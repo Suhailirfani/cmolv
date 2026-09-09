@@ -4041,7 +4041,7 @@ def bulk_progress_report_pdf(request):
         y = height - 2 * cm
 
         c.setFont("Helvetica-Bold", 14)
-        c.drawCentredString(width / 2, y, "MARKAZ HADIYA WOMEN'S COLLEGE, THAZHAPRA")
+        c.drawCentredString(width / 2, y, "CM MARKAZ OLAVANNA")
         y -= 0.7 * cm
 
         exam_title = exam_type.name.upper() if exam_type else "EXAMINATION"
@@ -4198,7 +4198,7 @@ def single_progress_report_pdf(request, pk):
     y = height - 2 * cm
 
     c.setFont("Helvetica-Bold", 14)
-    c.drawCentredString(width / 2, y, "MARKAZ HADIYA WOMEN'S COLLEGE, THAZHAPRA")
+    c.drawCentredString(width / 2, y, "CM MARKAZ OLAVANNA")
     y -= 0.7 * cm
 
     exam_title = exam_type.name.upper() if exam_type else "EXAMINATION"
@@ -4397,7 +4397,7 @@ def acknowledgement_certificate_pdf(request, pk):
     # Header
     c.setFont("Helvetica-Bold", 16)
     c.setFillColor(colors.HexColor('#0f172a'))
-    c.drawCentredString(width / 2, y, "MARKAZ HADIYA WOMEN'S COLLEGE")
+    c.drawCentredString(width / 2, y, "CM MARKAZ OLAVANNA")
     y -= 0.6 * cm
 
     c.setFont("Helvetica", 10)
@@ -4440,7 +4440,7 @@ def acknowledgement_certificate_pdf(request, pk):
     div_name = f" - {enrollment.division.name}" if enrollment and enrollment.division else ""
     year_name = enrollment.academic_year.name if enrollment and enrollment.academic_year else "Current Academic Year"
 
-    p1 = f"This is to certify that <b>{student.full_name}</b> (Student ID: <b>{student.student_id}</b>) is a bonafide student of Markaz Hadiya Women's College, Thazhapra."
+    p1 = f"This is to certify that <b>{student.full_name}</b> (Student ID: <b>{student.student_id}</b>) is a bonafide student of CM Markaz Olavanna."
     p2 = f"She is currently enrolled and pursuing her studies in <b>{grade_name}{div_name}</b> during the academic year <b>{year_name}</b>."
     p3 = f"As per our institutional records, her conduct and character have been good throughout her period of study."
     p4 = f"This acknowledgement certificate is issued upon her request for the purpose of <b>{purpose}</b>."
@@ -4473,7 +4473,7 @@ def acknowledgement_certificate_pdf(request, pk):
     c.setFont("Helvetica", 9)
     c.setFillColor(colors.HexColor('#64748b'))
     c.drawString(2.5 * cm, y, "College Office")
-    c.drawRightString(width - 2.5 * cm, y, "Markaz Hadiya Women's College")
+    c.drawRightString(width - 2.5 * cm, y, "CM Markaz Olavanna")
 
     c.showPage()
     c.save()
@@ -4903,7 +4903,7 @@ def cumulative_attendance_pdf(request, grade_id, division_id):
     elements = []
 
     # Title & Subtitles
-    elements.append(Paragraph("MARKAZ HADIYA WOMEN'S COLLEGE, THAZHAPRA", inst_style))
+    elements.append(Paragraph("CM MARKAZ OLAVANNA", inst_style))
     elements.append(Paragraph("STUDENT CUMULATIVE ATTENDANCE REPORT", title_style))
     
     if specified_month_name:
@@ -5150,7 +5150,7 @@ def all_classes_cumulative_pdf(request):
 
         class_count += 1
 
-        elements.append(Paragraph("MARKAZ HADIYA WOMEN'S COLLEGE, THAZHAPRA", inst_style))
+        elements.append(Paragraph("CM MARKAZ OLAVANNA", inst_style))
         elements.append(Paragraph("STUDENT CUMULATIVE ATTENDANCE REPORT", title_style))
         
         if specified_month_name:
@@ -5215,7 +5215,7 @@ def all_classes_cumulative_pdf(request):
         elements.append(f_table)
 
     if not elements:
-        elements.append(Paragraph("MARKAZ HADIYA WOMEN'S COLLEGE, THAZHAPRA", inst_style))
+        elements.append(Paragraph("CM MARKAZ OLAVANNA", inst_style))
         elements.append(Paragraph("No active classes or student records found.", sub_style))
 
     doc.build(elements)
@@ -7604,9 +7604,9 @@ def student_self_profile_update(request):
 def pwa_manifest(request):
     """Serve PWA manifest.json for Chrome app download/installation"""
     manifest_data = {
-        "name": "Markaz Hadiya Women's College",
-        "short_name": "Markaz Hadiya",
-        "description": "Markaz Hadiya Women's College ERP & Student Portal",
+        "name": "CM Markaz Olavanna",
+        "short_name": "CM Markaz Olavanna",
+        "description": "CM Markaz Olavanna ERP & Student Portal",
         "start_url": "/home/",
         "display": "standalone",
         "background_color": "#0f172a",
@@ -7639,7 +7639,7 @@ def pwa_manifest(request):
 def pwa_serviceworker(request):
     """Serve PWA service worker sw.js with root scope for Chrome PWA installation"""
     sw_code = """
-const CACHE_NAME = 'markaz-hadiya-pwa-v4';
+const CACHE_NAME = 'cm-markaz-pwa-v4';
 const urlsToCache = [
   '/static/images/app_icon.png',
   '/static/img/app_icon.png',

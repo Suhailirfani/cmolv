@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MARKAZ HADIYA WOMEN'S COLLEGE | Welcome</title>
+    <title>CM MARKAZ OLAVANNA | Welcome</title>
     <link rel="icon" type="image/png" href="{% static 'img/M_LOGO.png' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
@@ -40,8 +40,8 @@
             justify-content: center;
             text-align: center;
             padding: 0 20px;
-            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
-                        url('{% static "images/college_hero_niqab_full.png" %}') center/cover no-repeat;
+            background: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)), 
+                        url('{% static "images/kerala_muthallim_hero.jpg" %}') center/cover no-repeat;
         }
 
         .hero::before {
@@ -324,17 +324,14 @@
 
     <section class="hero">
         <div class="hero-content">
-            <h1 class="college-name">MARKAZ HADIYA <span>WOMEN'S COLLEGE</span></h1>
-            <p class="tagline">Empowering Minds, Preserving Values, Shaping Futures.</p>
+            <h1 class="college-name">CM MARKAZ <span><BR>DAWA COLLEGE</BR></span></h1>
+            <p class="tagline">Empowering Minds, Preserving Values, Shaping Islamic Scholars & Leaders.</p>
             <div class="cta-group">
                 {% if user.is_authenticated %}
                 <a href="{% url 'students:home' %}" class="btn btn-primary">Go to Dashboard <i class="fas fa-th-large"></i></a>
                 {% else %}
                 <a href="{% url 'login' %}" class="btn btn-primary">Login to ERP <i class="fas fa-university"></i></a>
                 {% endif %}
-                <a href="{% url 'awaze_register' %}" class="btn btn-outline">AWAZE G-CAMP <i class="fas fa-rocket"></i></a>
-                <a href="{% url 'candidate_register' %}" class="btn btn-outline">Award Ceremony <i class="fas fa-award"></i></a>
-                <a href="{% url 'students:career' %}" class="btn btn-outline">Careers <i class="fas fa-briefcase"></i></a>
                 <a href="{% url 'students:courses_and_fees' %}" class="btn btn-outline">Courses & Fees <i class="fas fa-money-check-alt"></i></a>
                 <a href="{% url 'students:about_us' %}" class="btn btn-outline">About Us <i class="fas fa-info-circle"></i></a>
                 <a href="{% url 'students:after_10' %}" class="btn btn-outline" style="border-color: var(--text-gold); color: var(--text-gold);">After 10th Guide <i class="fas fa-graduation-cap"></i></a>
@@ -351,9 +348,9 @@
                 {% empty %}
                     <span>📱 <a href="{% url 'students:brochure_malayalam' %}" style="color: #25D366; text-decoration: underline;">App Features Brochure (മലയാളം) - വിവരങ്ങൾ ഇവിടെ ലഭ്യമാണ്!</a></span>
                     <span>🚀 Admissions Open for 2026-27 Academic Year!</span>
-                    <span>🏆 Award Ceremony Registration is Live for Distinction Holders.</span>
-                    <span>✨ Join AWAZE G-CAMP - Register Now to Secure Your Spot!</span>
-                    <span>📅 Last Date for Excellence Award Registration: March 20, 2026.</span>
+                    <span>📖 Integrated Islamic Dawa & Academic Curriculum.</span>
+                    <span>🎓 Higher Secondary, Degree & Integrated Islamic Studies.</span>
+                    <span>🏢 State-of-the-art Residential Campus & Facilities.</span>
                 {% endfor %}
             </div>
         </div>
@@ -365,33 +362,81 @@
             <div class="card">
                 <i class="fas fa-book-open"></i>
                 <h3>Excellence in Education</h3>
-                <p>Providing state-of-the-art academic training while fostering intellectual growth.</p>
+                <p>Providing integrated Islamic Dawa and contemporary academic training fostering intellectual growth.</p>
             </div>
             <div class="card">
                 <i class="fas fa-heart"></i>
                 <h3>Spiritual Growth</h3>
-                <p>Nurturing strong moral characters and preserving traditional Islamic values.</p>
+                <p>Nurturing strong moral characters, piety (Taqwa), and preserving traditional Sunni Islamic values.</p>
             </div>
             <div class="card">
-                <i class="fas fa-venus"></i>
-                <h3>Women Empowerment</h3>
-                <p>Equipping women with the skills and confidence to lead in society.</p>
+                <i class="fas fa-graduation-cap"></i>
+                <h3>Dawa & Leadership</h3>
+                <p>Equipping dedicated Muthallimeen with profound knowledge and leadership skills to serve society.</p>
             </div>
         </div>
     </section>
 
-    <section class="section reveal" style="background: rgba(255,255,255,0.05); border-radius: 30px; margin-bottom: 100px;">
+    <section class="section reveal" style="background: rgba(255,255,255,0.05); border-radius: 30px; margin-bottom: 80px;">
         <div style="display: flex; align-items: center; gap: 50px; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 300px;">
                 <img src="{% static 'images/college_campus_thazhapra_1773342079964.jpg' %}" alt="College Campus" style="width: 100%; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
             </div>
             <div style="flex: 1; min-width: 300px;">
-                <h2>Welcome to Thazhapra</h2>
+                <h2>Welcome to Olavanna Campus</h2>
                 <p style="font-size: 1.2rem; line-height: 1.8; opacity: 0.8;">
-                    Located in the serene landscapes of Thazhapra, Markaz Hadiya Women's College offers a perfect environment for learning and reflection. Our campus is designed to be a sanctuary of knowledge for the modern woman.
+                    Located in the serene landscapes of Olavanna, CM Markaz Olavanna offers an ideal spiritual and academic environment. Our campus is designed to be a sanctuary of knowledge for dedicated scholars and muthallimeen.
                 </p>
                 <br>
                 <a href="#contact" class="btn btn-outline">Explore Campus</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Programs, Admissions & Careers Section -->
+    <section class="section reveal" style="margin-bottom: 80px;">
+        <h2>Admissions, Guidance & Careers</h2>
+        <p style="text-align: center; color: rgba(255,255,255,0.7); max-width: 650px; margin: -10px auto 40px; font-size: 1.1rem; line-height: 1.6;">
+            Explore admission opportunities, academic orientation, and career openings at CM Markaz Olavanna.
+        </p>
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+            <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; align-items: center; border: 1px solid rgba(241, 196, 15, 0.35); background: linear-gradient(180deg, rgba(106, 6, 6, 0.4) 0%, rgba(42, 4, 4, 0.6) 100%);">
+                <div>
+                    <i class="fas fa-paper-plane" style="color: var(--text-gold);"></i>
+                    <h3 style="font-size: 1.4rem; margin-bottom: 12px; color: white;">Admissions 2026-27</h3>
+                    <p style="font-size: 0.95rem; opacity: 0.85; line-height: 1.6; margin-bottom: 25px;">
+                        Join our prestigious Dawa & higher academic batches. Submit online admission enquiries directly.
+                    </p>
+                </div>
+                <a href="{% url 'students:enquiry_create' %}" class="btn btn-outline" style="border-color: var(--text-gold); color: var(--text-gold); width: 100%; padding: 12px 20px; font-size: 0.95rem;">
+                    Apply for Admission <i class="fas fa-arrow-right" style="font-size: 0.85rem; margin-left: 6px;"></i>
+                </a>
+            </div>
+
+            <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; align-items: center; border: 1px solid rgba(255, 255, 255, 0.2); background: linear-gradient(180deg, rgba(106, 6, 6, 0.4) 0%, rgba(42, 4, 4, 0.6) 100%);">
+                <div>
+                    <i class="fas fa-book-open-reader" style="color: #f39c12;"></i>
+                    <h3 style="font-size: 1.4rem; margin-bottom: 12px; color: white;">After 10th Guide</h3>
+                    <p style="font-size: 0.95rem; opacity: 0.85; line-height: 1.6; margin-bottom: 25px;">
+                        Interactive digital handbook on academic streams, career pathways, and integrated studies after SSLC.
+                    </p>
+                </div>
+                <a href="{% url 'students:after_10' %}" class="btn btn-outline" style="width: 100%; padding: 12px 20px; font-size: 0.95rem;">
+                    Read Guidance Book <i class="fas fa-arrow-right" style="font-size: 0.85rem; margin-left: 6px;"></i>
+                </a>
+            </div>
+
+            <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; align-items: center; border: 1px solid rgba(255, 255, 255, 0.2); background: linear-gradient(180deg, rgba(106, 6, 6, 0.4) 0%, rgba(42, 4, 4, 0.6) 100%);">
+                <div>
+                    <i class="fas fa-briefcase" style="color: #38bdf8;"></i>
+                    <h3 style="font-size: 1.4rem; margin-bottom: 12px; color: white;">Careers</h3>
+                    <p style="font-size: 0.95rem; opacity: 0.85; line-height: 1.6; margin-bottom: 25px;">
+                        Join our passionate team of educators and administrative staff dedicated to academic and moral excellence.
+                    </p>
+                </div>
+                <a href="{% url 'students:career' %}" class="btn btn-outline" style="width: 100%; padding: 12px 20px; font-size: 0.95rem;">
+                    View Openings <i class="fas fa-arrow-right" style="font-size: 0.85rem; margin-left: 6px;"></i>
+                </a>
             </div>
         </div>
     </section>
@@ -418,8 +463,9 @@
     </section>
 
     <footer style="padding: 50px 20px; text-align: center; border-top: 1px solid var(--glass-border); background: #070b14;">
-        <p>&copy; 2026 Markaz Hadiya Women's College, Thazhapra. All Rights Reserved. | 
+        <p>&copy; 2026 CM Markaz Olavanna. All Rights Reserved. | 
             <a href="{% url 'students:about_us' %}" style="color: var(--text-gold); text-decoration: none;">About Us</a> | 
+            <a href="{% url 'students:career' %}" style="color: rgba(255,255,255,0.7); text-decoration: none;">Careers</a> | 
             <a href="{% url 'students:brochure_malayalam' %}" style="color: #25D366; text-decoration: none; font-weight: 700;">📱 App Brochure (മലയാളം)</a>
         </p>
         <div style="margin-top: 20px; font-size: 1.5rem; display: flex; justify-content: center; gap: 20px;">

@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
             name='InstitutionPaymentSetting',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('institution_name', models.CharField(default="Markaz Hadiya Women's College", max_length=150)),
+                ('institution_name', models.CharField(default="CM Markaz Olavanna", max_length=150)),
                 ('account_holder_name', models.CharField(blank=True, help_text='Beneficiary Name', max_length=150)),
                 ('bank_name', models.CharField(blank=True, help_text='e.g. State Bank of India, Federal Bank', max_length=100)),
                 ('account_number', models.CharField(blank=True, help_text='Bank Account Number', max_length=50)),
