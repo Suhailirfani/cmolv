@@ -8250,6 +8250,16 @@ def substitute_teacher_finder_ajax(request):
     return JsonResponse({'free_teachers': results, 'count': len(results)})
 
 
+def user_guide(request):
+    """Serve the interactive User Manual & Documentation Help Center"""
+    context = {
+        'institution_name': 'Madeenathu CM Olavanna',
+        'system_version': 'InstiFlow v2.6 Enterprise',
+    }
+    return render(request, 'students/user_guide.html', context)
+
+
+
 
 
 

@@ -15,7 +15,8 @@ urlpatterns = [
     path('results/', views.student_results_public_lookup, name='results_lookup'),
     path('after-10-guide/', views.after_10, name='after_10'),
     path('about-us/', views.about_us, name='about_us'),
-
+    path('help/', views.user_guide, name='user_guide'),
+    path('user-guide/', views.user_guide, name='user_guide_alias'),
     path('courses-and-fees/', views.courses_and_fees, name='courses_and_fees'),
     path('courses-and-fees/<int:course_id>/calculate/', views.course_fee_calculator, name='course_fee_calculator'),
     path('students/', views.student_list, name='student_list'),

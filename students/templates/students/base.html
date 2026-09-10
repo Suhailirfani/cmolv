@@ -1849,7 +1849,11 @@
             {% endif %}
         </div>
 
-        <div style="margin-top: auto; padding-top: 2rem;">
+        <div style="margin-top: auto; padding-top: 1.5rem;">
+            <a href="{% url 'students:user_guide' %}" class="nav-item" style="color: #38bdf8; margin-bottom: 0.5rem; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2);">
+                <i class="fa-solid fa-book-bookmark"></i>
+                <span>User Guide & Help</span>
+            </a>
             {% if user.is_authenticated %}
             <form action="{% url 'logout' %}" method="post">
                 {% csrf_token %}

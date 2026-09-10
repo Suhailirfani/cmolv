@@ -1,0 +1,1128 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Manual & Documentation | MADEENATHU CM OLAVANNA</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/app_icon.png' %}?v=4">
+    <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/app_icon.png' %}?v=4">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/app_icon.png' %}?v=4">
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}?v=4">
+    
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #0099dd;
+            --primary-dark: #0077b6;
+            --teal: #00a69d;
+            --teal-dark: #008170;
+            --gold: #d4af37;
+            --gold-light: #f39c12;
+            --dark-bg: #070e17;
+            --dark-card: rgba(13, 27, 42, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Top Navigation Header */
+        .guide-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(7, 14, 23, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 0.85rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .brand-box {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            text-decoration: none;
+            color: white;
+        }
+
+        .brand-logo {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            object-fit: contain;
+            box-shadow: 0 4px 12px rgba(0, 153, 221, 0.3);
+        }
+
+        .brand-text h1 {
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            color: white;
+            line-height: 1.1;
+        }
+
+        .brand-text span {
+            font-size: 0.72rem;
+            color: var(--primary);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1px solid transparent;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--teal) 100%);
+            color: white;
+            box-shadow: 0 4px 14px rgba(0, 153, 221, 0.35);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 153, 221, 0.5);
+        }
+
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--glass-border);
+            color: white;
+        }
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: var(--primary);
+        }
+
+        /* Hero Banner */
+        .guide-hero {
+            position: relative;
+            padding: 3.5rem 1.5rem 2.5rem;
+            text-align: center;
+            background: radial-gradient(circle at 50% 20%, rgba(0, 153, 221, 0.18) 0%, rgba(0, 166, 157, 0.08) 45%, transparent 70%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .guide-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0, 153, 221, 0.15);
+            border: 1px solid rgba(0, 153, 221, 0.35);
+            color: #38bdf8;
+            padding: 0.35rem 0.9rem;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        .guide-hero h2 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.85rem;
+        }
+
+        .guide-hero p {
+            max-width: 680px;
+            margin: 0 auto 2rem;
+            color: var(--text-muted);
+            font-size: 1.05rem;
+        }
+
+        /* Search Bar & Role Filter */
+        .search-container {
+            max-width: 650px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 1.25rem 1rem 3.2rem;
+            background: rgba(13, 27, 42, 0.85);
+            border: 1px solid rgba(0, 153, 221, 0.35);
+            border-radius: 16px;
+            color: white;
+            font-size: 1.05rem;
+            font-family: inherit;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(0, 153, 221, 0.25), 0 12px 35px rgba(0, 0, 0, 0.45);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+
+        .role-filters {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+
+        .role-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .role-btn.active, .role-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0, 153, 221, 0.3);
+        }
+
+        /* Layout Container */
+        .guide-layout {
+            max-width: 1350px;
+            margin: 2.5rem auto;
+            padding: 0 1.5rem;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2.5rem;
+            align-items: start;
+        }
+
+        /* Sticky Sidebar Table of Contents */
+        .guide-toc {
+            position: sticky;
+            top: 5rem;
+            background: var(--dark-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 1.5rem 1.2rem;
+            max-height: calc(100vh - 6.5rem);
+            overflow-y: auto;
+        }
+
+        .toc-title {
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--gold);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toc-nav {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .toc-nav a {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.55rem 0.85rem;
+            border-radius: 10px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .toc-nav a i {
+            font-size: 0.95rem;
+            width: 18px;
+            text-align: center;
+        }
+        .toc-nav a:hover, .toc-nav a.active {
+            background: rgba(0, 153, 221, 0.15);
+            color: #38bdf8;
+            font-weight: 600;
+        }
+
+        /* Content Area & Modules */
+        .guide-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+        }
+
+        .guide-card {
+            background: var(--dark-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            transition: border-color 0.3s ease;
+        }
+        .guide-card:hover {
+            border-color: rgba(0, 153, 221, 0.35);
+        }
+
+        .module-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .module-icon {
+            width: 52px;
+            height: 52px;
+            min-width: 52px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(0, 153, 221, 0.2) 0%, rgba(0, 166, 157, 0.2) 100%);
+            border: 1px solid rgba(0, 153, 221, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            color: #38bdf8;
+        }
+
+        .module-info h3 {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 0.25rem;
+        }
+
+        .module-tags {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-top: 0.35rem;
+        }
+
+        .tag-pill {
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .tag-admin { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .tag-teacher { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .tag-accountant { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .tag-warden { background: rgba(139, 92, 246, 0.15); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); }
+        .tag-student { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+
+        /* Step Walkthrough Elements */
+        .step-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            margin-top: 1.25rem;
+        }
+
+        .step-item {
+            display: flex;
+            gap: 1.25rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 1.25rem;
+            transition: all 0.2s ease;
+        }
+        .step-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(0, 153, 221, 0.25);
+        }
+
+        .step-num {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--teal) 100%);
+            color: white;
+            font-weight: 800;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0, 153, 221, 0.35);
+        }
+
+        .step-body h4 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.35rem;
+        }
+
+        .step-body p {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            line-height: 1.6;
+        }
+
+        .step-path {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 0.25rem 0.65rem;
+            border-radius: 6px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            color: #38bdf8;
+            margin-top: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Tips & Callouts */
+        .callout {
+            margin-top: 1.25rem;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            display: flex;
+            gap: 0.85rem;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .callout-info {
+            background: rgba(0, 153, 221, 0.12);
+            border: 1px solid rgba(0, 153, 221, 0.3);
+            color: #7dd3fc;
+        }
+        .callout-tip {
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+        }
+        .callout-warning {
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fcd34d;
+        }
+
+        /* Quick Action Matrix */
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+            margin-top: 1.25rem;
+        }
+
+        .matrix-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            padding: 1.25rem;
+            transition: all 0.2s ease;
+        }
+        .matrix-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .matrix-card h5 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .matrix-card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.85rem;
+        }
+
+        /* Print Mode Stylesheet */
+        @media print {
+            body {
+                background: white !important;
+                color: #1e293b !important;
+            }
+            .guide-header, .search-container, .role-filters, .guide-toc, .btn, .no-print {
+                display: none !important;
+            }
+            .guide-layout {
+                display: block !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .guide-card {
+                background: white !important;
+                border: 1px solid #cbd5e1 !important;
+                color: #0f172a !important;
+                page-break-inside: avoid;
+                margin-bottom: 2rem !important;
+                box-shadow: none !important;
+            }
+            .module-info h3, .step-body h4, .matrix-card h5 {
+                color: #0f172a !important;
+            }
+            .step-item {
+                background: #f8fafc !important;
+                border: 1px solid #e2e8f0 !important;
+            }
+            .step-body p, .guide-hero p {
+                color: #475569 !important;
+            }
+            .step-path {
+                background: #f1f5f9 !important;
+                color: #0284c7 !important;
+                border-color: #cbd5e1 !important;
+            }
+            .callout-info, .callout-tip, .callout-warning {
+                background: #f8fafc !important;
+                color: #1e293b !important;
+                border: 1px solid #cbd5e1 !important;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .guide-layout {
+                grid-template-columns: 1fr;
+            }
+            .guide-toc {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="guide-header no-print">
+        <a href="{% url 'students:home' %}" class="brand-box">
+            <img src="{% static 'images/app_icon.png' %}?v=4" alt="Logo" class="brand-logo">
+            <div class="brand-text">
+                <h1>MADEENATHU CM OLAVANNA</h1>
+                <span>Documentation & User Manual</span>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button onclick="window.print()" class="btn btn-outline" title="Print as physical training manual">
+                <i class="fas fa-print"></i> <span>Print Manual</span>
+            </button>
+            <a href="{% url 'students:home' %}" class="btn btn-primary">
+                <i class="fas fa-arrow-left"></i> <span>Back to Portal</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="guide-hero">
+        <div class="guide-badge">
+            <i class="fas fa-book-bookmark"></i> InstiFlow ERP v2.6 Manual
+        </div>
+        <h2>Campus Management User Guide</h2>
+        <p>
+            Complete step-by-step documentation for administrators, mudarriseen, accountants, hostel wardens, and students of Madeenathu CM Olavanna.
+        </p>
+
+        <!-- Search Bar -->
+        <div class="search-container no-print">
+            <i class="fas fa-magnifying-glass search-icon"></i>
+            <input type="text" id="guideSearch" class="search-input" placeholder="Search guides, operations, or features (e.g. 'fees', 'attendance', 'outpass', 'marks')..." onkeyup="filterGuideTopics()">
+        </div>
+
+        <!-- Role Filter Buttons -->
+        <div class="role-filters no-print">
+            <button class="role-btn active" onclick="filterByRole('all')"><i class="fas fa-globe"></i> All Guides</button>
+            <button class="role-btn" onclick="filterByRole('admin')"><i class="fas fa-user-shield"></i> Administrator</button>
+            <button class="role-btn" onclick="filterByRole('teacher')"><i class="fas fa-chalkboard-user"></i> Mudarris / Teacher</button>
+            <button class="role-btn" onclick="filterByRole('accountant')"><i class="fas fa-calculator"></i> Accountant</button>
+            <button class="role-btn" onclick="filterByRole('warden')"><i class="fas fa-bed"></i> Hostel Warden</button>
+            <button class="role-btn" onclick="filterByRole('student')"><i class="fas fa-user-graduate"></i> Student / Parent</button>
+        </div>
+    </section>
+
+    <!-- Guide Main Layout -->
+    <main class="guide-layout">
+        
+        <!-- Table of Contents -->
+        <aside class="guide-toc no-print">
+            <div class="toc-title">
+                <i class="fas fa-list-check"></i> Modules Index
+            </div>
+            <ul class="toc-nav">
+                <li><a href="#quickstart" class="active"><i class="fas fa-bolt"></i> Quick Start & Login</a></li>
+                <li><a href="#academic-setup"><i class="fas fa-gears"></i> System & Academic Setup</a></li>
+                <li><a href="#admissions"><i class="fas fa-user-plus"></i> Admissions & Students</a></li>
+                <li><a href="#attendance"><i class="fas fa-calendar-check"></i> Smart Attendance</a></li>
+                <li><a href="#hostel"><i class="fas fa-bed"></i> Hostel Gate Pass (Outpass)</a></li>
+                <li><a href="#exams"><i class="fas fa-poll"></i> Exams & Progress Reports</a></li>
+                <li><a href="#fees"><i class="fas fa-file-invoice-dollar"></i> Fee Management & Billing</a></li>
+                <li><a href="#finance"><i class="fas fa-building-columns"></i> Institutional Accounts</a></li>
+                <li><a href="#alumni"><i class="fas fa-graduation-cap"></i> Alumni & Career Cell</a></li>
+                <li><a href="#pwa"><i class="fas fa-mobile-screen"></i> Mobile App Installation</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Guide Articles -->
+        <div class="guide-content">
+
+            <!-- 1. Quick Start & Login -->
+            <section id="quickstart" class="guide-card" data-roles="admin teacher accountant warden student">
+                <div class="module-header">
+                    <div class="module-icon"><i class="fas fa-bolt"></i></div>
+                    <div class="module-info">
+                        <h3>1. Quick Start & Portal Authentication</h3>
+                        <div class="module-tags">
+                            <span class="tag-pill tag-admin">Admin</span>
+                            <span class="tag-pill tag-teacher">Teacher</span>
+                            <span class="tag-pill tag-accountant">Accountant</span>
+                            <span class="tag-pill tag-warden">Warden</span>
+                            <span class="tag-pill tag-student">Student</span>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">
+                    Madeenathu CM Olavanna ERP operates on a role-based access model. Each user type sees only the permissions and menus relevant to their responsibilities.
+                </p>
+
+                <div class="step-list">
+                    <div class="step-item">
+                        <div class="step-num">1</div>
+                        <div class="step-body">
+                            <h4>Accessing the Portal</h4>
+                            <p>Open your web browser (Chrome, Edge, Safari) and navigate to the institution URL. Click <strong>Login to ERP</strong> on the landing page.</p>
+                            <span class="step-path"><i class="fas fa-link"></i> /login/</span>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">2</div>
+                        <div class="step-body">
+                            <h4>Entering Your Credentials</h4>
+                            <p>Enter your assigned <strong>Username</strong> and <strong>Password</strong>. If logging in for the first time as a student, use your Student Register Number.</p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">3</div>
+                        <div class="step-body">
+                            <h4>Navigating the Workspace</h4>
+                            <p>Upon successful login, you are directed to the main Dashboard containing dynamic analytics cards and quick-action buttons for daily tasks.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="callout callout-tip">
+                    <i class="fas fa-lightbulb" style="font-size: 1.2rem;"></i>
+                    <div>
+                        <strong>Pro Tip:</strong> You can install this portal as a standalone app on your phone or PC by clicking the <strong>Install App</strong> button in Chrome/Safari without needing Google Play Store.
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. System & Academic Setup -->
+            <section id="academic-setup" class="guide-card" data-roles="admin">
+                <div class="module-header">
+                    <div class="module-icon"><i class="fas fa-gears"></i></div>
+                    <div class="module-info">
+                        <h3>2. System Setup & Academic Configuration</h3>
+                        <div class="module-tags">
+                            <span class="tag-pill tag-admin">Admin Only</span>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">
+                    Configure the foundational academic hierarchy of Madeenathu CM Olavanna (Academic Sessions, Sections, Classes, Divisions, and Subjects).
+                </p>
+
+                <div class="step-list">
+                    <div class="step-item">
+                        <div class="step-num">1</div>
+                        <div class="step-body">
+                            <h4>Configure Academic Years</h4>
+                            <p>Set up sessions (e.g. <code>2026-2027</code>). Exactly one academic year is marked as <strong>Active</strong> per section to govern student promotions.</p>
+                            <span class="step-path"><i class="fas fa-compass"></i> Sidebar &rarr; Settings &rarr; Academic Years</span>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">2</div>
+                        <div class="step-body">
+                            <h4>Create Sections & Grades</h4>
+                            <p>Establish Sections (<em>Secondary, Higher Secondary, Shareea, Degree</em>) and Grades (<em>Plus One, Plus Two, 1st Year Degree</em>).</p>
+                            <span class="step-path"><i class="fas fa-compass"></i> Sidebar &rarr; Settings &rarr; Grades / Classes</span>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">3</div>
+                        <div class="step-body">
+                            <h4>Set up Divisions & Classrooms</h4>
+                            <p>Create divisions (e.g. <em>Dawa Commerce, Dawa Humanities, Science</em>) under their respective Grades.</p>
+                            <span class="step-path"><i class="fas fa-compass"></i> Sidebar &rarr; Settings &rarr; Divisions</span>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">4</div>
+                        <div class="step-body">
+                            <h4>Manage Subjects</h4>
+                            <p>Add curriculum subjects and categorize them as <strong>Academic</strong> or <strong>Dawa / Islamic</strong> subjects.</p>
+                            <span class="step-path"><i class="fas fa-compass"></i> Sidebar &rarr; Settings &rarr; Subjects</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. Admissions & Student Management -->
+            <section id="admissions" class="guide-card" data-roles="admin teacher">
+                <div class="module-header">
+                    <div class="module-icon"><i class="fas fa-user-plus"></i></div>
+                    <div class="module-info">
+                        <h3>3. Admissions & Student Directory Management</h3>
+                        <div class="module-tags">
+                            <span class="tag-pill tag-admin">Admin</span>
+                            <span class="tag-pill tag-teacher">Teacher</span>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">
+                    Full lifecycle management for students: from incoming online admission inquiries to student profile archiving, ID cards, and roll lists.
+                </p>
+
+                <div class="matrix-grid">
+                    <div class="matrix-card">
+                        <h5><i class="fas fa-file-signature" style="color: var(--primary);"></i> Online Enquiries</h5>
+                        <p>Public admission inquiries submitted via the website form appear in real-time on the Enquiries dashboard for review and approval.</p>
+                        <span class="step-path">Sidebar &rarr; Enquiries</span>
+                    </div>
+
+                    <div class="matrix-card">
+                        <h5><i class="fas fa-file-excel" style="color: var(--teal);"></i> Excel Bulk Import</h5>
+                        <p>Download the pre-formatted Excel template, populate student records (Name, Batch, Phone, Place), and upload hundreds of students in one click.</p>
+                        <span class="step-path">Students &rarr; Bulk Import</span>
+                    </div>
+
+                    <div class="matrix-card">
+                        <h5><i class="fas fa-id-card" style="color: var(--gold);"></i> ID Card Sheets</h5>
+                        <p>Generate print-ready ID cards complete with student photos, blood groups, roll numbers, and official Madeenathu CM branding.</p>
+                        <span class="step-path">Students &rarr; ID Cards</span>
+                    </div>
+
+                    <div class="matrix-card">
+                        <h5><i class="fas fa-key" style="color: #38bdf8;"></i> Student Credentials</h5>
+                        <p>Generate printable lists of auto-created usernames and passwords for distributed handover to students and parents.</p>
+                        <span class="step-path">Settings &rarr; Student Credentials</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. Smart Attendance -->
+            <section id="attendance" class="guide-card" data-roles="admin teacher warden">
+                <div class="module-header">
+                    <div class="module-icon"><i class="fas fa-calendar-check"></i></div>
+                    <div class="module-info">
+                        <h3>4. Smart Attendance System</h3>
+                        <div class="module-tags">
+                            <span class="tag-pill tag-admin">Admin</span>
+                            <span class="tag-pill tag-teacher">Teacher</span>
+                            <span class="tag-pill tag-warden">Warden</span>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">
+                    Record daily presence, period-wise class attendance, and activity sessions with instant percentage calculation.
+                </p>
+
+                <div class="step-list">
+                    <div class="step-item">
+                        <div class="step-num">1</div>
+                        <div class="step-body">
+                            <h4>Marking Attendance by Class</h4>
+                            <p>Select the Grade and Division. The entire class roll list is loaded with all students defaulted to <strong>Present</strong>. Simply tap on any absent student to mark them <strong>Absent</strong>, <strong>Late</strong>, or <strong>Excused</strong>.</p>
+                            <span class="step-path"><i class="fas fa-compass"></i> Attendance &rarr; Mark Attendance</span>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">2</div>
+                        <div class="step-body">
+                            <h4>Monthly & Yearly Attendance Register</h4>
+                            <p>Filter reports by date range, grade, and student type (Hostel vs Day Scholar). Instantly export summary PDF sheets for office records.</p>
+                            <span class="step-path"><i class="fas fa-compass"></i> Attendance &rarr; Attendance Register</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. Hostel Movement / Outpass -->
+            <section id="hostel" class="guide-card" data-roles="admin warden">
+                <div class="module-header">
+                    <div class="module-icon"><i class="fas fa-bed"></i></div>
+                    <div class="module-info">
+                        <h3>5. Hostel Movement & Gate Pass (Outpass)</h3>
+                        <div class="module-tags">
+                            <span class="tag-pill tag-admin">Admin</span>
+                            <span class="tag-pill tag-warden">Warden</span>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">
+                    Digital gate-pass registry to log hostel departures, escorting guardians, reasons, and return timestamps with overdue return alerts.
+                </p>
+
+                <div class="step-list">
+                    <div class="step-item">
+                        <div class="step-num">1</div>
+                        <div class="step-body">
+                            <h4>Creating an Outpass / Departure Record</h4>
+                            <p>Click <strong>Record Departure</strong>. Select the student, enter departure date & time, escort person name, contact number, reason, and expected return date.</p>
+                            <span class="step-path"><i class="fas fa-compass"></i> Hostel &rarr; Record Movement</span>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">2</div>
+                        <div class="step-body">
+                            <h4>Logging Arrival (Return Check-in)</h4>
+                            <p>When the student returns to campus, locate their pending entry on the Hostel dashboard and click <strong>Record Arrival</strong> to close the outpass ticket.</p>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">3</div>
+                        <div class="step-body">
+                            <h4>Live Campus Roll-Call</h4>
+                            <p>The dashboard displays real-time badges showing how many hostel muthallimeen are currently <strong>In Campus</strong> vs. <strong>On Leave</strong>.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. Exams & Progress Reports -->
+            <section id="exams" class="guide-card" data-roles="admin teacher student">
+                <div class="module-header">
+                    <div class="module-icon"><i class="fas fa-poll"></i></div>
+                    <div class="module-info">
+                        <h3>6. Examinations, Marks & Progress Reports</h3>
+                        <div class="module-tags">
+                            <span class="tag-pill tag-admin">Admin</span>
+                            <span class="tag-pill tag-teacher">Teacher</span>
+                            <span class="tag-pill tag-student">Student</span>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">
+                    Schedule examinations, enter marks with real-time saving, compute grades, and generate multi-page institutional progress report cards.
+                </p>
+
+                <div class="step-list">
+                    <div class="step-item">
+                        <div class="step-num">1</div>
+                        <div class="step-body">
+                            <h4>Create Exam & Set Maximum Marks</h4>
+                            <p>Define the Exam Title (e.g. <em>First Terminal Examination</em>) and set maximum marks per subject.</p>
+                            <span class="step-path"><i class="fas fa-compass"></i> Examination &rarr; Exam Types</span>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">2</div>
+                        <div class="step-body">
+                            <h4>Mark Entry (Web & Excel Upload)</h4>
+                            <p>Teachers can enter marks directly into the live grid with auto-save, or download an Excel sheet, fill marks offline, and re-upload.</p>
+                            <span class="step-path"><i class="fas fa-compass"></i> Examination &rarr; Mark Entry</span>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">3</div>
+                        <div class="step-body">
+                            <h4>Generate & Print Progress Reports</h4>
+                            <p>Access terminal progress cards with automatic Islamic & Academic subject separation, total score, percentage, attendance record, and principal sign-off.</p>
+                            <span class="step-path"><i class="fas fa-compass"></i> Examination &rarr; Progress Reports</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 7. Fees, Invoicing & Billing -->
+            <section id="fees" class="guide-card" data-roles="admin accountant">
+                <div class="module-header">
+                    <div class="module-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+                    <div class="module-info">
+                        <h3>7. Fee Management, Invoicing & Receipts</h3>
+                        <div class="module-tags">
+                            <span class="tag-pill tag-admin">Admin</span>
+                            <span class="tag-pill tag-accountant">Accountant</span>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">
+                    Automated monthly fee generation, custom concession discounts, instant thermal receipt printing, and live balance registers.
+                </p>
+
+                <div class="matrix-grid">
+                    <div class="matrix-card">
+                        <h5><i class="fas fa-tags" style="color: var(--primary);"></i> Fee Categories & Items</h5>
+                        <p>Configure fee heads: Admission Fee, Monthly Hostel Fee, Bus Fee, and Caution Deposit with targeting by grade or hostel status.</p>
+                        <span class="step-path">Finance &rarr; Fee Setup</span>
+                    </div>
+
+                    <div class="matrix-card">
+                        <h5><i class="fas fa-receipt" style="color: var(--teal);"></i> Collect Payment & Print</h5>
+                        <p>Record student payments via Cash, UPI, or Bank Transfer. Instantly print official receipts on A4 or 80mm Thermal printers.</p>
+                        <span class="step-path">Finance &rarr; Collect Fees</span>
+                    </div>
+
+                    <div class="matrix-card">
+                        <h5><i class="fas fa-percent" style="color: var(--gold);"></i> Concessions & Waivers</h5>
+                        <p>Apply custom fee concessions and scholarships for deserving muthallimeen with automated ledger adjustment.</p>
+                        <span class="step-path">Student Profile &rarr; Fees &rarr; Concession</span>
+                    </div>
+
+                    <div class="matrix-card">
+                        <h5><i class="fas fa-qrcode" style="color: #38bdf8;"></i> Bank & UPI QR Setup</h5>
+                        <p>Upload the institution UPI QR code and bank account details to automatically display them on student fee invoices.</p>
+                        <span class="step-path">Finance &rarr; Payment Setup</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 8. Institutional Accounts & Income/Expense -->
+            <section id="finance" class="guide-card" data-roles="admin accountant">
+                <div class="module-header">
+                    <div class="module-icon"><i class="fas fa-building-columns"></i></div>
+                    <div class="module-info">
+                        <h3>8. Institutional Accounts, Income & Expenses</h3>
+                        <div class="module-tags">
+                            <span class="tag-pill tag-admin">Admin</span>
+                            <span class="tag-pill tag-accountant">Accountant</span>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">
+                    Comprehensive double-entry institutional accounting ledger tracking institutional income grants, mess expenses, maintenance, and daily cashier cash-flow.
+                </p>
+
+                <div class="step-list">
+                    <div class="step-item">
+                        <div class="step-num">1</div>
+                        <div class="step-body">
+                            <h4>Recording Income & Expenses</h4>
+                            <p>Log non-fee income (Donations, Grants) and daily campus expenses (Mess, Electricity, Maintenance) under predefined categories.</p>
+                            <span class="step-path"><i class="fas fa-compass"></i> Finance &rarr; Accounts Ledger</span>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">2</div>
+                        <div class="step-body">
+                            <h4>Daily Collection & Defaulter Reports</h4>
+                            <p>Review the daily cash/UPI collection summary and view list of fee defaulters with pending dues across all batches.</p>
+                            <span class="step-path"><i class="fas fa-compass"></i> Finance &rarr; Defaulter List</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 9. Alumni & Careers -->
+            <section id="alumni" class="guide-card" data-roles="admin">
+                <div class="module-header">
+                    <div class="module-icon"><i class="fas fa-graduation-cap"></i></div>
+                    <div class="module-info">
+                        <h3>9. Alumni Network & Career Cell</h3>
+                        <div class="module-tags">
+                            <span class="tag-pill tag-admin">Admin</span>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">
+                    Seamlessly transfer graduated batches to the searchable Alumni Directory and manage employment openings on the public career portal.
+                </p>
+
+                <div class="step-list">
+                    <div class="step-item">
+                        <div class="step-num">1</div>
+                        <div class="step-body">
+                            <h4>Batch Graduation & Alumni Transfer</h4>
+                            <p>When a batch finishes their course, use <strong>Batch Graduate</strong> to automatically archive their student profile into the permanent Alumni Registry.</p>
+                            <span class="step-path"><i class="fas fa-compass"></i> Alumni &rarr; Bulk Transfer</span>
+                        </div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">2</div>
+                        <div class="step-body">
+                            <h4>Publishing Career Vacancies</h4>
+                            <p>Post open teaching and administrative job vacancies. Candidate applications submitted online are stored in the HR management queue.</p>
+                            <span class="step-path"><i class="fas fa-compass"></i> HR &rarr; Job Vacancies</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 10. Mobile PWA App Guide -->
+            <section id="pwa" class="guide-card" data-roles="admin teacher accountant warden student">
+                <div class="module-header">
+                    <div class="module-icon"><i class="fas fa-mobile-screen"></i></div>
+                    <div class="module-info">
+                        <h3>10. Installing the Mobile Web App (PWA)</h3>
+                        <div class="module-tags">
+                            <span class="tag-pill tag-admin">Admin</span>
+                            <span class="tag-pill tag-teacher">Teacher</span>
+                            <span class="tag-pill tag-accountant">Accountant</span>
+                            <span class="tag-pill tag-warden">Warden</span>
+                            <span class="tag-pill tag-student">Student</span>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">
+                    How to install Madeenathu CM Olavanna ERP as a fast, native-like app on Android phones, iPhones, iPads, and Windows PCs.
+                </p>
+
+                <div class="matrix-grid">
+                    <div class="matrix-card">
+                        <h5><i class="fab fa-android" style="color: #22c55e;"></i> Android (Google Chrome)</h5>
+                        <p>1. Open the portal in Chrome.<br>2. Tap the <strong>three dots menu (⋮)</strong> at top-right.<br>3. Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.<br>4. The app icon appears instantly on your launcher.</p>
+                    </div>
+
+                    <div class="matrix-card">
+                        <h5><i class="fab fa-apple" style="color: #94a3b8;"></i> iPhone / iPad (Safari)</h5>
+                        <p>1. Open the portal in Safari.<br>2. Tap the <strong>Share button (⎋ / square with arrow)</strong> at the bottom.<br>3. Scroll down and tap <strong>"Add to Home Screen"</strong>.<br>4. Tap <strong>Add</strong>.</p>
+                    </div>
+
+                    <div class="matrix-card">
+                        <h5><i class="fab fa-windows" style="color: #38bdf8;"></i> Windows PC / Mac (Chrome / Edge)</h5>
+                        <p>1. Open the portal in Chrome or Edge.<br>2. Click the <strong>Install Icon (⊕)</strong> on the right side of the address bar.<br>3. Click <strong>Install</strong> to launch as a standalone desktop application.</p>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer style="padding: 2.5rem 1.5rem; text-align: center; border-top: 1px solid var(--glass-border); background: #050a10; color: var(--text-muted); font-size: 0.88rem; margin-top: 4rem;">
+        <p>&copy; 2026 Madeenathu CM Olavanna. All Rights Reserved. | InstiFlow Enterprise Campus Management System</p>
+    </footer>
+
+    <!-- Interactive JavaScript -->
+    <script>
+        // Real-time Search Filter
+        function filterGuideTopics() {
+            const query = document.getElementById('guideSearch').value.toLowerCase().trim();
+            const cards = document.querySelectorAll('.guide-card');
+
+            cards.forEach(card => {
+                const text = card.innerText.toLowerCase();
+                if (query === '' || text.includes(query)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Role Filter Tabs
+        function filterByRole(role) {
+            // Update active button
+            const buttons = document.querySelectorAll('.role-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const cards = document.querySelectorAll('.guide-card');
+            cards.forEach(card => {
+                const cardRoles = card.getAttribute('data-roles') || '';
+                if (role === 'all' || cardRoles.includes(role)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Smooth scroll TOC active state
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('.guide-card');
+            const navLinks = document.querySelectorAll('.toc-nav a');
+
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 120) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
