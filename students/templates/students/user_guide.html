@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ml">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,7 +13,7 @@
     <!-- Google Fonts & FontAwesome -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Malayalam:wght@400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -41,10 +41,10 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', 'Noto Sans Malayalam', 'Manrope', sans-serif;
             background: var(--dark-bg);
             color: var(--text-main);
-            line-height: 1.6;
+            line-height: 1.65;
             overflow-x: hidden;
         }
 
@@ -53,7 +53,7 @@
             position: sticky;
             top: 0;
             z-index: 100;
-            background: rgba(7, 14, 23, 0.88);
+            background: rgba(7, 14, 23, 0.9);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--glass-border);
@@ -136,6 +136,34 @@
             color: var(--primary);
         }
 
+        /* Language Switcher Button Group */
+        .lang-switch-box {
+            display: inline-flex;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 3px;
+        }
+        .lang-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.4rem 0.85rem;
+            font-size: 0.82rem;
+            font-weight: 700;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .lang-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 153, 221, 0.4);
+        }
+
         /* Hero Banner */
         .guide-hero {
             position: relative;
@@ -162,23 +190,25 @@
         }
 
         .guide-hero h2 {
-            font-size: clamp(2rem, 5vw, 3rem);
+            font-size: clamp(1.8rem, 4.5vw, 2.8rem);
             font-weight: 800;
             color: white;
             letter-spacing: -0.02em;
             margin-bottom: 0.85rem;
+            line-height: 1.25;
         }
 
         .guide-hero p {
-            max-width: 680px;
+            max-width: 760px;
             margin: 0 auto 2rem;
             color: var(--text-muted);
             font-size: 1.05rem;
+            line-height: 1.7;
         }
 
         /* Search Bar & Role Filter */
         .search-container {
-            max-width: 650px;
+            max-width: 680px;
             margin: 0 auto;
             position: relative;
         }
@@ -219,7 +249,7 @@
         }
 
         .role-btn {
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 1.1rem;
             border-radius: 30px;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--glass-border);
@@ -228,6 +258,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
+            font-family: inherit;
         }
         .role-btn.active, .role-btn:hover {
             background: var(--primary);
@@ -242,7 +273,7 @@
             margin: 2.5rem auto;
             padding: 0 1.5rem;
             display: grid;
-            grid-template-columns: 280px 1fr;
+            grid-template-columns: 290px 1fr;
             gap: 2.5rem;
             align-items: start;
         }
@@ -250,13 +281,13 @@
         /* Sticky Sidebar Table of Contents */
         .guide-toc {
             position: sticky;
-            top: 5rem;
+            top: 5.5rem;
             background: var(--dark-card);
             backdrop-filter: blur(12px);
             border: 1px solid var(--glass-border);
             border-radius: 18px;
             padding: 1.5rem 1.2rem;
-            max-height: calc(100vh - 6.5rem);
+            max-height: calc(100vh - 7rem);
             overflow-y: auto;
         }
 
@@ -313,7 +344,7 @@
             background: var(--dark-card);
             border: 1px solid var(--glass-border);
             border-radius: 20px;
-            padding: 2rem;
+            padding: 2.2rem;
             backdrop-filter: blur(12px);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
             transition: border-color 0.3s ease;
@@ -325,16 +356,16 @@
         .module-header {
             display: flex;
             align-items: flex-start;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
+            gap: 1.15rem;
+            margin-bottom: 1.35rem;
             padding-bottom: 1.25rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .module-icon {
-            width: 52px;
-            height: 52px;
-            min-width: 52px;
+            width: 54px;
+            height: 54px;
+            min-width: 54px;
             border-radius: 14px;
             background: linear-gradient(135deg, rgba(0, 153, 221, 0.2) 0%, rgba(0, 166, 157, 0.2) 100%);
             border: 1px solid rgba(0, 153, 221, 0.3);
@@ -350,6 +381,7 @@
             font-weight: 800;
             color: white;
             margin-bottom: 0.25rem;
+            line-height: 1.3;
         }
 
         .module-tags {
@@ -372,6 +404,13 @@
         .tag-accountant { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
         .tag-warden { background: rgba(139, 92, 246, 0.15); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); }
         .tag-student { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+
+        .module-desc {
+            color: var(--text-muted);
+            font-size: 0.98rem;
+            line-height: 1.7;
+            margin-bottom: 1.25rem;
+        }
 
         /* Step Walkthrough Elements */
         .step-list {
@@ -396,9 +435,9 @@
         }
 
         .step-num {
-            width: 32px;
-            height: 32px;
-            min-width: 32px;
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
             border-radius: 50%;
             background: linear-gradient(135deg, var(--primary) 0%, var(--teal) 100%);
             color: white;
@@ -411,41 +450,42 @@
         }
 
         .step-body h4 {
-            font-size: 1.05rem;
+            font-size: 1.1rem;
             font-weight: 700;
             color: white;
-            margin-bottom: 0.35rem;
+            margin-bottom: 0.4rem;
+            line-height: 1.35;
         }
 
         .step-body p {
-            color: var(--text-muted);
-            font-size: 0.92rem;
-            line-height: 1.6;
+            color: #cbd5e1;
+            font-size: 0.94rem;
+            line-height: 1.65;
         }
 
         .step-path {
             display: inline-flex;
             align-items: center;
             gap: 0.4rem;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 0.25rem 0.65rem;
-            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.45);
+            padding: 0.3rem 0.75rem;
+            border-radius: 8px;
             font-family: 'Fira Code', monospace;
-            font-size: 0.8rem;
+            font-size: 0.82rem;
             color: #38bdf8;
-            margin-top: 0.5rem;
+            margin-top: 0.6rem;
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         /* Tips & Callouts */
         .callout {
-            margin-top: 1.25rem;
-            padding: 1rem 1.25rem;
-            border-radius: 12px;
+            margin-top: 1.35rem;
+            padding: 1.1rem 1.35rem;
+            border-radius: 14px;
             display: flex;
-            gap: 0.85rem;
-            font-size: 0.9rem;
-            line-height: 1.5;
+            gap: 0.95rem;
+            font-size: 0.92rem;
+            line-height: 1.6;
         }
         .callout-info {
             background: rgba(0, 153, 221, 0.12);
@@ -466,8 +506,8 @@
         /* Quick Action Matrix */
         .matrix-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.15rem;
             margin-top: 1.25rem;
         }
 
@@ -475,8 +515,11 @@
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--glass-border);
             border-radius: 14px;
-            padding: 1.25rem;
+            padding: 1.35rem;
             transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
         .matrix-card:hover {
             transform: translateY(-3px);
@@ -485,18 +528,35 @@
         }
 
         .matrix-card h5 {
-            font-size: 1rem;
+            font-size: 1.05rem;
             font-weight: 700;
             color: white;
-            margin-bottom: 0.4rem;
+            margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.55rem;
+            line-height: 1.3;
         }
         .matrix-card p {
-            font-size: 0.85rem;
-            color: var(--text-muted);
+            font-size: 0.9rem;
+            color: #94a3b8;
             margin-bottom: 0.85rem;
+            line-height: 1.6;
+        }
+
+        /* Language-specific visibility classes */
+        .lang-en, .lang-ml {
+            transition: opacity 0.2s ease;
+        }
+        body.mode-ml .lang-en { display: none !important; }
+        body.mode-en .lang-ml { display: none !important; }
+        body.mode-bi .lang-en { display: block; }
+        body.mode-bi .lang-ml { display: block; }
+        body.mode-bi .lang-en {
+            margin-top: 0.35rem;
+            opacity: 0.8;
+            font-size: 0.9em;
+            font-style: italic;
         }
 
         /* Print Mode Stylesheet */
@@ -505,7 +565,7 @@
                 background: white !important;
                 color: #1e293b !important;
             }
-            .guide-header, .search-container, .role-filters, .guide-toc, .btn, .no-print {
+            .guide-header, .search-container, .role-filters, .guide-toc, .btn, .no-print, .lang-switch-box {
                 display: none !important;
             }
             .guide-layout {
@@ -529,7 +589,7 @@
                 background: #f8fafc !important;
                 border: 1px solid #e2e8f0 !important;
             }
-            .step-body p, .guide-hero p {
+            .step-body p, .guide-hero p, .module-desc {
                 color: #475569 !important;
             }
             .step-path {
@@ -554,7 +614,7 @@
         }
     </style>
 </head>
-<body>
+<body class="mode-ml">
 
     <!-- Header Navigation -->
     <header class="guide-header no-print">
@@ -562,15 +622,29 @@
             <img src="{% static 'images/app_icon.png' %}?v=4" alt="Logo" class="brand-logo">
             <div class="brand-text">
                 <h1>MADEENATHU CM OLAVANNA</h1>
-                <span>Documentation & User Manual</span>
+                <span class="lang-ml">യൂസർ മാനുവൽ & പ്രവർത്തന സഹായി</span>
+                <span class="lang-en">Documentation & User Manual</span>
             </div>
         </a>
         <div class="header-actions">
+            <!-- Language Toggle Switcher -->
+            <div class="lang-switch-box" title="Select Language">
+                <button class="lang-btn active" id="btn-lang-ml" onclick="setLanguage('ml')">
+                    <i class="fas fa-language"></i> മലയാളം
+                </button>
+                <button class="lang-btn" id="btn-lang-en" onclick="setLanguage('en')">
+                    English
+                </button>
+                <button class="lang-btn" id="btn-lang-bi" onclick="setLanguage('bi')">
+                    Both
+                </button>
+            </div>
+
             <button onclick="window.print()" class="btn btn-outline" title="Print as physical training manual">
-                <i class="fas fa-print"></i> <span>Print Manual</span>
+                <i class="fas fa-print"></i> <span class="lang-ml">പ്രിന്റ്</span><span class="lang-en">Print</span>
             </button>
             <a href="{% url 'students:home' %}" class="btn btn-primary">
-                <i class="fas fa-arrow-left"></i> <span>Back to Portal</span>
+                <i class="fas fa-arrow-left"></i> <span class="lang-ml">പോർട്ടലിലേക്ക്</span><span class="lang-en">Back to Portal</span>
             </a>
         </div>
     </header>
@@ -580,25 +654,33 @@
         <div class="guide-badge">
             <i class="fas fa-book-bookmark"></i> InstiFlow ERP v2.6 Manual
         </div>
-        <h2>Campus Management User Guide</h2>
+        <h2>
+            <span class="lang-ml">ക്യാമ്പസ് മാനേജ്‌മെന്റ് യൂസർ ഗൈഡ്</span>
+            <span class="lang-en">Campus Management User Guide</span>
+        </h2>
         <p>
-            Complete step-by-step documentation for administrators, mudarriseen, accountants, hostel wardens, and students of Madeenathu CM Olavanna.
+            <span class="lang-ml">
+                മദീനത്തു സി.എം ഒളവണ്ണയിലെ അഡ്മിനിസ്ട്രേറ്റർമാർ, മുദരിസുമാർ, അക്കൗണ്ടന്റ്മാർ, ഹോസ്റ്റൽ വാർഡൻമാർ, വിദ്യാർത്ഥികൾ എന്നിവർക്കായി തയ്യാറാക്കിയ പൂർണ്ണമായ പ്രവർത്തന സഹായി.
+            </span>
+            <span class="lang-en">
+                Complete step-by-step documentation for administrators, mudarriseen, accountants, hostel wardens, and students of Madeenathu CM Olavanna.
+            </span>
         </p>
 
         <!-- Search Bar -->
         <div class="search-container no-print">
             <i class="fas fa-magnifying-glass search-icon"></i>
-            <input type="text" id="guideSearch" class="search-input" placeholder="Search guides, operations, or features (e.g. 'fees', 'attendance', 'outpass', 'marks')..." onkeyup="filterGuideTopics()">
+            <input type="text" id="guideSearch" class="search-input" placeholder="തിരയുക: ഹാജർ, ഫീസ്, ഔട്ട്പാസ്, മാർക്ക്, അഡ്മിഷൻ (Search topics...)" onkeyup="filterGuideTopics()">
         </div>
 
         <!-- Role Filter Buttons -->
         <div class="role-filters no-print">
-            <button class="role-btn active" onclick="filterByRole('all')"><i class="fas fa-globe"></i> All Guides</button>
-            <button class="role-btn" onclick="filterByRole('admin')"><i class="fas fa-user-shield"></i> Administrator</button>
-            <button class="role-btn" onclick="filterByRole('teacher')"><i class="fas fa-chalkboard-user"></i> Mudarris / Teacher</button>
-            <button class="role-btn" onclick="filterByRole('accountant')"><i class="fas fa-calculator"></i> Accountant</button>
-            <button class="role-btn" onclick="filterByRole('warden')"><i class="fas fa-bed"></i> Hostel Warden</button>
-            <button class="role-btn" onclick="filterByRole('student')"><i class="fas fa-user-graduate"></i> Student / Parent</button>
+            <button class="role-btn active" onclick="filterByRole('all', this)"><i class="fas fa-globe"></i> <span class="lang-ml">എല്ലാ ഗൈഡുകളും</span><span class="lang-en">All Guides</span></button>
+            <button class="role-btn" onclick="filterByRole('admin', this)"><i class="fas fa-user-shield"></i> <span class="lang-ml">അഡ്മിനിസ്ട്രേറ്റർ</span><span class="lang-en">Administrator</span></button>
+            <button class="role-btn" onclick="filterByRole('teacher', this)"><i class="fas fa-chalkboard-user"></i> <span class="lang-ml">മുദരിസ് / അധ്യാപകൻ</span><span class="lang-en">Mudarris / Teacher</span></button>
+            <button class="role-btn" onclick="filterByRole('accountant', this)"><i class="fas fa-calculator"></i> <span class="lang-ml">അക്കൗണ്ടന്റ്</span><span class="lang-en">Accountant</span></button>
+            <button class="role-btn" onclick="filterByRole('warden', this)"><i class="fas fa-bed"></i> <span class="lang-ml">ഹോസ്റ്റൽ വാർഡൻ</span><span class="lang-en">Hostel Warden</span></button>
+            <button class="role-btn" onclick="filterByRole('student', this)"><i class="fas fa-user-graduate"></i> <span class="lang-ml">വിദ്യാർത്ഥി / രക്ഷിതാവ്</span><span class="lang-en">Student / Parent</span></button>
         </div>
     </section>
 
@@ -608,19 +690,19 @@
         <!-- Table of Contents -->
         <aside class="guide-toc no-print">
             <div class="toc-title">
-                <i class="fas fa-list-check"></i> Modules Index
+                <i class="fas fa-list-check"></i> <span class="lang-ml">വിഷയ സൂചിക</span><span class="lang-en">Modules Index</span>
             </div>
             <ul class="toc-nav">
-                <li><a href="#quickstart" class="active"><i class="fas fa-bolt"></i> Quick Start & Login</a></li>
-                <li><a href="#academic-setup"><i class="fas fa-gears"></i> System & Academic Setup</a></li>
-                <li><a href="#admissions"><i class="fas fa-user-plus"></i> Admissions & Students</a></li>
-                <li><a href="#attendance"><i class="fas fa-calendar-check"></i> Smart Attendance</a></li>
-                <li><a href="#hostel"><i class="fas fa-bed"></i> Hostel Gate Pass (Outpass)</a></li>
-                <li><a href="#exams"><i class="fas fa-poll"></i> Exams & Progress Reports</a></li>
-                <li><a href="#fees"><i class="fas fa-file-invoice-dollar"></i> Fee Management & Billing</a></li>
-                <li><a href="#finance"><i class="fas fa-building-columns"></i> Institutional Accounts</a></li>
-                <li><a href="#alumni"><i class="fas fa-graduation-cap"></i> Alumni & Career Cell</a></li>
-                <li><a href="#pwa"><i class="fas fa-mobile-screen"></i> Mobile App Installation</a></li>
+                <li><a href="#quickstart" class="active"><i class="fas fa-bolt"></i> <span class="lang-ml">1. ലോഗിൻ & തുടക്കം</span><span class="lang-en">1. Quick Start & Login</span></a></li>
+                <li><a href="#academic-setup"><i class="fas fa-gears"></i> <span class="lang-ml">2. അക്കാദമിക് സെറ്റപ്പ്</span><span class="lang-en">2. Academic Setup</span></a></li>
+                <li><a href="#admissions"><i class="fas fa-user-plus"></i> <span class="lang-ml">3. അഡ്മിഷൻ & ഡയറക്ടറി</span><span class="lang-en">3. Admissions & Students</span></a></li>
+                <li><a href="#attendance"><i class="fas fa-calendar-check"></i> <span class="lang-ml">4. സ്മാർട്ട് അറ്റൻഡൻസ്</span><span class="lang-en">4. Smart Attendance</span></a></li>
+                <li><a href="#hostel"><i class="fas fa-bed"></i> <span class="lang-ml">5. ഹോസ്റ്റൽ ഔട്ട്പാസ്</span><span class="lang-en">5. Hostel Gate Pass</span></a></li>
+                <li><a href="#exams"><i class="fas fa-poll"></i> <span class="lang-ml">6. പരീക്ഷ & മാർക്കുകൾ</span><span class="lang-en">6. Exams & Reports</span></a></li>
+                <li><a href="#fees"><i class="fas fa-file-invoice-dollar"></i> <span class="lang-ml">7. ഫീസ് & രസീതുകൾ</span><span class="lang-en">7. Fee Management</span></a></li>
+                <li><a href="#finance"><i class="fas fa-building-columns"></i> <span class="lang-ml">8. ഇൻസ്റ്റിറ്റ്യൂഷൻ അക്കൗണ്ട്സ്</span><span class="lang-en">8. Accounts Ledger</span></a></li>
+                <li><a href="#alumni"><i class="fas fa-graduation-cap"></i> <span class="lang-ml">9. പൂർവ്വവിദ്യാർത്ഥി ശൃംഖല</span><span class="lang-en">9. Alumni & Careers</span></a></li>
+                <li><a href="#pwa"><i class="fas fa-mobile-screen"></i> <span class="lang-ml">10. മൊബൈൽ ആപ്പ്</span><span class="lang-en">10. Mobile App PWA</span></a></li>
             </ul>
         </aside>
 
@@ -632,7 +714,10 @@
                 <div class="module-header">
                     <div class="module-icon"><i class="fas fa-bolt"></i></div>
                     <div class="module-info">
-                        <h3>1. Quick Start & Portal Authentication</h3>
+                        <h3>
+                            <span class="lang-ml">1. സിസ്റ്റം പ്രവേശനവും ലോഗിൻ രീതിയും</span>
+                            <span class="lang-en">1. Quick Start & Portal Authentication</span>
+                        </h3>
                         <div class="module-tags">
                             <span class="tag-pill tag-admin">Admin</span>
                             <span class="tag-pill tag-teacher">Teacher</span>
@@ -642,16 +727,27 @@
                         </div>
                     </div>
                 </div>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    Madeenathu CM Olavanna ERP operates on a role-based access model. Each user type sees only the permissions and menus relevant to their responsibilities.
+                <p class="module-desc">
+                    <span class="lang-ml">
+                        മദീനത്തു സി.എം ഒളവണ്ണ ERP സുരക്ഷിതമായ റോൾ അധിഷ്ഠിത (Role-based) സിസ്റ്റത്തിലാണ് പ്രവർത്തിക്കുന്നത്. അഡ്മിൻ, മുദരിസ്, അക്കൗണ്ടന്റ്, വാർഡൻ, വിദ്യാർത്ഥികൾ എന്നിവർക്ക് അവരുടെ ഉത്തരവാദിത്തങ്ങൾക്കനുസൃതമായ സൗകര്യങ്ങൾ ലഭ്യമാകും.
+                    </span>
+                    <span class="lang-en">
+                        Madeenathu CM Olavanna ERP operates on a role-based access model. Each user type sees only the permissions and menus relevant to their responsibilities.
+                    </span>
                 </p>
 
                 <div class="step-list">
                     <div class="step-item">
                         <div class="step-num">1</div>
                         <div class="step-body">
-                            <h4>Accessing the Portal</h4>
-                            <p>Open your web browser (Chrome, Edge, Safari) and navigate to the institution URL. Click <strong>Login to ERP</strong> on the landing page.</p>
+                            <h4>
+                                <span class="lang-ml">വെബ് പോർട്ടൽ തുറക്കുക</span>
+                                <span class="lang-en">Accessing the Portal</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">നിങ്ങളുടെ കമ്പ്യൂട്ടറിലോ മൊബൈലിലോ ബ്രൗസർ (Chrome, Safari, Edge) തുറന്ന് സ്ഥാപനത്തിന്റെ വെബ്‌സൈറ്റിലെ <strong>Login to ERP</strong> ബട്ടണിൽ ക്ലിക്ക് ചെയ്യുക.</span>
+                                <span class="lang-en">Open your web browser (Chrome, Edge, Safari) and navigate to the institution URL. Click <strong>Login to ERP</strong> on the landing page.</span>
+                            </p>
                             <span class="step-path"><i class="fas fa-link"></i> /login/</span>
                         </div>
                     </div>
@@ -659,16 +755,28 @@
                     <div class="step-item">
                         <div class="step-num">2</div>
                         <div class="step-body">
-                            <h4>Entering Your Credentials</h4>
-                            <p>Enter your assigned <strong>Username</strong> and <strong>Password</strong>. If logging in for the first time as a student, use your Student Register Number.</p>
+                            <h4>
+                                <span class="lang-ml">യൂസർനെയിമും പാസ്‌വേഡും നൽകുക</span>
+                                <span class="lang-en">Entering Your Credentials</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">നിങ്ങൾക്ക് അനുവദിച്ചു തന്നിട്ടുള്ള <strong>Username</strong>-ഉം <strong>Password</strong>-ഉം നൽകി Login ചെയ്യുക. വിദ്യാർത്ഥികൾ ആദ്യമായി പ്രവേശിക്കുമ്പോൾ അവരുടെ അഡ്മിഷൻ/രജിസ്റ്റർ നമ്പർ ഉപയോഗിക്കാം.</span>
+                                <span class="lang-en">Enter your assigned <strong>Username</strong> and <strong>Password</strong>. If logging in for the first time as a student, use your Student Register Number.</span>
+                            </p>
                         </div>
                     </div>
 
                     <div class="step-item">
                         <div class="step-num">3</div>
                         <div class="step-body">
-                            <h4>Navigating the Workspace</h4>
-                            <p>Upon successful login, you are directed to the main Dashboard containing dynamic analytics cards and quick-action buttons for daily tasks.</p>
+                            <h4>
+                                <span class="lang-ml">ഡാഷ്‌ബോർഡ് ഉപയോഗം</span>
+                                <span class="lang-en">Navigating the Workspace</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">ലോഗിൻ ചെയ്ത ശേഷം പ്രധാന ഡാഷ്‌ബോർഡിൽ തത്സമയ വിവരങ്ങൾ, ഹാജർ, ഫീസ് നിലവാരം, പരീക്ഷാ വിവരങ്ങൾ, ദ്രുത ലിങ്കുകൾ (Quick Action Buttons) എന്നിവ ലഭ്യമാകും.</span>
+                                <span class="lang-en">Upon successful login, you are directed to the main Dashboard containing dynamic analytics cards and quick-action buttons for daily tasks.</span>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -676,7 +784,9 @@
                 <div class="callout callout-tip">
                     <i class="fas fa-lightbulb" style="font-size: 1.2rem;"></i>
                     <div>
-                        <strong>Pro Tip:</strong> You can install this portal as a standalone app on your phone or PC by clicking the <strong>Install App</strong> button in Chrome/Safari without needing Google Play Store.
+                        <strong><span class="lang-ml">പ്രത്യേക നിർദ്ദേശം:</span><span class="lang-en">Pro Tip:</span></strong> 
+                        <span class="lang-ml">Play Store-ൽ പോകാതെ തന്നെ നിങ്ങളുടെ ഫോണിലോ കമ്പ്യൂട്ടറിലോ <strong>Install App</strong> ക്ലിക്ക് ചെയ്ത് ഈ ERP ഒരു മൊബൈൽ ആപ്പായി എളുപ്പത്തിൽ ഉപയോഗിക്കാവുന്നതാണ്.</span>
+                        <span class="lang-en">You can install this portal as a standalone app on your phone or PC by clicking the <strong>Install App</strong> button in Chrome/Safari without needing Google Play Store.</span>
                     </div>
                 </div>
             </section>
@@ -686,50 +796,82 @@
                 <div class="module-header">
                     <div class="module-icon"><i class="fas fa-gears"></i></div>
                     <div class="module-info">
-                        <h3>2. System Setup & Academic Configuration</h3>
+                        <h3>
+                            <span class="lang-ml">2. അക്കാദമിക് & സിസ്റ്റം ക്രമീകരണങ്ങൾ</span>
+                            <span class="lang-en">2. System Setup & Academic Configuration</span>
+                        </h3>
                         <div class="module-tags">
                             <span class="tag-pill tag-admin">Admin Only</span>
                         </div>
                     </div>
                 </div>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    Configure the foundational academic hierarchy of Madeenathu CM Olavanna (Academic Sessions, Sections, Classes, Divisions, and Subjects).
+                <p class="module-desc">
+                    <span class="lang-ml">
+                        മദീനത്തു സി.എം ഒളവണ്ണയുടെ അധ്യയന വർഷങ്ങൾ, സെക്ഷനുകൾ, ക്ലാസുകൾ, ഡിവിഷനുകൾ, ഇസ്ലാമിക്/ജനറൽ വിഷയങ്ങൾ എന്നിവ സെറ്റ് ചെയ്യാനുള്ള വഴികൾ.
+                    </span>
+                    <span class="lang-en">
+                        Configure the foundational academic hierarchy of Madeenathu CM Olavanna (Academic Sessions, Sections, Classes, Divisions, and Subjects).
+                    </span>
                 </p>
 
                 <div class="step-list">
                     <div class="step-item">
                         <div class="step-num">1</div>
                         <div class="step-body">
-                            <h4>Configure Academic Years</h4>
-                            <p>Set up sessions (e.g. <code>2026-2027</code>). Exactly one academic year is marked as <strong>Active</strong> per section to govern student promotions.</p>
-                            <span class="step-path"><i class="fas fa-compass"></i> Sidebar &rarr; Settings &rarr; Academic Years</span>
+                            <h4>
+                                <span class="lang-ml">അധ്യയന വർഷം ചേർക്കൽ (Academic Years)</span>
+                                <span class="lang-en">Configure Academic Years</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">പുതിയ അധ്യയന വർഷം (ഉദാഹരണത്തിന് <code>2026-2027</code>) നിർമ്മിക്കുക. നിലവിലെ വർഷത്തെ <strong>Active</strong> ആയി അടയാളപ്പെടുത്തുക.</span>
+                                <span class="lang-en">Set up sessions (e.g. <code>2026-2027</code>). Exactly one academic year is marked as <strong>Active</strong> per section to govern student promotions.</span>
+                            </p>
+                            <span class="step-path"><i class="fas fa-compass"></i> Settings &rarr; Academic Years</span>
                         </div>
                     </div>
 
                     <div class="step-item">
                         <div class="step-num">2</div>
                         <div class="step-body">
-                            <h4>Create Sections & Grades</h4>
-                            <p>Establish Sections (<em>Secondary, Higher Secondary, Shareea, Degree</em>) and Grades (<em>Plus One, Plus Two, 1st Year Degree</em>).</p>
-                            <span class="step-path"><i class="fas fa-compass"></i> Sidebar &rarr; Settings &rarr; Grades / Classes</span>
+                            <h4>
+                                <span class="lang-ml">സെക്ഷനുകളും ക്ലാസുകളും (Grades / Classes)</span>
+                                <span class="lang-en">Create Sections & Grades</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">സ്ഥാപനത്തിന്റെ സെക്ഷനുകൾ (<em>Secondary, Higher Secondary, Shareea, Degree</em>) ചേർക്കുകയും അവക്ക് കീഴിൽ ക്ലാസുകൾ (<em>Plus One, Plus Two, 1st Year Degree</em>) സജ്ജീകരിക്കുകയും ചെയ്യുക.</span>
+                                <span class="lang-en">Establish Sections (<em>Secondary, Higher Secondary, Shareea, Degree</em>) and Grades (<em>Plus One, Plus Two, 1st Year Degree</em>).</span>
+                            </p>
+                            <span class="step-path"><i class="fas fa-compass"></i> Settings &rarr; Grades / Classes</span>
                         </div>
                     </div>
 
                     <div class="step-item">
                         <div class="step-num">3</div>
                         <div class="step-body">
-                            <h4>Set up Divisions & Classrooms</h4>
-                            <p>Create divisions (e.g. <em>Dawa Commerce, Dawa Humanities, Science</em>) under their respective Grades.</p>
-                            <span class="step-path"><i class="fas fa-compass"></i> Sidebar &rarr; Settings &rarr; Divisions</span>
+                            <h4>
+                                <span class="lang-ml">ഡിവിഷനുകൾ ക്രമീകരിക്കൽ (Divisions)</span>
+                                <span class="lang-en">Set up Divisions & Classrooms</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">ഓരോ ക്ലാസിനും കീഴിൽ ഡിവിഷനുകൾ ഉണ്ടാക്കുക (ഉദാ: <em>Dawa Commerce, Dawa Humanities, Science</em>).</span>
+                                <span class="lang-en">Create divisions (e.g. <em>Dawa Commerce, Dawa Humanities, Science</em>) under their respective Grades.</span>
+                            </p>
+                            <span class="step-path"><i class="fas fa-compass"></i> Settings &rarr; Divisions</span>
                         </div>
                     </div>
 
                     <div class="step-item">
                         <div class="step-num">4</div>
                         <div class="step-body">
-                            <h4>Manage Subjects</h4>
-                            <p>Add curriculum subjects and categorize them as <strong>Academic</strong> or <strong>Dawa / Islamic</strong> subjects.</p>
-                            <span class="step-path"><i class="fas fa-compass"></i> Sidebar &rarr; Settings &rarr; Subjects</span>
+                            <h4>
+                                <span class="lang-ml">പഠന വിഷയങ്ങൾ ചേർക്കൽ (Manage Subjects)</span>
+                                <span class="lang-en">Manage Subjects</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">വിഷയങ്ങൾ ചേർത്ത് അവ <strong>Academic</strong> വിഷയമാണോ അതോ <strong>Dawa / Islamic</strong> വിഷയമാണോ എന്ന് കൃത്യമായി തരംതിരിക്കുക (മാർക്ക് ലിസ്റ്റിലും പ്രോഗ്രസ്സ് റിപ്പോർട്ടിലും ഇത് കൃത്യമായി വേർതിരിച്ച് കാണിക്കും).</span>
+                                <span class="lang-en">Add curriculum subjects and categorize them as <strong>Academic</strong> or <strong>Dawa / Islamic</strong> subjects for neat bifurcation in progress reports.</span>
+                            </p>
+                            <span class="step-path"><i class="fas fa-compass"></i> Settings &rarr; Subjects</span>
                         </div>
                     </div>
                 </div>
@@ -740,39 +882,67 @@
                 <div class="module-header">
                     <div class="module-icon"><i class="fas fa-user-plus"></i></div>
                     <div class="module-info">
-                        <h3>3. Admissions & Student Directory Management</h3>
+                        <h3>
+                            <span class="lang-ml">3. അഡ്മിഷൻ & വിദ്യാർത്ഥി വിവരങ്ങൾ</span>
+                            <span class="lang-en">3. Admissions & Student Directory Management</span>
+                        </h3>
                         <div class="module-tags">
                             <span class="tag-pill tag-admin">Admin</span>
                             <span class="tag-pill tag-teacher">Teacher</span>
                         </div>
                     </div>
                 </div>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    Full lifecycle management for students: from incoming online admission inquiries to student profile archiving, ID cards, and roll lists.
+                <p class="module-desc">
+                    <span class="lang-ml">
+                        ഓൺലൈൻ അഡ്മിഷൻ അപേക്ഷകൾ കൈകാര്യം ചെയ്യൽ, എക്സൽ വഴി വിദ്യാർത്ഥികളെ ഒന്നിച്ച് ചേർക്കൽ, ഐഡി കാർഡ് ജനറേഷൻ, പ്രൊഫൈൽ മാനേജ്‌മെന്റ്.
+                    </span>
+                    <span class="lang-en">
+                        Full lifecycle management for students: from incoming online admission inquiries to student profile archiving, ID cards, and roll lists.
+                    </span>
                 </p>
 
                 <div class="matrix-grid">
                     <div class="matrix-card">
-                        <h5><i class="fas fa-file-signature" style="color: var(--primary);"></i> Online Enquiries</h5>
-                        <p>Public admission inquiries submitted via the website form appear in real-time on the Enquiries dashboard for review and approval.</p>
+                        <div>
+                            <h5><i class="fas fa-file-signature" style="color: var(--primary);"></i> <span class="lang-ml">ഓൺലൈൻ അപേക്ഷകൾ</span><span class="lang-en">Online Enquiries</span></h5>
+                            <p>
+                                <span class="lang-ml">വെബ്‌സൈറ്റ് വഴി രക്ഷിതാക്കളും വിദ്യാർത്ഥികളും സമർപ്പിക്കുന്ന പ്രവേശന അപേക്ഷകൾ ഇവിടെ പരിശോധിക്കാം. അഡ്മിന് ഒറ്റ ക്ലിക്കിലൂടെ ഇവ സ്ഥിരീകരിച്ച് അഡ്മിഷൻ നൽകാം.</span>
+                                <span class="lang-en">Public admission inquiries submitted via the website form appear in real-time on the Enquiries dashboard for review and approval.</span>
+                            </p>
+                        </div>
                         <span class="step-path">Sidebar &rarr; Enquiries</span>
                     </div>
 
                     <div class="matrix-card">
-                        <h5><i class="fas fa-file-excel" style="color: var(--teal);"></i> Excel Bulk Import</h5>
-                        <p>Download the pre-formatted Excel template, populate student records (Name, Batch, Phone, Place), and upload hundreds of students in one click.</p>
+                        <div>
+                            <h5><i class="fas fa-file-excel" style="color: var(--teal);"></i> <span class="lang-ml">എക്സൽ ബൾക്ക് ഇംപോർട്ട്</span><span class="lang-en">Excel Bulk Import</span></h5>
+                            <p>
+                                <span class="lang-ml">സാമ്പിൾ എക്സൽ ഫോർമാറ്റ് ഡൗൺലോഡ് ചെയ്ത് വിദ്യാർത്ഥികളുടെ പേര്, ഫോൺ, അഡ്രസ്സ്, ബാച്ച് എന്നിവ എന്റർ ചെയ്ത ശേഷം അപ്‌ലോഡ് ചെയ്താൽ നൂറുകണക്കിന് കുട്ടികളെ നിമിഷനേരം കൊണ്ട് ചേർക്കാം.</span>
+                                <span class="lang-en">Download the pre-formatted Excel template, populate student records (Name, Batch, Phone, Place), and upload hundreds of students in one click.</span>
+                            </p>
+                        </div>
                         <span class="step-path">Students &rarr; Bulk Import</span>
                     </div>
 
                     <div class="matrix-card">
-                        <h5><i class="fas fa-id-card" style="color: var(--gold);"></i> ID Card Sheets</h5>
-                        <p>Generate print-ready ID cards complete with student photos, blood groups, roll numbers, and official Madeenathu CM branding.</p>
+                        <div>
+                            <h5><i class="fas fa-id-card" style="color: var(--gold);"></i> <span class="lang-ml">ഐഡി കാർഡ് പ്രിന്റിംഗ്</span><span class="lang-en">ID Card Sheets</span></h5>
+                            <p>
+                                <span class="lang-ml">ഫോട്ടോ, ബ്ലഡ് ഗ്രൂപ്പ്, റോൾ നമ്പർ, മദീനത്തു സി.എം ഒളവണ്ണയുടെ ലോഗോ എന്നിവയോടുകൂടിയ പ്രിന്റ് ചെയ്യാവുന്ന ഡിജിറ്റൽ ഐഡി കാർഡുകൾ ഒന്നിച്ച് ഡൗൺലോഡ് ചെയ്യാം.</span>
+                                <span class="lang-en">Generate print-ready ID cards complete with student photos, blood groups, roll numbers, and official Madeenathu CM branding.</span>
+                            </p>
+                        </div>
                         <span class="step-path">Students &rarr; ID Cards</span>
                     </div>
 
                     <div class="matrix-card">
-                        <h5><i class="fas fa-key" style="color: #38bdf8;"></i> Student Credentials</h5>
-                        <p>Generate printable lists of auto-created usernames and passwords for distributed handover to students and parents.</p>
+                        <div>
+                            <h5><i class="fas fa-key" style="color: #38bdf8;"></i> <span class="lang-ml">സ്റ്റുഡന്റ് ലോഗിൻ വിവരങ്ങൾ</span><span class="lang-en">Student Credentials</span></h5>
+                            <p>
+                                <span class="lang-ml">ഓരോ കുട്ടിക്കും ഓട്ടോമാറ്റിക്കായി ലഭിച്ച യൂസർനെയിമും പാസ്‌വേഡും അടങ്ങിയ പ്രിന്റബിൾ സ്ലിപ്പുകൾ തയ്യാറാക്കി രക്ഷിതാക്കൾക്ക് കൈമാറാം.</span>
+                                <span class="lang-en">Generate printable lists of auto-created usernames and passwords for distributed handover to students and parents.</span>
+                            </p>
+                        </div>
                         <span class="step-path">Settings &rarr; Student Credentials</span>
                     </div>
                 </div>
@@ -783,7 +953,10 @@
                 <div class="module-header">
                     <div class="module-icon"><i class="fas fa-calendar-check"></i></div>
                     <div class="module-info">
-                        <h3>4. Smart Attendance System</h3>
+                        <h3>
+                            <span class="lang-ml">4. സ്മാർട്ട് അറ്റൻഡൻസ് സിസ്റ്റം (ഹാജർ)</span>
+                            <span class="lang-en">4. Smart Attendance System</span>
+                        </h3>
                         <div class="module-tags">
                             <span class="tag-pill tag-admin">Admin</span>
                             <span class="tag-pill tag-teacher">Teacher</span>
@@ -791,16 +964,27 @@
                         </div>
                     </div>
                 </div>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    Record daily presence, period-wise class attendance, and activity sessions with instant percentage calculation.
+                <p class="module-desc">
+                    <span class="lang-ml">
+                        ദിവസേനയുള്ള ഹാജർ, പീരിയഡ് തിരിച്ചുള്ള ഹാജർ, അവധി രേഖപ്പെടുത്തൽ, ശതമാന കണക്കുകൂട്ടൽ എന്നിവ ലളിതമായി നിർവ്വഹിക്കാം.
+                    </span>
+                    <span class="lang-en">
+                        Record daily presence, period-wise class attendance, and activity sessions with instant percentage calculation.
+                    </span>
                 </p>
 
                 <div class="step-list">
                     <div class="step-item">
                         <div class="step-num">1</div>
                         <div class="step-body">
-                            <h4>Marking Attendance by Class</h4>
-                            <p>Select the Grade and Division. The entire class roll list is loaded with all students defaulted to <strong>Present</strong>. Simply tap on any absent student to mark them <strong>Absent</strong>, <strong>Late</strong>, or <strong>Excused</strong>.</p>
+                            <h4>
+                                <span class="lang-ml">ക്ലാസ്സ് അടിസ്ഥാനത്തിൽ ഹാജർ രേഖപ്പെടുത്തൽ</span>
+                                <span class="lang-en">Marking Attendance by Class</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">ക്ലാസ്സും ഡിവിഷനും തിരഞ്ഞെടുക്കുക. എല്ലാ കുട്ടികളും സ്ഥിരസ്ഥിതിയായി <strong>Present</strong> ആയിരിക്കും. വരാത്ത കുട്ടിയുടെ പേരിൽ ടാപ്പ് ചെയ്ത് <strong>Absent</strong>, <strong>Late</strong>, അല്ലെങ്കിൽ <strong>Excused</strong> എന്ന് മാറ്റുക.</span>
+                                <span class="lang-en">Select the Grade and Division. The entire class roll list is loaded with all students defaulted to <strong>Present</strong>. Simply tap on any absent student to mark them <strong>Absent</strong>, <strong>Late</strong>, or <strong>Excused</strong>.</span>
+                            </p>
                             <span class="step-path"><i class="fas fa-compass"></i> Attendance &rarr; Mark Attendance</span>
                         </div>
                     </div>
@@ -808,8 +992,14 @@
                     <div class="step-item">
                         <div class="step-num">2</div>
                         <div class="step-body">
-                            <h4>Monthly & Yearly Attendance Register</h4>
-                            <p>Filter reports by date range, grade, and student type (Hostel vs Day Scholar). Instantly export summary PDF sheets for office records.</p>
+                            <h4>
+                                <span class="lang-ml">ഹാജർ രജിസ്റ്ററും റിപ്പോർട്ടുകളും (PDF Export)</span>
+                                <span class="lang-en">Monthly & Yearly Attendance Register</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">മാസ തിരിച്ചുള്ള സമഗ്ര ഹാജർ രജിസ്റ്റർ കാണാനും ഹോസ്റ്റൽ/ഡേ-സ്കോളർ വിദ്യാർത്ഥികളുടെ ഹാജർ ശതമാനം റിപ്പോർട്ട് PDF ആയി പ്രിന്റ് എടുക്കാനും സാധിക്കും.</span>
+                                <span class="lang-en">Filter reports by date range, grade, and student type (Hostel vs Day Scholar). Instantly export summary PDF sheets for office records.</span>
+                            </p>
                             <span class="step-path"><i class="fas fa-compass"></i> Attendance &rarr; Attendance Register</span>
                         </div>
                     </div>
@@ -821,23 +1011,37 @@
                 <div class="module-header">
                     <div class="module-icon"><i class="fas fa-bed"></i></div>
                     <div class="module-info">
-                        <h3>5. Hostel Movement & Gate Pass (Outpass)</h3>
+                        <h3>
+                            <span class="lang-ml">5. ഹോസ്റ്റൽ ഗേറ്റ് പാസ് & ഔട്ട്പാസ് സിസ്റ്റം</span>
+                            <span class="lang-en">5. Hostel Movement & Gate Pass (Outpass)</span>
+                        </h3>
                         <div class="module-tags">
                             <span class="tag-pill tag-admin">Admin</span>
                             <span class="tag-pill tag-warden">Warden</span>
                         </div>
                     </div>
                 </div>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    Digital gate-pass registry to log hostel departures, escorting guardians, reasons, and return timestamps with overdue return alerts.
+                <p class="module-desc">
+                    <span class="lang-ml">
+                        ഹോസ്റ്റലിൽ താമസിക്കുന്ന മുതഅല്ലിമീങ്ങൾ വീട്ടിലേക്ക് പോകുന്നതും തിരിച്ചെത്തുന്നതും ഡിജിറ്റലായി രേഖപ്പെടുത്തുന്ന സമഗ്ര ഗേറ്റ് പാസ് സംവിധാനം.
+                    </span>
+                    <span class="lang-en">
+                        Digital gate-pass registry to log hostel departures, escorting guardians, reasons, and return timestamps with overdue return alerts.
+                    </span>
                 </p>
 
                 <div class="step-list">
                     <div class="step-item">
                         <div class="step-num">1</div>
                         <div class="step-body">
-                            <h4>Creating an Outpass / Departure Record</h4>
-                            <p>Click <strong>Record Departure</strong>. Select the student, enter departure date & time, escort person name, contact number, reason, and expected return date.</p>
+                            <h4>
+                                <span class="lang-ml">ഔട്ട്പാസ് നൽകൽ (Record Departure)</span>
+                                <span class="lang-en">Creating an Outpass / Departure Record</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">വിദ്യാർത്ഥിയുടെ പേര് തിരഞ്ഞെടുക്കുക. പുറത്തുപോകുന്ന തീയതി, സമയം, കൊണ്ടുപോകുന്ന രക്ഷിതാവിന്റെ/വ്യക്തിയുടെ പേര്, ഫോൺ നമ്പർ, പോകുന്ന കാരണം, തിരിച്ചെത്തേണ്ട തീയതി എന്നിവ രേഖപ്പെടുത്തി സേവ് ചെയ്യുക.</span>
+                                <span class="lang-en">Click <strong>Record Departure</strong>. Select the student, enter departure date & time, escort person name, contact number, reason, and expected return date.</span>
+                            </p>
                             <span class="step-path"><i class="fas fa-compass"></i> Hostel &rarr; Record Movement</span>
                         </div>
                     </div>
@@ -845,16 +1049,28 @@
                     <div class="step-item">
                         <div class="step-num">2</div>
                         <div class="step-body">
-                            <h4>Logging Arrival (Return Check-in)</h4>
-                            <p>When the student returns to campus, locate their pending entry on the Hostel dashboard and click <strong>Record Arrival</strong> to close the outpass ticket.</p>
+                            <h4>
+                                <span class="lang-ml">തിരിച്ചുവരവ് രേഖപ്പെടുത്തൽ (Return Check-in)</span>
+                                <span class="lang-en">Logging Arrival (Return Check-in)</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">കുട്ടി ഹോസ്റ്റലിൽ തിരിച്ചെത്തുമ്പോൾ ലിസ്റ്റിൽ വിദ്യാർത്ഥിയുടെ പേരിന് നേരെയുള്ള <strong>Record Arrival</strong> ക്ലിക്ക് ചെയ്താൽ ഔട്ട്പാസ് എൻട്രി ക്ലോസ് ചെയ്യപ്പെടും.</span>
+                                <span class="lang-en">When the student returns to campus, locate their pending entry on the Hostel dashboard and click <strong>Record Arrival</strong> to close the outpass ticket.</span>
+                            </p>
                         </div>
                     </div>
 
                     <div class="step-item">
                         <div class="step-num">3</div>
                         <div class="step-body">
-                            <h4>Live Campus Roll-Call</h4>
-                            <p>The dashboard displays real-time badges showing how many hostel muthallimeen are currently <strong>In Campus</strong> vs. <strong>On Leave</strong>.</p>
+                            <h4>
+                                <span class="lang-ml">തത്സമയ ക്യാമ്പസ് റോൾ-കോൾ (Live Headcount)</span>
+                                <span class="lang-en">Live Campus Roll-Call</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">ഹോസ്റ്റൽ ഡാഷ്‌ബോർഡിൽ നിലവിൽ എത്ര കുട്ടികൾ ക്യാമ്പസിലുണ്ട് (<strong>In Campus</strong>), എത്ര പേർ അവധിയിലാണ് (<strong>On Leave</strong>) എന്ന് തത്സമയം കാണാം.</span>
+                                <span class="lang-en">The dashboard displays real-time badges showing how many hostel muthallimeen are currently <strong>In Campus</strong> vs. <strong>On Leave</strong>.</span>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -865,7 +1081,10 @@
                 <div class="module-header">
                     <div class="module-icon"><i class="fas fa-poll"></i></div>
                     <div class="module-info">
-                        <h3>6. Examinations, Marks & Progress Reports</h3>
+                        <h3>
+                            <span class="lang-ml">6. പരീക്ഷകൾ, മാർക്ക് എൻട്രി & പ്രോഗ്രസ്സ് കാർഡ്</span>
+                            <span class="lang-en">6. Examinations, Marks & Progress Reports</span>
+                        </h3>
                         <div class="module-tags">
                             <span class="tag-pill tag-admin">Admin</span>
                             <span class="tag-pill tag-teacher">Teacher</span>
@@ -873,16 +1092,27 @@
                         </div>
                     </div>
                 </div>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    Schedule examinations, enter marks with real-time saving, compute grades, and generate multi-page institutional progress report cards.
+                <p class="module-desc">
+                    <span class="lang-ml">
+                        പരീക്ഷകൾ ഷെഡ്യൂൾ ചെയ്യൽ, തത്സമയ മാർക്ക് എൻട്രി, ഗ്രേഡ് കണക്കുകൂട്ടൽ, ഇസ്ലാമിക് & ജനറൽ വിഷയങ്ങൾ ഉൾപ്പെടുത്തിയ പ്രോഗ്രസ്സ് കാർഡ് പ്രിന്റിംഗ്.
+                    </span>
+                    <span class="lang-en">
+                        Schedule examinations, enter marks with real-time saving, compute grades, and generate multi-page institutional progress report cards.
+                    </span>
                 </p>
 
                 <div class="step-list">
                     <div class="step-item">
                         <div class="step-num">1</div>
                         <div class="step-body">
-                            <h4>Create Exam & Set Maximum Marks</h4>
-                            <p>Define the Exam Title (e.g. <em>First Terminal Examination</em>) and set maximum marks per subject.</p>
+                            <h4>
+                                <span class="lang-ml">പരീക്ഷ നിർമ്മിക്കൽ (Create Exam & Set Marks)</span>
+                                <span class="lang-en">Create Exam & Set Maximum Marks</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">പരീക്ഷയുടെ പേര് (ഉദാ: <em>First Terminal Examination</em>) നൽകി ഓരോ വിഷയത്തിന്റെയും പരമാവധി മാർക്ക് (Max Marks) നിശ്ചയിക്കുക.</span>
+                                <span class="lang-en">Define the Exam Title (e.g. <em>First Terminal Examination</em>) and set maximum marks per subject.</span>
+                            </p>
                             <span class="step-path"><i class="fas fa-compass"></i> Examination &rarr; Exam Types</span>
                         </div>
                     </div>
@@ -890,8 +1120,14 @@
                     <div class="step-item">
                         <div class="step-num">2</div>
                         <div class="step-body">
-                            <h4>Mark Entry (Web & Excel Upload)</h4>
-                            <p>Teachers can enter marks directly into the live grid with auto-save, or download an Excel sheet, fill marks offline, and re-upload.</p>
+                            <h4>
+                                <span class="lang-ml">മാർക്ക് നൽകൽ (Web Grid & Excel Upload)</span>
+                                <span class="lang-en">Mark Entry (Web & Excel Upload)</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">അധ്യാപകർക്ക് പോർട്ടലിൽ നേരിട്ട് മാർക്ക് ടൈപ്പ് ചെയ്യാം (ഓട്ടോമാറ്റിക്കായി സേവ് ആകും), അല്ലെങ്കിൽ എക്സൽ ഷീറ്റ് ഡൗൺലോഡ് ചെയ്ത് ഓഫ്‌ലൈനായി മാർക്ക് നൽകി അപ്‌ലോഡ് ചെയ്യാം.</span>
+                                <span class="lang-en">Teachers can enter marks directly into the live grid with auto-save, or download an Excel sheet, fill marks offline, and re-upload.</span>
+                            </p>
                             <span class="step-path"><i class="fas fa-compass"></i> Examination &rarr; Mark Entry</span>
                         </div>
                     </div>
@@ -899,8 +1135,14 @@
                     <div class="step-item">
                         <div class="step-num">3</div>
                         <div class="step-body">
-                            <h4>Generate & Print Progress Reports</h4>
-                            <p>Access terminal progress cards with automatic Islamic & Academic subject separation, total score, percentage, attendance record, and principal sign-off.</p>
+                            <h4>
+                                <span class="lang-ml">പ്രോഗ്രസ്സ് കാർഡുകൾ പ്രിന്റ് ചെയ്യൽ</span>
+                                <span class="lang-en">Generate & Print Progress Reports</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">ഇസ്ലാമിക് വിഷയങ്ങളും ജനറൽ വിഷയങ്ങളും വേർതിരിച്ച്, മൊത്തം മാർക്ക്, ശതമാനം, ഹാജർ നില, റാങ്ക്, സ്ഥാപന മേധാവിയുടെ ഒപ്പ് എന്നിവ ഉൾപ്പെടുത്തിയ മനോഹരമായ പ്രോഗ്രസ്സ് കാർഡുകൾ തയ്യാറാക്കാം.</span>
+                                <span class="lang-en">Access terminal progress cards with automatic Islamic & Academic subject separation, total score, percentage, attendance record, and principal sign-off.</span>
+                            </p>
                             <span class="step-path"><i class="fas fa-compass"></i> Examination &rarr; Progress Reports</span>
                         </div>
                     </div>
@@ -912,39 +1154,67 @@
                 <div class="module-header">
                     <div class="module-icon"><i class="fas fa-file-invoice-dollar"></i></div>
                     <div class="module-info">
-                        <h3>7. Fee Management, Invoicing & Receipts</h3>
+                        <h3>
+                            <span class="lang-ml">7. ഫീസ് മാനേജ്‌മെന്റ് & തെർമൽ ബില്ലിംഗ്</span>
+                            <span class="lang-en">7. Fee Management, Invoicing & Receipts</span>
+                        </h3>
                         <div class="module-tags">
                             <span class="tag-pill tag-admin">Admin</span>
                             <span class="tag-pill tag-accountant">Accountant</span>
                         </div>
                     </div>
                 </div>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    Automated monthly fee generation, custom concession discounts, instant thermal receipt printing, and live balance registers.
+                <p class="module-desc">
+                    <span class="lang-ml">
+                        പ്രതിമാസ ഫീസ് ബില്ലിംഗ്, ഫീസ് ഇളവുകൾ, ക്യാഷ്/യുപിഐ കളക്ഷൻ, 80mm തെർമൽ പ്രിന്റർ റസീറ്റുകൾ, ഫീസ് കുടിശ്ശിക ട്രാക്കിംഗ്.
+                    </span>
+                    <span class="lang-en">
+                        Automated monthly fee generation, custom concession discounts, instant thermal receipt printing, and live balance registers.
+                    </span>
                 </p>
 
                 <div class="matrix-grid">
                     <div class="matrix-card">
-                        <h5><i class="fas fa-tags" style="color: var(--primary);"></i> Fee Categories & Items</h5>
-                        <p>Configure fee heads: Admission Fee, Monthly Hostel Fee, Bus Fee, and Caution Deposit with targeting by grade or hostel status.</p>
+                        <div>
+                            <h5><i class="fas fa-tags" style="color: var(--primary);"></i> <span class="lang-ml">ഫീസ് ഇനങ്ങൾ (Fee Heads)</span><span class="lang-en">Fee Categories & Items</span></h5>
+                            <p>
+                                <span class="lang-ml">അഡ്മിഷൻ ഫീസ്, ഹോസ്റ്റൽ മെസ്സ് ഫീസ്, ബസ് ഫീസ്, കോഷൻ ഡെപ്പോസിറ്റ് തുടങ്ങിയ ഫീസ് ഹെഡുകൾ സജ്ജീകരിക്കുക.</span>
+                                <span class="lang-en">Configure fee heads: Admission Fee, Monthly Hostel Fee, Bus Fee, and Caution Deposit with targeting by grade or hostel status.</span>
+                            </p>
+                        </div>
                         <span class="step-path">Finance &rarr; Fee Setup</span>
                     </div>
 
                     <div class="matrix-card">
-                        <h5><i class="fas fa-receipt" style="color: var(--teal);"></i> Collect Payment & Print</h5>
-                        <p>Record student payments via Cash, UPI, or Bank Transfer. Instantly print official receipts on A4 or 80mm Thermal printers.</p>
+                        <div>
+                            <h5><i class="fas fa-receipt" style="color: var(--teal);"></i> <span class="lang-ml">ഫീസ് വാങ്ങലും രസീതും</span><span class="lang-en">Collect Payment & Print</span></h5>
+                            <p>
+                                <span class="lang-ml">ക്യാഷ്, ഗൂഗിൾ പേ/UPI, ബാങ്ക് ട്രാൻസ്ഫർ വഴി ഫീസ് സ്വീകരിക്കാം. ഉടനടി A4 അല്ലെങ്കിൽ 80mm തെർമൽ പ്രിന്ററിൽ രസീത് നൽകാം.</span>
+                                <span class="lang-en">Record student payments via Cash, UPI, or Bank Transfer. Instantly print official receipts on A4 or 80mm Thermal printers.</span>
+                            </p>
+                        </div>
                         <span class="step-path">Finance &rarr; Collect Fees</span>
                     </div>
 
                     <div class="matrix-card">
-                        <h5><i class="fas fa-percent" style="color: var(--gold);"></i> Concessions & Waivers</h5>
-                        <p>Apply custom fee concessions and scholarships for deserving muthallimeen with automated ledger adjustment.</p>
+                        <div>
+                            <h5><i class="fas fa-percent" style="color: var(--gold);"></i> <span class="lang-ml">ഫീസ് ഇളവുകൾ (Concessions)</span><span class="lang-en">Concessions & Waivers</span></h5>
+                            <p>
+                                <span class="lang-ml">അർഹരായ വിദ്യാർത്ഥികൾക്ക് പ്രത്യേക ഫീസ് ഇളവുകളും സ്കോളർഷിപ്പുകളും നൽകാനും ലെഡ്ജറിൽ അഡ്ജസ്റ്റ് ചെയ്യാനും സാധിക്കും.</span>
+                                <span class="lang-en">Apply custom fee concessions and scholarships for deserving muthallimeen with automated ledger adjustment.</span>
+                            </p>
+                        </div>
                         <span class="step-path">Student Profile &rarr; Fees &rarr; Concession</span>
                     </div>
 
                     <div class="matrix-card">
-                        <h5><i class="fas fa-qrcode" style="color: #38bdf8;"></i> Bank & UPI QR Setup</h5>
-                        <p>Upload the institution UPI QR code and bank account details to automatically display them on student fee invoices.</p>
+                        <div>
+                            <h5><i class="fas fa-qrcode" style="color: #38bdf8;"></i> <span class="lang-ml">ബാങ്ക് & UPI QR ക്രമീകരണം</span><span class="lang-en">Bank & UPI QR Setup</span></h5>
+                            <p>
+                                <span class="lang-ml">സ്ഥാപനത്തിന്റെ ബാങ്ക് വിവരങ്ങളും UPI QR കോഡും നൽകിയാൽ ഫീസ് ഇൻവോയ്സുകളിൽ അത് സ്വയം പ്രത്യക്ഷപ്പെടും.</span>
+                                <span class="lang-en">Upload the institution UPI QR code and bank account details to automatically display them on student fee invoices.</span>
+                            </p>
+                        </div>
                         <span class="step-path">Finance &rarr; Payment Setup</span>
                     </div>
                 </div>
@@ -955,23 +1225,37 @@
                 <div class="module-header">
                     <div class="module-icon"><i class="fas fa-building-columns"></i></div>
                     <div class="module-info">
-                        <h3>8. Institutional Accounts, Income & Expenses</h3>
+                        <h3>
+                            <span class="lang-ml">8. ഇൻസ്റ്റിറ്റ്യൂഷൻ അക്കൗണ്ട്സ് & വരവ്-ചിലവ് കണക്കുകൾ</span>
+                            <span class="lang-en">8. Institutional Accounts, Income & Expenses</span>
+                        </h3>
                         <div class="module-tags">
                             <span class="tag-pill tag-admin">Admin</span>
                             <span class="tag-pill tag-accountant">Accountant</span>
                         </div>
                     </div>
                 </div>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    Comprehensive double-entry institutional accounting ledger tracking institutional income grants, mess expenses, maintenance, and daily cashier cash-flow.
+                <p class="module-desc">
+                    <span class="lang-ml">
+                        സ്ഥാപനത്തിന്റെ ഫീസിതര വരുമാനങ്ങൾ (ഡൊണേഷൻ, ഗ്രാന്റ്സ്), നിത്യനിദാന ചിലവുകൾ (മെസ്സ്, കറന്റ്, മെയിന്റനൻസ്), പ്രതിദിന ക്യാഷ് കൗണ്ടർ കണക്കുകൾ എന്നിവ സൂക്ഷിക്കാം.
+                    </span>
+                    <span class="lang-en">
+                        Comprehensive double-entry institutional accounting ledger tracking institutional income grants, mess expenses, maintenance, and daily cashier cash-flow.
+                    </span>
                 </p>
 
                 <div class="step-list">
                     <div class="step-item">
                         <div class="step-num">1</div>
                         <div class="step-body">
-                            <h4>Recording Income & Expenses</h4>
-                            <p>Log non-fee income (Donations, Grants) and daily campus expenses (Mess, Electricity, Maintenance) under predefined categories.</p>
+                            <h4>
+                                <span class="lang-ml">വരവ് ചിലവുകൾ രേഖപ്പെടുത്തൽ (Income & Expense Ledger)</span>
+                                <span class="lang-en">Recording Income & Expenses</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">ഫീസിതര വരുമാനങ്ങളും പ്രതിദിന സ്ഥാപന ചിലവുകളും അതാത് കാറ്റഗറികളിൽ (Mess, Electricity, Maintenance) രേഖപ്പെടുത്തുക.</span>
+                                <span class="lang-en">Log non-fee income (Donations, Grants) and daily campus expenses (Mess, Electricity, Maintenance) under predefined categories.</span>
+                            </p>
                             <span class="step-path"><i class="fas fa-compass"></i> Finance &rarr; Accounts Ledger</span>
                         </div>
                     </div>
@@ -979,8 +1263,14 @@
                     <div class="step-item">
                         <div class="step-num">2</div>
                         <div class="step-body">
-                            <h4>Daily Collection & Defaulter Reports</h4>
-                            <p>Review the daily cash/UPI collection summary and view list of fee defaulters with pending dues across all batches.</p>
+                            <h4>
+                                <span class="lang-ml">ദിവസേനയുള്ള ക്യാഷ് കണക്കും കുടിശ്ശിക പട്ടികയും</span>
+                                <span class="lang-en">Daily Collection & Defaulter Reports</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">ഓരോ ദിവസത്തെയും ആകെ കളക്ഷൻ റിപ്പോർട്ടും, ഫീസ് അടക്കാൻ ബാക്കിയുള്ള വിദ്യാർത്ഥികളുടെ (Defaulters List) വിശദ വിവരങ്ങളും പരിശോധിക്കാം.</span>
+                                <span class="lang-en">Review the daily cash/UPI collection summary and view list of fee defaulters with pending dues across all batches.</span>
+                            </p>
                             <span class="step-path"><i class="fas fa-compass"></i> Finance &rarr; Defaulter List</span>
                         </div>
                     </div>
@@ -992,22 +1282,36 @@
                 <div class="module-header">
                     <div class="module-icon"><i class="fas fa-graduation-cap"></i></div>
                     <div class="module-info">
-                        <h3>9. Alumni Network & Career Cell</h3>
+                        <h3>
+                            <span class="lang-ml">9. പൂർവ്വവിദ്യാർത്ഥി ശൃംഖല & കരിയർ സെൽ</span>
+                            <span class="lang-en">9. Alumni Network & Career Cell</span>
+                        </h3>
                         <div class="module-tags">
                             <span class="tag-pill tag-admin">Admin</span>
                         </div>
                     </div>
                 </div>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    Seamlessly transfer graduated batches to the searchable Alumni Directory and manage employment openings on the public career portal.
+                <p class="module-desc">
+                    <span class="lang-ml">
+                        പഠനം പൂർത്തിയാക്കിയ ബാച്ചുകളെ അലുമ്‌നി ഡയറക്ടറിയിലേക്ക് മാറ്റൽ, സ്ഥാപനത്തിലെ തൊഴിൽ ഒഴിവുകൾ (Job Vacancies) വെബ്‌സൈറ്റിൽ പ്രസിദ്ധീകരിക്കൽ.
+                    </span>
+                    <span class="lang-en">
+                        Seamlessly transfer graduated batches to the searchable Alumni Directory and manage employment openings on the public career portal.
+                    </span>
                 </p>
 
                 <div class="step-list">
                     <div class="step-item">
                         <div class="step-num">1</div>
                         <div class="step-body">
-                            <h4>Batch Graduation & Alumni Transfer</h4>
-                            <p>When a batch finishes their course, use <strong>Batch Graduate</strong> to automatically archive their student profile into the permanent Alumni Registry.</p>
+                            <h4>
+                                <span class="lang-ml">ബാച്ച് ഗ്രാജ്വേഷൻ & അലുമ്‌നി ട്രാൻസ്ഫർ</span>
+                                <span class="lang-en">Batch Graduation & Alumni Transfer</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">ഒരു ബാച്ച് പഠനം പൂർത്തിയാക്കുമ്പോൾ <strong>Batch Graduate</strong> ഉപയോഗിച്ച് വിദ്യാർത്ഥി വിവരങ്ങളെ അലുമ്‌നി രജിസ്ട്രിയിലേക്ക് സുരക്ഷിതമായി മാറ്റാം.</span>
+                                <span class="lang-en">When a batch finishes their course, use <strong>Batch Graduate</strong> to automatically archive their student profile into the permanent Alumni Registry.</span>
+                            </p>
                             <span class="step-path"><i class="fas fa-compass"></i> Alumni &rarr; Bulk Transfer</span>
                         </div>
                     </div>
@@ -1015,8 +1319,14 @@
                     <div class="step-item">
                         <div class="step-num">2</div>
                         <div class="step-body">
-                            <h4>Publishing Career Vacancies</h4>
-                            <p>Post open teaching and administrative job vacancies. Candidate applications submitted online are stored in the HR management queue.</p>
+                            <h4>
+                                <span class="lang-ml">തൊഴിൽ ഒഴിവുകൾ പ്രസിദ്ധീകരിക്കൽ (Job Vacancies)</span>
+                                <span class="lang-en">Publishing Career Vacancies</span>
+                            </h4>
+                            <p>
+                                <span class="lang-ml">അധ്യാപക, ജീവനക്കാരുടെ ഒഴിവുകൾ വെബ്‌സൈറ്റ് കരിയർ പേജിൽ പ്രസിദ്ധീകരിക്കാനും ഓൺലൈനായി വരുന്ന അപേക്ഷകൾ പരിശോധിക്കാനും സാധിക്കും.</span>
+                                <span class="lang-en">Post open teaching and administrative job vacancies. Candidate applications submitted online are stored in the HR management queue.</span>
+                            </p>
                             <span class="step-path"><i class="fas fa-compass"></i> HR &rarr; Job Vacancies</span>
                         </div>
                     </div>
@@ -1028,7 +1338,10 @@
                 <div class="module-header">
                     <div class="module-icon"><i class="fas fa-mobile-screen"></i></div>
                     <div class="module-info">
-                        <h3>10. Installing the Mobile Web App (PWA)</h3>
+                        <h3>
+                            <span class="lang-ml">10. മൊബൈൽ ആപ്പ് ഇൻസ്റ്റാൾ ചെയ്യേണ്ട വിധം</span>
+                            <span class="lang-en">10. Installing the Mobile Web App (PWA)</span>
+                        </h3>
                         <div class="module-tags">
                             <span class="tag-pill tag-admin">Admin</span>
                             <span class="tag-pill tag-teacher">Teacher</span>
@@ -1038,24 +1351,44 @@
                         </div>
                     </div>
                 </div>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    How to install Madeenathu CM Olavanna ERP as a fast, native-like app on Android phones, iPhones, iPads, and Windows PCs.
+                <p class="module-desc">
+                    <span class="lang-ml">
+                        മദീനത്തു സി.എം ഒളവണ്ണ ERP നിങ്ങളുടെ ആൻഡ്രോയ്ഡ് ഫോൺ, ഐഫോൺ, ടാബ്‌ലെറ്റ്, കമ്പ്യൂട്ടറുകളിൽ ഒരു ആപ്പായി ഇൻസ്റ്റാൾ ചെയ്യാനുള്ള ലളിതമായ വഴികൾ:
+                    </span>
+                    <span class="lang-en">
+                        How to install Madeenathu CM Olavanna ERP as a fast, native-like app on Android phones, iPhones, iPads, and Windows PCs.
+                    </span>
                 </p>
 
                 <div class="matrix-grid">
                     <div class="matrix-card">
-                        <h5><i class="fab fa-android" style="color: #22c55e;"></i> Android (Google Chrome)</h5>
-                        <p>1. Open the portal in Chrome.<br>2. Tap the <strong>three dots menu (⋮)</strong> at top-right.<br>3. Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.<br>4. The app icon appears instantly on your launcher.</p>
+                        <div>
+                            <h5><i class="fab fa-android" style="color: #22c55e;"></i> Android (Google Chrome)</h5>
+                            <p>
+                                <span class="lang-ml">1. ഗൂഗിൾ ക്രോമിൽ പോർട്ടൽ തുറക്കുക.<br>2. മുകളിൽ വലതുവശത്തുള്ള <strong>മൂന്ന് ഡോട്ടുകൾ (⋮)</strong> ക്ലിക്ക് ചെയ്യുക.<br>3. <strong>"Install app"</strong> അല്ലെങ്കിൽ <strong>"Add to Home screen"</strong> തിരഞ്ഞെടുക്കുക.<br>4. ആപ്പ് നിങ്ങളുടെ ഫോണിൽ ഇൻസ്റ്റാൾ ആകും.</span>
+                                <span class="lang-en">1. Open the portal in Chrome.<br>2. Tap the <strong>three dots menu (⋮)</strong> at top-right.<br>3. Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.<br>4. The app icon appears instantly on your launcher.</span>
+                            </p>
+                        </div>
                     </div>
 
                     <div class="matrix-card">
-                        <h5><i class="fab fa-apple" style="color: #94a3b8;"></i> iPhone / iPad (Safari)</h5>
-                        <p>1. Open the portal in Safari.<br>2. Tap the <strong>Share button (⎋ / square with arrow)</strong> at the bottom.<br>3. Scroll down and tap <strong>"Add to Home Screen"</strong>.<br>4. Tap <strong>Add</strong>.</p>
+                        <div>
+                            <h5><i class="fab fa-apple" style="color: #94a3b8;"></i> iPhone / iPad (Safari)</h5>
+                            <p>
+                                <span class="lang-ml">1. സഫാരി (Safari) ബ്രൗസറിൽ സൈറ്റ് തുറക്കുക.<br>2. താഴെയുള്ള <strong>Share ബട്ടൺ (⎋)</strong> ക്ലിക്ക് ചെയ്യുക.<br>3. താഴേക്ക് സ്ക്രോൾ ചെയ്ത് <strong>"Add to Home Screen"</strong> അമർത്തുക.<br>4. <strong>Add</strong> കൊടുക്കുക.</span>
+                                <span class="lang-en">1. Open the portal in Safari.<br>2. Tap the <strong>Share button (⎋ / square with arrow)</strong> at the bottom.<br>3. Scroll down and tap <strong>"Add to Home Screen"</strong>.<br>4. Tap <strong>Add</strong>.</span>
+                            </p>
+                        </div>
                     </div>
 
                     <div class="matrix-card">
-                        <h5><i class="fab fa-windows" style="color: #38bdf8;"></i> Windows PC / Mac (Chrome / Edge)</h5>
-                        <p>1. Open the portal in Chrome or Edge.<br>2. Click the <strong>Install Icon (⊕)</strong> on the right side of the address bar.<br>3. Click <strong>Install</strong> to launch as a standalone desktop application.</p>
+                        <div>
+                            <h5><i class="fab fa-windows" style="color: #38bdf8;"></i> Windows PC / Mac (Chrome / Edge)</h5>
+                            <p>
+                                <span class="lang-ml">1. ക്രോമിലോ എഡ്ജിലോ സൈറ്റ് തുറക്കുക.<br>2. അഡ്രസ്സ് ബാറിന്റെ വലതുവശത്തുള്ള <strong>Install ഐക്കൺ (⊕)</strong> ക്ലിക്ക് ചെയ്യുക.<br>3. <strong>Install</strong> ക്ലിക്ക് ചെയ്യുക.</span>
+                                <span class="lang-en">1. Open the portal in Chrome or Edge.<br>2. Click the <strong>Install Icon (⊕)</strong> on the right side of the address bar.<br>3. Click <strong>Install</strong> to launch as a standalone desktop application.</span>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -1070,7 +1403,25 @@
 
     <!-- Interactive JavaScript -->
     <script>
-        // Real-time Search Filter
+        // Language Toggle Controller
+        function setLanguage(lang) {
+            document.body.classList.remove('mode-ml', 'mode-en', 'mode-bi');
+            document.body.classList.add('mode-' + lang);
+
+            document.getElementById('btn-lang-ml').classList.toggle('active', lang === 'ml');
+            document.getElementById('btn-lang-en').classList.toggle('active', lang === 'en');
+            document.getElementById('btn-lang-bi').classList.toggle('active', lang === 'bi');
+
+            localStorage.setItem('cmolv_guide_lang', lang);
+        }
+
+        // Initialize saved language preference (defaults to Malayalam)
+        (function() {
+            const savedLang = localStorage.getItem('cmolv_guide_lang') || 'ml';
+            setLanguage(savedLang);
+        })();
+
+        // Real-time Search Filter (Works for Malayalam and English terms)
         function filterGuideTopics() {
             const query = document.getElementById('guideSearch').value.toLowerCase().trim();
             const cards = document.querySelectorAll('.guide-card');
@@ -1086,11 +1437,12 @@
         }
 
         // Role Filter Tabs
-        function filterByRole(role) {
-            // Update active button
+        function filterByRole(role, btnElement) {
             const buttons = document.querySelectorAll('.role-btn');
             buttons.forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            if (btnElement) {
+                btnElement.classList.add('active');
+            }
 
             const cards = document.querySelectorAll('.guide-card');
             cards.forEach(card => {
@@ -1111,7 +1463,7 @@
             let current = '';
             sections.forEach(section => {
                 const sectionTop = section.offsetTop;
-                if (pageYOffset >= sectionTop - 120) {
+                if (pageYOffset >= sectionTop - 130) {
                     current = section.getAttribute('id');
                 }
             });
