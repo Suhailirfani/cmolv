@@ -198,6 +198,9 @@
             display: flex;
             flex-direction: column;
             width: calc(100% - 280px);
+            max-width: calc(100% - 280px);
+            min-width: 0;
+            box-sizing: border-box;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -209,6 +212,7 @@
         body.sidebar-closed .main-workspace {
             margin-left: 0;
             width: 100%;
+            max-width: 100%;
         }
 
         .sidebar-logo {
@@ -1730,6 +1734,10 @@
                 <span>My Profile</span>
             </a>
             {% endif %}
+            <a href="{% url 'students:class_timetable_view' %}" class="nav-item">
+                <i class="fa-solid fa-calendar-days"></i>
+                <span>Class Timetable</span>
+            </a>
             <a href="{% url 'students:student_self_profile_update' %}" class="nav-item">
                 <i class="fa-solid fa-user-gear"></i>
                 <span>Profile & Password</span>
@@ -1754,10 +1762,43 @@
                 <i class="fa-solid fa-graduation-cap"></i>
                 <span>Examination</span>
             </a>
-            <a href="{% url 'students:timetable_dashboard' %}" class="nav-item">
-                <i class="fa-solid fa-calendar-days"></i>
-                <span>Timetable</span>
-            </a>
+            <div class="nav-group">
+                <a href="#" class="nav-item nav-dropdown-btn" onclick="event.preventDefault(); const content = this.nextElementSibling; const icon = this.querySelector('.arrow'); const isClosed = content.style.display === 'none' || content.style.display === ''; content.style.display = isClosed ? 'block' : 'none'; icon.style.transform = isClosed ? 'rotate(180deg)' : 'none';">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <span>Timetable</span>
+                    <i class="fa-solid fa-chevron-down arrow" style="margin-left: auto; font-size: 0.8rem; transition: transform 0.3s;"></i>
+                </a>
+                <div class="nav-group-content" style="display: none; padding-left: 1.5rem; margin-top: 0.25rem;">
+                    {% if request.user.is_superuser or request.user.profile.role == 'admin' %}
+                    <a href="{% url 'students:timetable_dashboard' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-table-columns" style="font-size: 0.9rem;"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="{% url 'students:timetable_builder' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-sliders" style="font-size: 0.9rem;"></i>
+                        <span>Grid Builder</span>
+                    </a>
+                    <a href="{% url 'students:period_timing_list' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-clock" style="font-size: 0.9rem;"></i>
+                        <span>Period Timings</span>
+                    </a>
+                    <a href="{% url 'students:teacher_assignment_list' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-user-pen" style="font-size: 0.9rem;"></i>
+                        <span>Teacher Allocation</span>
+                    </a>
+                    {% endif %}
+                    {% if request.user.profile.role == 'teacher' %}
+                    <a href="{% url 'students:teacher_my_schedule' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-user-clock" style="font-size: 0.9rem;"></i>
+                        <span>My Schedule</span>
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'students:class_timetable_view' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-table-cells" style="font-size: 0.9rem;"></i>
+                        <span>Class Timetable</span>
+                    </a>
+                </div>
+            </div>
             {% endif %}
 
             {% if request.user.is_superuser or request.user.profile.role in 'admin,accountant,ntstaff' %}
@@ -1789,10 +1830,6 @@
                     </a>
                 </div>
             </div>
-            <a href="{% url 'fees:finance_dashboard' %}" class="nav-item">
-                <i class="fa-solid fa-building-columns"></i>
-                <span>Finance</span>
-            </a>
             <a href="{% url 'students:hostel_movement_list' %}" class="nav-item">
                 <i class="fa-solid fa-bed"></i>
                 <span>Hostel</span>

@@ -1,129 +1,231 @@
 {% extends 'students/base.html' %}
 
-{% block title %}Mark Attendance - Student Attendance System{% endblock %}
+{% block title %}Select Class - Period Attendance - HadiyAdmin{% endblock %}
+{% block page_heading %}Select Class to Mark Attendance{% endblock %}
+
+{% block extra_css %}
+<style>
+    .date-nav-toolbar {
+        background: white;
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--border, #e2e8f0);
+        margin-bottom: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1.25rem;
+    }
+
+    .class-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--border, #e2e8f0);
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        text-decoration: none;
+        color: inherit;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .class-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(99, 102, 241, 0.12), 0 4px 8px rgba(0, 0, 0, 0.04);
+        border-color: #818cf8;
+    }
+
+    .class-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #6366f1, #a855f7);
+        opacity: 0.8;
+    }
+
+    .class-name-title {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin: 0.25rem 0 0 0;
+        line-height: 1.3;
+    }
+
+    .section-badge {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #6366f1;
+        background: #ede9fe;
+        padding: 0.25rem 0.6rem;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        display: inline-block;
+    }
+
+    .class-stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.9rem;
+    }
+
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-weight: 700;
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+        border-radius: 8px;
+    }
+
+    .status-pill.success {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .status-pill.warning {
+        background: #fef3c7;
+        color: #b45309;
+    }
+
+    .status-pill.danger {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .stream-tag {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #475569;
+        background: #f1f5f9;
+        padding: 0.2rem 0.5rem;
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    .enter-btn {
+        margin-top: 1rem;
+        width: 100%;
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 0.7rem 1rem;
+        font-weight: 700;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);
+        transition: opacity 0.2s;
+    }
+
+    .class-card:hover .enter-btn {
+        opacity: 0.95;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="page-header" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+<!-- Date Toolbar -->
+<div class="date-nav-toolbar">
     <div>
-        <h1 style="color: #2c3e50; font-size: 2rem; margin-bottom: 0.5rem; font-weight: 700;">📝 Mark Attendance</h1>
-        <p class="text-muted" style="color: #6c757d;">Step 1: Select the date and class to mark attendance for.</p>
+        <h2 style="margin: 0 0 0.25rem 0; color: #1e293b; font-size: 1.5rem; font-weight: 800;">
+            📝 Mark Period Attendance
+        </h2>
+        <p style="margin: 0; color: #64748b; font-size: 0.9rem; font-weight: 500;">
+            Select a class below. By default, all students of that class are included together.
+        </p>
     </div>
-    <div>
-        <a href="{% url 'students:monthly_attendance_select' %}" class="btn btn-primary" style="background: #9b59b6; border: none; box-shadow: 0 4px 6px -1px rgba(155, 89, 182, 0.3); text-decoration: none; display: inline-block;">
-            <span style="margin-right: 0.5rem;">📅</span> Switch to Monthly Grid
+
+    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <!-- Simple Date Picker -->
+        <form method="get" id="dateFilterForm" style="display: flex; align-items: center; gap: 0.5rem; margin: 0; background: #f8fafc; padding: 0.4rem 0.75rem; border-radius: 12px; border: 1px solid #cbd5e1;">
+            <i class="fa-regular fa-calendar" style="color: #6366f1;"></i>
+            <label style="font-weight: 700; color: #475569; font-size: 0.85rem; margin: 0;">Date:</label>
+            <input type="date" name="date" value="{{ selected_date }}" onchange="this.form.submit()" style="border: none; background: transparent; font-weight: 800; color: #1e293b; font-size: 0.95rem; cursor: pointer; outline: none;">
+        </form>
+
+        <a href="{% url 'students:today_attendance' %}?date={{ selected_date }}" class="btn btn-outline-primary" style="border-radius: 10px; font-weight: 700; font-size: 0.85rem; padding: 0.55rem 1rem; text-decoration: none;">
+            <i class="fa-solid fa-table-cells"></i> View Today's Matrix
         </a>
     </div>
 </div>
 
-<div class="filter-form" style="background: #fff; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 2rem;">
-    <form method="get" id="filterForm">
-        <div class="form-row" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
-            <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
-                <label style="font-weight: 600; color: #34495e; margin-bottom: 0.5rem; display: block;">Date</label>
-                <input type="date" name="date" value="{{ selected_date }}" required style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px;">
-            </div>
-            <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
-                <label style="font-weight: 600; color: #34495e; margin-bottom: 0.5rem; display: block;">Attendance Type</label>
-                <select name="type" id="attendanceType" onchange="updateForm()" style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px;">
-                    <option value="daily" {% if attendance_type == 'daily' %}selected{% endif %}>Daily</option>
-                    <option value="period" {% if attendance_type == 'period' %}selected{% endif %}>Period</option>
-                    <option value="activity" {% if attendance_type == 'activity' %}selected{% endif %}>Activity</option>
-                </select>
-            </div>
-            <div class="form-group" id="periodGroup" style="flex: 1; min-width: 200px; margin-bottom: 0; display: {% if attendance_type == 'period' %}block{% else %}none{% endif %};">
-                <label style="font-weight: 600; color: #34495e; margin-bottom: 0.5rem; display: block;">Period</label>
-                <select name="period" id="periodSelect" style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px;">
-                    <option value="">Select Period</option>
-                    {% for period in periods %}
-                    <option value="{{ period.id }}" {% if selected_period == period.id|stringformat:"s" %}selected{% endif %}>{{ period.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-group" id="activityGroup" style="flex: 1; min-width: 200px; margin-bottom: 0; display: {% if attendance_type == 'activity' %}block{% else %}none{% endif %};">
-                <label style="font-weight: 600; color: #34495e; margin-bottom: 0.5rem; display: block;">Activity</label>
-                <select name="activity" id="activitySelect" style="width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px;">
-                    <option value="">Select Activity</option>
-                    {% for activity in activities %}
-                    <option value="{{ activity.id }}" {% if selected_activity == activity.id|stringformat:"s" %}selected{% endif %}>{{ activity.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div style="margin-bottom: 0;">
-                <button type="submit" class="btn btn-primary" style="background: #3498db; color: white; padding: 0.6rem 1.5rem; border-radius: 6px; border: none; cursor: pointer;">Load Classes</button>
-            </div>
+<!-- Class Cards Grid (Grouped by Grade, all students combined) -->
+{% if grade_summary %}
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+    {% for g_id, data in grade_summary.items %}
+    <a href="{% url 'students:mark_attendance_grade' data.grade_id %}?date={{ selected_date }}" class="class-card">
+        
+        <div style="margin-bottom: 1rem;">
+            <span class="section-badge">{{ data.section_name }}</span>
+            <h3 class="class-name-title">{{ data.grade_name }}</h3>
         </div>
-    </form>
-</div>
+        
+        <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; flex-grow: 1;">
+            <div class="class-stat-row">
+                <span style="color: #64748b; font-weight: 600;">Total Students</span>
+                <span style="font-weight: 800; color: #1e293b; font-size: 1.05rem;">{{ data.student_count }} Students</span>
+            </div>
 
-{% if classroom_summary %}
-<div class="card" style="background: transparent; box-shadow: none; padding: 0;">
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
-        {% for div_name, data in division_summary.items %}
-        <a href="{% url 'students:mark_attendance_class' data.grade_id data.division_id|default:0 %}?section={{ data.section_id|default:'' }}&date={{ selected_date }}&type={{ attendance_type }}{% if selected_period %}&period={{ selected_period }}{% endif %}{% if selected_activity %}&activity={{ selected_activity }}{% endif %}" style="text-decoration: none; color: inherit; display: block;">
-            <div style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s; height: 100%; display: flex; flex-direction: column;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 10px 15px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.05)';">
-                
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                    <div>
-                        <span style="color: #7f8c8d; font-size: 0.9rem; font-weight: bold; text-transform: uppercase;">{{ data.section }}</span>
-                        <h3 style="margin: 0; color: #2c3e50; font-size: 1.5rem;">{{ div_name }}</h3>
-                    </div>
+            {% if data.streams %}
+            <div class="class-stat-row">
+                <span style="color: #64748b; font-weight: 600;">Streams</span>
+                <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+                    {% for stream in data.streams %}
+                    <span class="stream-tag">{{ stream }}</span>
+                    {% endfor %}
                 </div>
-                
-                <div style="display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 1rem; flex-grow: 1;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.5rem; border-bottom: 1px solid #f1f5f9;">
-                        <span style="color: #64748b; font-size: 0.9rem;">Total Students</span>
-                        <span style="font-weight: 600; color: #334155;">{{ data.student_count }}</span>
-                    </div>
-                    
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.5rem; border-bottom: 1px solid #f1f5f9;">
-                        <span style="color: #64748b; font-size: 0.9rem;">Marked Attendance</span>
-                        <span style="font-weight: 600; color: #334155;">{{ data.recorded_count }}</span>
-                    </div>
-                </div>
-                
-                <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+            </div>
+            {% endif %}
+            
+            <div class="class-stat-row">
+                <span style="color: #64748b; font-weight: 600;">Periods Marked Today</span>
+                <span style="font-weight: 800; color: #6366f1; font-size: 0.95rem;">{{ data.periods_marked }} / {{ data.total_periods }}</span>
+            </div>
+
+            <div class="class-stat-row" style="border-bottom: none;">
+                <span style="color: #64748b; font-weight: 600;">Status</span>
+                <span class="status-pill {{ data.status_class }}">
                     {% if data.status_class == 'success' %}
-                        <div style="display: flex; align-items: center; color: #059669; font-weight: 600; font-size: 0.9rem;">
-                            <span style="margin-right: 0.5rem;">✅</span> {{ data.status }}
-                        </div>
+                    <i class="fa-solid fa-circle-check"></i>
                     {% elif data.status_class == 'warning' %}
-                        <div style="display: flex; align-items: center; color: #d97706; font-weight: 600; font-size: 0.9rem;">
-                            <span style="margin-right: 0.5rem;">⚠️</span> {{ data.status }}
-                        </div>
+                    <i class="fa-solid fa-clock-rotate-left"></i>
                     {% else %}
-                        <div style="display: flex; align-items: center; color: #dc2626; font-weight: 600; font-size: 0.9rem;">
-                            <span style="margin-right: 0.5rem;">❌</span> {{ data.status }}
-                        </div>
+                    <i class="fa-solid fa-circle-minus"></i>
                     {% endif %}
-                </div>
+                    {{ data.status }}
+                </span>
             </div>
-        </a>
-        {% empty %}
-        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 12px; border: 1px dashed #ced4da;">
-            <p style="color: #6c757d; margin-bottom: 1rem; font-size: 1.1rem;">No class data found.</p>
         </div>
-        {% endfor %}
-    </div>
+        
+        <div class="enter-btn">
+            <span>Enter Class & Mark Periods</span>
+            <i class="fa-solid fa-arrow-right"></i>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div style="text-align: center; padding: 4rem 2rem; background: white; border-radius: 16px; border: 1px solid #e2e8f0; color: #64748b;">
+    <i class="fa-solid fa-chalkboard-user" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
+    <p style="margin: 0; font-weight: 700; font-size: 1.1rem;">No classes found for the active academic year.</p>
 </div>
 {% endif %}
 
-<script>
-function updateForm() {
-    const type = document.getElementById('attendanceType').value;
-    const periodGroup = document.getElementById('periodGroup');
-    const activityGroup = document.getElementById('activityGroup');
-
-    if (type === 'period') {
-        periodGroup.style.display = 'block';
-        activityGroup.style.display = 'none';
-    } else if (type === 'activity') {
-        periodGroup.style.display = 'none';
-        activityGroup.style.display = 'block';
-    } else {
-        periodGroup.style.display = 'none';
-        activityGroup.style.display = 'none';
-    }
-}
-</script>
 {% endblock %}
-

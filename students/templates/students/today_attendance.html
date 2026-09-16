@@ -1,395 +1,886 @@
 {% extends 'students/base.html' %}
+{% load static %}
 
-{% block title %}Today's Attendance - HadiyAdmin{% endblock %}
-{% block page_heading %}Today's Attendance{% endblock %}
+{% block title %}Period Attendance Matrix - {{ selected_date|date:"d M Y" }} - HadiyAdmin{% endblock %}
+{% block page_heading %}Period Attendance Matrix{% endblock %}
 
 {% block extra_css %}
 <style>
-    .stats-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.25rem;
-        margin-bottom: 1.5rem;
+    /* =========================================================
+       PERIOD ATTENDANCE MATRIX - MODERN PREMIUM STYLES
+       ========================================================= */
+
+    :root {
+        --present-bg: #dcfce7;
+        --present-text: #15803d;
+        --present-border: #86efac;
+        --absent-bg: #fee2e2;
+        --absent-text: #b91c1c;
+        --absent-border: #fca5a5;
+        --late-bg: #fef3c7;
+        --late-text: #b45309;
+        --late-border: #fcd34d;
+        --excused-bg: #e0f2fe;
+        --excused-text: #0369a1;
+        --excused-border: #7dd3fc;
+        --unmarked-bg: #f1f5f9;
+        --unmarked-text: #64748b;
+        --unmarked-border: #cbd5e1;
     }
 
-    .stat-badge-box {
-        padding: 1.25rem;
-        border-radius: 16px;
-        border: 1px solid var(--border, #e2e8f0);
+    /* Date Navigation Bar */
+    .date-nav-card {
         background: white;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+        border-radius: 16px;
+        padding: 1rem 1.25rem;
+        border: 1px solid var(--border, #e2e8f0);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        margin-bottom: 1.5rem;
         display: flex;
         align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
         gap: 1rem;
     }
 
-    .stat-badge-box.present {
-        border-left: 4px solid var(--success, #22c55e);
+    .date-picker-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #f8fafc;
+        padding: 0.35rem 0.5rem;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
     }
 
-    .stat-badge-box.absent {
-        border-left: 4px solid var(--danger, #ef4444);
+    .date-btn-nav {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background: white;
+        color: #475569;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-weight: bold;
+        transition: all 0.2s;
     }
 
-    .stat-badge-box.not-marked {
-        border-left: 4px solid var(--gray, #94a3b8);
+    .date-btn-nav:hover {
+        background: #6366f1;
+        color: white;
+        border-color: #6366f1;
     }
 
-    .stat-icon {
+    /* Summary Stats Container */
+    .stats-matrix-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stat-matrix-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.2rem;
+        border: 1px solid var(--border, #e2e8f0);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .stat-matrix-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    }
+
+    .stat-matrix-icon {
         width: 48px;
         height: 48px;
-        border-radius: 12px;
+        border-radius: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.25rem;
+        font-size: 1.35rem;
+        flex-shrink: 0;
     }
 
-    .present .stat-icon { background: #dcfce7; color: #15803d; }
-    .absent .stat-icon { background: #fee2e2; color: #991b1b; }
-    .not-marked .stat-icon { background: #f1f5f9; color: #475569; }
-
-    .stat-text .value {
-        font-size: 1.5rem;
-        font-weight: 800;
-        line-height: 1;
-        margin-bottom: 0.25rem;
-    }
-
-    .stat-text .label {
-        font-size: 0.8rem;
-        font-weight: 700;
-        color: var(--gray, #64748b);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    /* Filter Toolbar */
-    .filter-toolbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 1rem;
+    /* Period Strip Row */
+    .period-strip-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 0.75rem;
         margin-bottom: 1.5rem;
+    }
+
+    .period-mini-card {
         background: white;
-        padding: 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.75rem;
+        text-align: center;
+        transition: all 0.2s;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    }
+
+    .period-mini-card:hover {
+        border-color: #818cf8;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
+        transform: translateY(-2px);
+    }
+
+    .period-mini-card .p-name {
+        font-weight: 800;
+        font-size: 0.85rem;
+        color: #1e293b;
+        margin-bottom: 0.2rem;
+    }
+
+    .period-mini-card .p-time {
+        font-size: 0.7rem;
+        color: #64748b;
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+    }
+
+    .period-mini-card .p-stats {
+        display: flex;
+        justify-content: center;
+        gap: 0.4rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    /* Filter & Search Bar */
+    .matrix-toolbar {
+        background: white;
+        border-radius: 16px;
+        padding: 1rem 1.25rem;
+        border: 1px solid var(--border, #e2e8f0);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        margin-bottom: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .filter-pills-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .pill-btn {
+        padding: 0.45rem 1rem;
+        border-radius: 20px;
+        font-size: 0.825rem;
+        font-weight: 700;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .pill-btn:hover {
+        background: #f1f5f9;
+        color: #1e293b;
+    }
+
+    .pill-btn.active {
+        background: #6366f1;
+        color: white;
+        border-color: #6366f1;
+        box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);
+    }
+
+    /* Matrix Table Styles */
+    .matrix-table-wrapper {
+        background: white;
         border-radius: 16px;
         border: 1px solid var(--border, #e2e8f0);
-    }
-
-    .filter-btn-group {
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .filter-btn {
-        padding: 0.5rem 1.25rem;
-        border-radius: 10px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        border: 1px solid var(--border, #e2e8f0);
-        background: white;
-        color: var(--dark-secondary, #475569);
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .filter-btn:hover {
-        background: #f8fafc;
-    }
-
-    .filter-btn.active {
-        background: var(--primary, #6366f1);
-        color: white;
-        border-color: var(--primary, #6366f1);
-    }
-
-    /* Cards Grid */
-    .today-cards-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.5rem;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
+        overflow-x: auto;
         margin-bottom: 2rem;
     }
 
-    @media (min-width: 576px) {
-        .today-cards-grid {
-            grid-template-columns: repeat(4, 1fr);
-        }
-    }
-
-    @media (min-width: 768px) {
-        .today-cards-grid {
-            grid-template-columns: repeat(6, 1fr);
-        }
-    }
-
-    @media (min-width: 992px) {
-        .today-cards-grid {
-            grid-template-columns: repeat(8, 1fr);
-        }
-    }
-
-    @media (min-width: 1200px) {
-        .today-cards-grid {
-            grid-template-columns: repeat(12, 1fr);
-        }
-    }
-
-    .today-student-card {
-        border-radius: 14px;
-        padding: 0.6rem 0.5rem;
-        border: 1px solid var(--border, #cbd5e1);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.12);
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-        min-width: 0; /* Enable text truncation */
-    }
-
-    .today-student-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22), 0 4px 8px rgba(0, 0, 0, 0.18);
-    }
-
-    /* Present Student Card (Green) */
-    .card-status-present {
-        background: #dcfce7 !important;
-        border: 1px solid #86efac !important;
-        color: #15803d !important;
-        box-shadow: 0 4px 8px rgba(34, 197, 94, 0.12);
-    }
-
-    /* Absent Student Card (Red) */
-    .card-status-absent {
-        background: #fee2e2 !important;
-        border: 1px solid #fca5a5 !important;
-        color: #991b1b !important;
-        box-shadow: 0 4px 8px rgba(239, 68, 68, 0.12);
-    }
-
-    /* Late Student Card (Yellow) */
-    .card-status-late {
-        background: #fef9c3 !important;
-        border: 1px solid #fde68a !important;
-        color: #854d0e !important;
-        box-shadow: 0 4px 8px rgba(234, 179, 8, 0.12);
-    }
-
-    /* Excused Student Card (Blue) */
-    .card-status-excused {
-        background: #dbeafe !important;
-        border: 1px solid #93c5fd !important;
-        color: #1e40af !important;
-        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.12);
-    }
-
-    /* Not Marked Student Card (Blurred / Muted) */
-    .card-status-not_marked, .card-status-not-marked {
-        background: #f1f5f9 !important;
-        border: 1px dashed #cbd5e1 !important;
-        color: #64748b !important;
-        opacity: 0.55;
-        filter: blur(0.5px);
-        backdrop-filter: blur(4px);
-    }
-
-    .card-status-not_marked:hover, .card-status-not-marked:hover {
-        opacity: 1;
-        filter: none;
-    }
-
-    .today-student-card .student-name {
-        font-size: 0.85rem;
-        font-weight: 700;
-        line-height: 1.2;
+    .matrix-table {
         width: 100%;
-        color: inherit;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.875rem;
     }
 
-    .no-results-message {
-        grid-column: 1 / -1;
+    .matrix-table thead th {
+        background: #f8fafc;
+        color: #475569;
+        font-weight: 700;
+        padding: 0.9rem 0.75rem;
         text-align: center;
-        padding: 4rem 2rem;
+        border-bottom: 2px solid #e2e8f0;
+        white-space: nowrap;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .matrix-table thead th.th-student {
+        text-align: left;
+        min-width: 200px;
+        position: sticky;
+        left: 0;
+        background: #f8fafc;
+        z-index: 10;
+    }
+
+    .matrix-table tbody tr {
+        transition: background-color 0.15s;
+    }
+
+    .matrix-table tbody tr:hover {
+        background-color: #f8faff;
+    }
+
+    .matrix-table tbody td {
+        padding: 0.75rem 0.6rem;
+        text-align: center;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .matrix-table tbody td.td-student {
+        text-align: left;
+        position: sticky;
+        left: 0;
         background: white;
-        border-radius: 16px;
-        border: 1px solid var(--border, #e2e8f0);
-        color: var(--gray, #64748b);
+        z-index: 5;
+        border-right: 1px solid #f1f5f9;
+    }
+
+    .matrix-table tbody tr:hover td.td-student {
+        background-color: #f8faff;
+    }
+
+    /* Period Status Badge (Cell) */
+    .period-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        font-weight: 800;
+        font-size: 0.85rem;
+        transition: transform 0.15s, box-shadow 0.15s;
+        cursor: default;
+    }
+
+    .period-badge:hover {
+        transform: scale(1.15);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .period-badge.present {
+        background: var(--present-bg);
+        color: var(--present-text);
+        border: 1px solid var(--present-border);
+    }
+
+    .period-badge.absent {
+        background: var(--absent-bg);
+        color: var(--absent-text);
+        border: 1px solid var(--absent-border);
+    }
+
+    .period-badge.late {
+        background: var(--late-bg);
+        color: var(--late-text);
+        border: 1px solid var(--late-border);
+    }
+
+    .period-badge.excused {
+        background: var(--excused-bg);
+        color: var(--excused-text);
+        border: 1px solid var(--excused-border);
+    }
+
+    .period-badge.not-marked {
+        background: var(--unmarked-bg);
+        color: var(--unmarked-text);
+        border: 1px dashed var(--unmarked-border);
+        opacity: 0.65;
+    }
+
+    /* Student Info in Table */
+    .student-avatar-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .student-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+    }
+
+    .student-details .name {
+        font-weight: 700;
+        color: #1e293b;
+        line-height: 1.2;
+        font-size: 0.9rem;
+    }
+
+    .student-details .meta {
+        font-size: 0.75rem;
+        color: #64748b;
+        font-weight: 600;
+        margin-top: 2px;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .type-pill {
+        font-size: 0.65rem;
+        padding: 0.1rem 0.4rem;
+        border-radius: 6px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .type-hostel {
+        background: #ede9fe;
+        color: #6d28d9;
+    }
+
+    .type-day {
+        background: #e0f2fe;
+        color: #0369a1;
+    }
+
+    /* Percentage Badge */
+    .pct-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 8px;
+        font-weight: 800;
+        font-size: 0.75rem;
+        display: inline-block;
+    }
+
+    .pct-high { background: #dcfce7; color: #15803d; }
+    .pct-mid { background: #fef3c7; color: #b45309; }
+    .pct-low { background: #fee2e2; color: #b91c1c; }
+    .pct-none { background: #f1f5f9; color: #64748b; }
+
+    /* Mobile Cards View */
+    .mobile-matrix-list {
         display: none;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 2rem;
+    }
+
+    .mobile-student-card {
+        background: white;
+        border-radius: 14px;
+        padding: 1rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    .mobile-periods-row {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 0.35rem;
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #f1f5f9;
+        text-align: center;
+    }
+
+    .mobile-p-col .p-lbl {
+        font-size: 0.65rem;
+        color: #64748b;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+
+    @media (max-width: 991px) {
+        .matrix-table-wrapper {
+            display: none;
+        }
+        .mobile-matrix-list {
+            display: flex;
+        }
+    }
+
+    /* Print Styles */
+    @media print {
+        .sidebar, .top-nav, .date-nav-card, .matrix-toolbar, .btn, .no-print {
+            display: none !important;
+        }
+        .main-content {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .matrix-table-wrapper {
+            display: block !important;
+            box-shadow: none !important;
+            border: 1px solid #000 !important;
+        }
+        .matrix-table th, .matrix-table td {
+            border: 1px solid #ddd !important;
+            color: #000 !important;
+        }
+        .period-badge {
+            border: 1px solid #000 !important;
+            color: #000 !important;
+            background: transparent !important;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Stats Summary Box -->
-<div class="stats-container">
-    {% if today_holiday %}
-    <div class="stat-badge-box present" style="background: linear-gradient(135deg, #fef9c3 0%, #fefce8 100%); border: 1px solid #fde68a; color: #d97706;">
-        <div class="stat-icon" style="color: #d97706;">
-            <i class="fa-solid fa-umbrella-beach"></i>
+<!-- Top Date & Action Navigation Bar -->
+<div class="date-nav-card">
+    <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <div class="date-picker-group">
+            <a href="?date={{ prev_date|date:'Y-m-d' }}{% if selected_grade %}&grade={{ selected_grade }}{% endif %}{% if selected_division %}&division={{ selected_division }}{% endif %}{% if selected_student_type %}&student_type={{ selected_student_type }}{% endif %}" class="date-btn-nav" title="Previous Day ({{ prev_date|date:'d M' }})">
+                <i class="fa-solid fa-chevron-left"></i>
+            </a>
+
+            <form method="get" id="dateFilterForm" style="display: inline-flex; align-items: center; margin: 0;">
+                <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" onchange="this.form.submit()" style="border: none; background: transparent; font-weight: 800; color: #1e293b; font-size: 1rem; cursor: pointer; outline: none; padding: 0.25rem 0.5rem;">
+                {% if selected_grade %}<input type="hidden" name="grade" value="{{ selected_grade }}">{% endif %}
+                {% if selected_division %}<input type="hidden" name="division" value="{{ selected_division }}">{% endif %}
+                {% if selected_student_type %}<input type="hidden" name="student_type" value="{{ selected_student_type }}">{% endif %}
+            </form>
+
+            <a href="?date={{ next_date|date:'Y-m-d' }}{% if selected_grade %}&grade={{ selected_grade }}{% endif %}{% if selected_division %}&division={{ selected_division }}{% endif %}{% if selected_student_type %}&student_type={{ selected_student_type }}{% endif %}" class="date-btn-nav" title="Next Day ({{ next_date|date:'d M' }})">
+                <i class="fa-solid fa-chevron-right"></i>
+            </a>
         </div>
-        <div class="stat-text" style="min-width: 0; flex: 1;">
-            <div class="value" style="font-size: 1.1rem; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ today_holiday.title }}">{{ today_holiday.title }}</div>
-            <div class="label">Holiday Today</div>
-        </div>
-    </div>
-    {% else %}
-    <div class="stat-badge-box present">
-        <div class="stat-icon">
-            <i class="fa-solid fa-circle-check"></i>
-        </div>
-        <div class="stat-text">
-            <div class="value">{{ total_present_all }}</div>
-            <div class="label">Present / Attended</div>
-        </div>
-    </div>
-    {% endif %}
-    
-    <div class="stat-badge-box absent">
-        <div class="stat-icon">
-            <i class="fa-solid fa-circle-xmark"></i>
-        </div>
-        <div class="stat-text">
-            <div class="value" id="absentCountSummary">{{ absent_count }}</div>
-            <div class="label">Absent Today</div>
+
+        <div>
+            {% if is_today %}
+            <span class="badge bg-primary" style="font-size: 0.8rem; padding: 0.4rem 0.75rem; border-radius: 8px; font-weight: 700;">
+                <i class="fa-solid fa-calendar-day"></i> Today
+            </span>
+            {% else %}
+            <a href="{% url 'students:today_attendance' %}{% if selected_grade %}?grade={{ selected_grade }}{% endif %}" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px; font-weight: 700; font-size: 0.8rem;">
+                <i class="fa-solid fa-rotate-left"></i> Jump to Today
+            </a>
+            {% endif %}
+
+            {% if today_holiday %}
+            <span class="badge bg-warning text-dark" style="font-size: 0.8rem; padding: 0.4rem 0.75rem; border-radius: 8px; font-weight: 700; margin-left: 0.5rem;">
+                🏖️ Holiday: {{ today_holiday.title }}
+            </span>
+            {% endif %}
         </div>
     </div>
 
-    <div class="stat-badge-box not-marked">
-        <div class="stat-icon">
-            <i class="fa-solid fa-circle-minus"></i>
-        </div>
-        <div class="stat-text">
-            <div class="value">{{ not_marked_count }}</div>
-            <div class="label">Not Marked</div>
-        </div>
-    </div>
-</div>
+    <!-- Right Quick Actions -->
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <button onclick="window.print()" class="btn btn-outline-secondary" style="border-radius: 10px; font-weight: 600; padding: 0.5rem 1rem; font-size: 0.875rem;">
+            <i class="fa-solid fa-print"></i> Print Matrix
+        </button>
 
-<!-- Filter Toolbar -->
-<div class="filter-toolbar">
-    <div class="filter-btn-group" style="flex-wrap: wrap; gap: 0.4rem;">
-        <button class="filter-btn active" data-filter="all">
-            <i class="fa-solid fa-users"></i> All ({{ total_count }})
-        </button>
-        <button class="filter-btn" data-filter="present" style="color: #15803d;">
-            <i class="fa-solid fa-circle-check"></i> Present ({{ present_count }})
-        </button>
-        <button class="filter-btn" data-filter="absent" style="color: #ef4444;">
-            <i class="fa-solid fa-circle-xmark"></i> Absent ({{ absent_count }})
-        </button>
-        <button class="filter-btn" data-filter="late" style="color: #d97706;">
-            <i class="fa-solid fa-clock"></i> Late ({{ late_count }})
-        </button>
-        <button class="filter-btn" data-filter="excused" style="color: #1e40af;">
-            <i class="fa-solid fa-user-shield"></i> Excused ({{ excused_count }})
-        </button>
-        <button class="filter-btn" data-filter="not_marked" style="color: #64748b;">
-            <i class="fa-solid fa-circle-minus"></i> Not Marked ({{ not_marked_count }})
-        </button>
-    </div>
-    
-    <div style="display: flex; gap: 0.5rem; align-items: center;">
-        <input type="text" id="todaySearchInput" placeholder="Search student name or ID..." style="padding: 0.5rem 1rem; border-radius: 10px; border: 1px solid var(--border, #e2e8f0); font-size: 0.9rem; min-width: 220px;">
-        <a href="{% url 'students:home' %}" class="btn btn-secondary" style="background: #64748b; color: white; padding: 0.5rem 1.25rem; border-radius: 10px; font-size: 0.9rem; text-decoration: none; font-weight: 600;">
-            <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+        <a href="{% url 'students:mark_attendance' %}?type=period&date={{ selected_date|date:'Y-m-d' }}" class="btn btn-primary" style="background: #6366f1; border: none; border-radius: 10px; font-weight: 700; padding: 0.5rem 1.25rem; font-size: 0.875rem; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3); display: inline-flex; align-items: center; gap: 0.4rem;">
+            <i class="fa-solid fa-pen-to-square"></i> Mark Period Attendance
         </a>
     </div>
 </div>
 
-<!-- Student Cards grouped by Class -->
-<div id="todayCardsGrid">
-    {% regroup student_stats by enrollment.class_name as grouped_stats %}
-
-    {% for group in grouped_stats %}
-    <div class="class-attendance-section" style="margin-bottom: 2.5rem;">
-        <div class="class-section-header" style="font-size: 1.25rem; font-weight: 800; color: var(--dark, #1e293b); margin: 1.5rem 0 1rem 0; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0; display: flex; align-items: center; gap: 0.75rem;">
-            <i class="fa-solid fa-chalkboard-user" style="color: var(--primary, #6366f1);"></i>
-            Class: {{ group.grouper }}
-            <span class="badge-count" style="font-size: 0.8rem; background-color: var(--primary, #6366f1); color: white; border-radius: 8px; padding: 0.25rem 0.6rem; font-weight: 700;">{{ group.list|length }} Student{% if group.list|length != 1 %}s{% endif %}</span>
+<!-- Key Performance Matrix Badges -->
+<div class="stats-matrix-grid">
+    <div class="stat-matrix-card">
+        <div class="stat-matrix-icon" style="background: #ede9fe; color: #6366f1;">
+            <i class="fa-solid fa-users"></i>
         </div>
-        
-        <div class="today-cards-grid">
-            {% for stat in group.list %}
-            <a href="{% url 'students:student_profile' stat.student.id %}" class="today-student-card card-status-{{ stat.status }} student-card-item" data-status="{{ stat.status }}" data-name="{{ stat.student.full_name|lower }}" data-id="{{ stat.student.student_id|lower }}" style="text-decoration: none;">
-                <div class="student-name" title="{{ stat.student.full_name }}">{{ stat.student.full_name }}</div>
-                <div style="font-size: 0.7rem; opacity: 0.7; font-weight: 600; margin-top: 1px;">ID: {{ stat.student.student_id }}</div>
-            </a>
-            {% endfor %}
+        <div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b; line-height: 1.1;">{{ total_students }}</div>
+            <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 0.2rem;">Enrolled Students</div>
         </div>
     </div>
-    {% empty %}
-    <div class="no-results-message" style="display: block; text-align: center; padding: 4rem 2rem; background: white; border-radius: 16px; border: 1px solid var(--border, #e2e8f0); color: var(--gray, #64748b);">
-        <i class="fa-solid fa-user-slash" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
-        <p style="margin: 0; font-weight: 600; font-size: 1.1rem;">No students enrolled for the active academic year.</p>
-    </div>
-    {% endfor %}
 
-    <!-- Client-side filter no results message -->
-    <div class="no-results-message" id="filterNoResults" style="text-align: center; padding: 4rem 2rem; background: white; border-radius: 16px; border: 1px solid var(--border, #e2e8f0); color: var(--gray, #64748b); display: none;">
-        <i class="fa-solid fa-magnifying-glass" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
-        <p style="margin: 0; font-weight: 600; font-size: 1.1rem;">No students match the current filters.</p>
+    <div class="stat-matrix-card">
+        <div class="stat-matrix-icon" style="background: #dcfce7; color: #15803d;">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #15803d; line-height: 1.1;">{{ total_present_slots }} <span style="font-size: 0.9rem; font-weight: 600; color: #64748b;">/ {{ total_marked_slots }}</span></div>
+            <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 0.2rem;">Total Present Periods</div>
+        </div>
+    </div>
+
+    <div class="stat-matrix-card">
+        <div class="stat-matrix-icon" style="background: #fee2e2; color: #b91c1c;">
+            <i class="fa-solid fa-circle-xmark"></i>
+        </div>
+        <div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #b91c1c; line-height: 1.1;">{{ total_absent_slots }}</div>
+            <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 0.2rem;">Total Absent Periods</div>
+        </div>
+    </div>
+
+    <div class="stat-matrix-card">
+        <div class="stat-matrix-icon" style="background: #e0f2fe; color: #0284c7;">
+            <i class="fa-solid fa-chart-pie"></i>
+        </div>
+        <div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #0284c7; line-height: 1.1;">{{ overall_percentage }}%</div>
+            <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 0.2rem;">Avg Day Attendance</div>
+        </div>
     </div>
 </div>
 
+<!-- Period-by-Period Strip Mini-Cards -->
+<div class="period-strip-container">
+    {% for ps in period_stats %}
+    <div class="period-mini-card">
+        <div class="p-name">{{ ps.period.name|truncatechars:14 }}</div>
+        <div class="p-time">{{ ps.period.start_time|time:"H:i" }} - {{ ps.period.end_time|time:"H:i" }}</div>
+        <div class="p-stats">
+            <span style="color: #15803d;" title="{{ ps.present }} Present"><i class="fa-solid fa-check"></i> {{ ps.present }}</span>
+            <span style="color: #b91c1c;" title="{{ ps.absent }} Absent"><i class="fa-solid fa-xmark"></i> {{ ps.absent }}</span>
+            {% if ps.not_marked > 0 %}
+            <span style="color: #94a3b8;" title="{{ ps.not_marked }} Not Marked"><i class="fa-solid fa-minus"></i> {{ ps.not_marked }}</span>
+            {% endif %}
+        </div>
+        <div style="margin-top: 0.4rem;">
+            <a href="{% url 'students:mark_attendance' %}?type=period&date={{ selected_date|date:'Y-m-d' }}&period={{ ps.period.id }}" style="font-size: 0.65rem; font-weight: 700; color: #6366f1; text-decoration: none;">
+                Mark P{{ forloop.counter }} →
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Toolbar: Filters, Status Pills, Search -->
+<div class="matrix-toolbar">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <!-- Status Filter Pills -->
+        <div class="filter-pills-row">
+            <button class="pill-btn active" data-filter="all">
+                <i class="fa-solid fa-users"></i> All ({{ total_students }})
+            </button>
+            <button class="pill-btn" data-filter="present" style="color: #15803d;">
+                <i class="fa-solid fa-circle-check"></i> All Present ({{ fully_present_count }})
+            </button>
+            <button class="pill-btn" data-filter="partial" style="color: #b45309;">
+                <i class="fa-solid fa-triangle-exclamation"></i> Partial ({{ partial_absent_count }})
+            </button>
+            <button class="pill-btn" data-filter="absent" style="color: #b91c1c;">
+                <i class="fa-solid fa-circle-xmark"></i> Full Absent ({{ fully_absent_count }})
+            </button>
+            <button class="pill-btn" data-filter="not_marked" style="color: #64748b;">
+                <i class="fa-solid fa-circle-minus"></i> Unmarked ({{ unmarked_count }})
+            </button>
+        </div>
+
+        <!-- Real-time Live Search Input -->
+        <div style="min-width: 240px; position: relative;">
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.85rem;"></i>
+            <input type="text" id="matrixSearchInput" placeholder="Search student name, ID..." style="width: 100%; padding: 0.5rem 1rem 0.5rem 2.25rem; border-radius: 10px; border: 1px solid var(--border, #cbd5e1); font-size: 0.875rem; outline: none; transition: border-color 0.2s;">
+        </div>
+    </div>
+
+    <!-- Dropdown Filters: Grade / Division / Student Type -->
+    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; padding-top: 0.75rem; border-top: 1px solid #f1f5f9;">
+        <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Filter By:</span>
+
+        <form method="get" id="matrixDropdownForm" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0;">
+            <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+            
+            <select name="grade" onchange="this.form.submit()" style="padding: 0.35rem 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.8rem; font-weight: 600; color: #334155;">
+                <option value="">All Classes</option>
+                {% for g in all_grades %}
+                <option value="{{ g.id }}" {% if selected_grade == g.id|stringformat:"s" %}selected{% endif %}>{{ g.name }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="division" onchange="this.form.submit()" style="padding: 0.35rem 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.8rem; font-weight: 600; color: #334155;">
+                <option value="">All Divisions</option>
+                {% for d in all_divisions %}
+                <option value="{{ d.id }}" {% if selected_division == d.id|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="student_type" onchange="this.form.submit()" style="padding: 0.35rem 0.75rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.8rem; font-weight: 600; color: #334155;">
+                <option value="">All Types</option>
+                <option value="hostel" {% if selected_student_type == 'hostel' %}selected{% endif %}>Hostel</option>
+                <option value="day_scholar" {% if selected_student_type == 'day_scholar' %}selected{% endif %}>Day Scholar</option>
+            </select>
+
+            {% if selected_grade or selected_division or selected_student_type %}
+            <a href="?date={{ selected_date|date:'Y-m-d' }}" class="btn btn-sm btn-link" style="color: #ef4444; font-size: 0.8rem; font-weight: 700; text-decoration: none; padding: 0.35rem 0.5rem;">
+                <i class="fa-solid fa-xmark"></i> Clear Filters
+            </a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- =========================================================
+     DESKTOP & TABLET MATRIX TABLE
+     ========================================================= -->
+<div class="matrix-table-wrapper">
+    <table class="matrix-table" id="periodAttendanceTable">
+        <thead>
+            <tr>
+                <th style="width: 45px;">#</th>
+                <th class="th-student">Student Information</th>
+                <th style="min-width: 140px;">Class & Div</th>
+                {% for p in periods %}
+                <th title="{{ p.name }} ({{ p.start_time|time:'H:i' }} - {{ p.end_time|time:'H:i' }})" style="min-width: 55px;">
+                    <div>P{{ forloop.counter }}</div>
+                    <div style="font-size: 0.65rem; color: #94a3b8; font-weight: 600; text-transform: none;">{{ p.start_time|time:"H:i" }}</div>
+                </th>
+                {% endfor %}
+                <th style="min-width: 100px;">Summary</th>
+                <th style="min-width: 80px;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stat in student_stats %}
+            <tr class="matrix-student-row" 
+                data-status="{{ stat.day_status }}" 
+                data-name="{{ stat.student.full_name|lower }}" 
+                data-id="{{ stat.student.student_id|lower }}"
+                data-class="{{ stat.class_name|lower }}">
+                <td>
+                    <span style="font-weight: 700; color: #94a3b8; font-size: 0.8rem;">{{ forloop.counter }}</span>
+                </td>
+                <td class="td-student">
+                    <div class="student-avatar-cell">
+                        <div class="student-avatar">
+                            {{ stat.student.first_name|first }}{{ stat.student.last_name|first }}
+                        </div>
+                        <div class="student-details">
+                            <a href="{% url 'students:student_profile' stat.student.id %}" class="name" style="text-decoration: none;">
+                                {{ stat.student.full_name }}
+                            </a>
+                            <div class="meta">
+                                <span>ID: {{ stat.student.student_id }}</span>
+                                {% if stat.student.student_type == 'hostel' %}
+                                <span class="type-pill type-hostel">Hostel</span>
+                                {% else %}
+                                <span class="type-pill type-day">Day</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span style="font-weight: 700; color: #334155; font-size: 0.8rem;">{{ stat.class_name }}</span>
+                </td>
+
+                <!-- Period Status Badges -->
+                {% for p_stat in stat.periods %}
+                <td>
+                    <span class="period-badge {{ p_stat.badge_class }}" 
+                          title="{{ p_stat.period.name }}: {{ p_stat.status|title }}{% if p_stat.marked_by %} (By {{ p_stat.marked_by }}){% endif %}">
+                        {{ p_stat.code }}
+                    </span>
+                </td>
+                {% endfor %}
+
+                <!-- Summary Column -->
+                <td>
+                    {% if stat.day_status == 'present' %}
+                    <span class="pct-badge pct-high">{{ stat.present_count }}/{{ stat.periods|length }} (100%)</span>
+                    {% elif stat.day_status == 'partial' %}
+                    <span class="pct-badge pct-mid">{{ stat.present_count }}/{{ stat.periods|length }} ({{ stat.percentage }}%)</span>
+                    {% elif stat.day_status == 'absent' %}
+                    <span class="pct-badge pct-low">0/{{ stat.periods|length }} (0%)</span>
+                    {% else %}
+                    <span class="pct-badge pct-none">Unmarked</span>
+                    {% endif %}
+                </td>
+
+                <!-- Quick Action -->
+                <td>
+                    {% if stat.grade_id %}
+                    <a href="{% url 'students:mark_attendance_class' stat.grade_id stat.division_id %}?date={{ selected_date|date:'Y-m-d' }}&type=period" class="btn btn-sm btn-light" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; font-weight: 700; border-radius: 6px; color: #6366f1;" title="Mark Attendance for {{ stat.class_name }}">
+                        <i class="fa-solid fa-pen"></i> Mark
+                    </a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="{{ periods|length|add:5 }}" style="text-align: center; padding: 4rem 2rem; color: #64748b;">
+                    <i class="fa-solid fa-user-slash" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
+                    <p style="margin: 0; font-weight: 700; font-size: 1.1rem;">No student records found for the active academic year.</p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- =========================================================
+     MOBILE CARDS LIST
+     ========================================================= -->
+<div class="mobile-matrix-list" id="mobileMatrixList">
+    {% for stat in student_stats %}
+    <div class="mobile-student-card mobile-student-item" 
+         data-status="{{ stat.day_status }}" 
+         data-name="{{ stat.student.full_name|lower }}" 
+         data-id="{{ stat.student.student_id|lower }}"
+         data-class="{{ stat.class_name|lower }}">
+        
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div class="student-avatar-cell">
+                <div class="student-avatar" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                    {{ stat.student.first_name|first }}{{ stat.student.last_name|first }}
+                </div>
+                <div class="student-details">
+                    <a href="{% url 'students:student_profile' stat.student.id %}" class="name" style="text-decoration: none; font-size: 0.85rem;">
+                        {{ stat.student.full_name }}
+                    </a>
+                    <div class="meta">
+                        <span>ID: {{ stat.student.student_id }}</span>
+                        <span style="font-weight: 700; color: #3b82f6;">{{ stat.class_name }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                {% if stat.day_status == 'present' %}
+                <span class="pct-badge pct-high">{{ stat.present_count }}/{{ stat.periods|length }}</span>
+                {% elif stat.day_status == 'partial' %}
+                <span class="pct-badge pct-mid">{{ stat.present_count }}/{{ stat.periods|length }}</span>
+                {% elif stat.day_status == 'absent' %}
+                <span class="pct-badge pct-low">0/{{ stat.periods|length }}</span>
+                {% else %}
+                <span class="pct-badge pct-none">-</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="mobile-periods-row">
+            {% for p_stat in stat.periods %}
+            <div class="mobile-p-col">
+                <div class="p-lbl">P{{ forloop.counter }}</div>
+                <span class="period-badge {{ p_stat.badge_class }}" style="width: 26px; height: 26px; font-size: 0.75rem;">
+                    {{ p_stat.code }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- No Results Placeholder for Real-time Search -->
+<div id="noResultsBox" style="display: none; text-align: center; padding: 4rem 2rem; background: white; border-radius: 16px; border: 1px solid #e2e8f0; color: #64748b; margin-bottom: 2rem;">
+    <i class="fa-solid fa-magnifying-glass" style="font-size: 2.5rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
+    <p style="margin: 0; font-weight: 700; font-size: 1.1rem;">No students matched your search or status filter.</p>
+</div>
+
+<!-- Legend Bar at bottom -->
+<div style="background: white; border-radius: 12px; padding: 1rem 1.25rem; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; font-size: 0.8rem; font-weight: 600; color: #64748b;">
+    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <span style="font-weight: 700; text-transform: uppercase;">Legend:</span>
+        <span style="display: inline-flex; align-items: center; gap: 0.35rem;"><span class="period-badge present" style="width: 20px; height: 20px; font-size: 0.7rem;">P</span> Present</span>
+        <span style="display: inline-flex; align-items: center; gap: 0.35rem;"><span class="period-badge absent" style="width: 20px; height: 20px; font-size: 0.7rem;">A</span> Absent</span>
+        <span style="display: inline-flex; align-items: center; gap: 0.35rem;"><span class="period-badge late" style="width: 20px; height: 20px; font-size: 0.7rem;">L</span> Late</span>
+        <span style="display: inline-flex; align-items: center; gap: 0.35rem;"><span class="period-badge excused" style="width: 20px; height: 20px; font-size: 0.7rem;">E</span> Excused</span>
+        <span style="display: inline-flex; align-items: center; gap: 0.35rem;"><span class="period-badge not-marked" style="width: 20px; height: 20px; font-size: 0.7rem;">-</span> Not Marked</span>
+    </div>
+    <div>
+        <span>Showing attendance records for {{ selected_date|date:"F d, Y" }}</span>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function() {
-        var currentFilter = 'all';
+        var activeFilter = 'all';
 
-        function applyFilters() {
-            var searchQuery = $('#todaySearchInput').val().toLowerCase().trim();
+        function filterRows() {
+            var query = $('#matrixSearchInput').val().toLowerCase().trim();
             var visibleCount = 0;
 
-            $('.class-attendance-section').each(function() {
-                var section = $(this);
-                var sectionVisibleCount = 0;
-                
-                section.find('.student-card-item').each(function() {
-                    var card = $(this);
-                    var status = card.data('status');
-                    var name = card.data('name');
-                    var studentId = card.data('id');
+            // Filter Desktop rows
+            $('.matrix-student-row').each(function() {
+                var row = $(this);
+                var status = row.data('status');
+                var name = (row.data('name') || '').toString();
+                var studentId = (row.data('id') || '').toString();
+                var className = (row.data('class') || '').toString();
 
-                    var matchesFilter = (currentFilter === 'all' || status === currentFilter);
-                    var matchesSearch = (searchQuery === '' || name.includes(searchQuery) || studentId.includes(searchQuery));
+                var matchesStatus = (activeFilter === 'all' || status === activeFilter);
+                var matchesSearch = (query === '' || name.includes(query) || studentId.includes(query) || className.includes(query));
 
-                    if (matchesFilter && matchesSearch) {
-                        card.show();
-                        sectionVisibleCount++;
-                        visibleCount++;
-                    } else {
-                        card.hide();
-                    }
-                });
-
-                if (sectionVisibleCount === 0) {
-                    section.hide();
+                if (matchesStatus && matchesSearch) {
+                    row.show();
+                    visibleCount++;
                 } else {
-                    section.show();
+                    row.hide();
                 }
             });
 
-            if (visibleCount === 0) {
-                $('#filterNoResults').show();
+            // Filter Mobile items
+            $('.mobile-student-item').each(function() {
+                var card = $(this);
+                var status = card.data('status');
+                var name = (card.data('name') || '').toString();
+                var studentId = (card.data('id') || '').toString();
+                var className = (card.data('class') || '').toString();
+
+                var matchesStatus = (activeFilter === 'all' || status === activeFilter);
+                var matchesSearch = (query === '' || name.includes(query) || studentId.includes(query) || className.includes(query));
+
+                if (matchesStatus && matchesSearch) {
+                    card.show();
+                } else {
+                    card.hide();
+                }
+            });
+
+            if (visibleCount === 0 && $('.matrix-student-row').length > 0) {
+                $('#noResultsBox').show();
             } else {
-                $('#filterNoResults').hide();
+                $('#noResultsBox').hide();
             }
         }
 
-        $('.filter-btn').click(function() {
-            $('.filter-btn').removeClass('active');
+        // Pill filter clicks
+        $('.pill-btn').click(function() {
+            $('.pill-btn').removeClass('active');
             $(this).addClass('active');
-            currentFilter = $(this).data('filter') || 'all';
-            applyFilters();
+            activeFilter = $(this).data('filter') || 'all';
+            filterRows();
         });
 
-        $('#todaySearchInput').on('keyup input', function() {
-            applyFilters();
+        // Search input
+        $('#matrixSearchInput').on('keyup input', function() {
+            filterRows();
         });
     });
 </script>

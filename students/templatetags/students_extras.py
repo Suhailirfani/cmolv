@@ -14,3 +14,10 @@ def get_item(dictionary, key):
     if str_key in dictionary:
         return dictionary[str_key]
     return None
+
+
+@register.filter
+def concat_key(val1, val2):
+    """Concatenate two values into a string key with an underscore: e.g. monday_1"""
+    return f"{val1}_{val2}"
+

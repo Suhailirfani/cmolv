@@ -243,6 +243,41 @@
 
 
 
+    {% if request.user.profile.role == 'teacher' and teacher_today_slots %}
+    <!-- Teacher's Today Teaching Schedule -->
+    <div class="card mb-4" style="background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+                <h3 style="margin: 0; font-weight: 800; font-size: 1.15rem; color: #0f172a; display: flex; align-items: center; gap: 0.6rem;">
+                    <i class="fa-solid fa-calendar-user" style="color: #0ea5e9;"></i> Today's Teaching Schedule
+                </h3>
+                <span style="font-size: 0.8rem; font-weight: 700; color: #64748b;">{{ today_day_name }} &bull; {{ teacher_today_slots|length }} Period{{ teacher_today_slots|length|pluralize }}</span>
+            </div>
+            <a href="{% url 'students:teacher_my_schedule' %}" class="btn btn-sm btn-primary" style="padding: 0.45rem 1rem; font-size: 0.8rem; font-weight: 700; border-radius: 10px; text-decoration: none; margin: 0;">
+                <i class="fa-solid fa-eye"></i> Full Week Schedule
+            </a>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem;">
+            {% for slot in teacher_today_slots %}
+            <div style="background: linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%); border-radius: 14px; border: 1px solid #bae6fd; border-left: 5px solid #0ea5e9; padding: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                    <span style="font-weight: 800; color: #0369a1; font-size: 0.85rem;">{{ slot.period_timing.name }}</span>
+                    <span style="font-size: 0.72rem; color: #64748b; font-weight: 700; background: #e0f2fe; padding: 0.15rem 0.45rem; border-radius: 6px;">{{ slot.period_timing.start_time|time:"H:i" }} - {{ slot.period_timing.end_time|time:"H:i" }}</span>
+                </div>
+                <div style="font-weight: 800; color: #0f172a; font-size: 1.05rem; margin-bottom: 0.25rem;">{{ slot.subject.name }}</div>
+                <div style="font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.75rem;">
+                    🏫 {{ slot.grade.name }} {% if slot.division %}- {{ slot.division.name }}{% endif %}
+                    {% if slot.room_number %}<span style="color: #64748b; margin-left: 0.35rem;">📍 {{ slot.room_number }}</span>{% endif %}
+                </div>
+                <a href="{% url 'students:mark_attendance_class' slot.grade.id slot.division.id|default:0 %}?type=period&period={{ slot.period_timing.id }}" class="btn btn-sm btn-success" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; font-weight: 700; border-radius: 8px; width: 100%; text-align: center; text-decoration: none; margin: 0; box-sizing: border-box;">
+                    <i class="fa-solid fa-check"></i> Mark Attendance
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <div class="card">
         <h3 style="margin-bottom: 2rem; font-weight: 800; display: flex; align-items: center; gap: 0.75rem;">
             <i class="fa-solid fa-bolt" style="color: var(--warning);"></i> Quick Actions
@@ -256,6 +291,21 @@
                 <i class="fa-solid fa-clipboard-user"></i>
                 Mark Attendance
             </a>
+            <a href="{% url 'students:class_timetable_view' %}" class="quick-action-btn">
+                <i class="fa-solid fa-table-cells" style="color: #8b5cf6;"></i>
+                Class Timetable
+            </a>
+            {% if request.user.profile.role == 'teacher' %}
+            <a href="{% url 'students:teacher_my_schedule' %}" class="quick-action-btn">
+                <i class="fa-solid fa-user-clock" style="color: #0ea5e9;"></i>
+                My Teaching Schedule
+            </a>
+            {% else %}
+            <a href="{% url 'students:timetable_dashboard' %}" class="quick-action-btn">
+                <i class="fa-solid fa-calendar-days" style="color: #6366f1;"></i>
+                Timetable Dashboard
+            </a>
+            {% endif %}
             <a href="{% url 'students:hostel_movement_create' %}" class="quick-action-btn">
                 <i class="fa-solid fa-shuttle-van"></i>
                 Hostel Movement
@@ -275,10 +325,6 @@
             <a href="{% url 'students:examination_dashboard' %}" class="quick-action-btn">
                 <i class="fa-solid fa-graduation-cap"></i>
                 Exam Dashboard
-            </a>
-            <a href="{% url 'fees:finance_dashboard' %}" class="quick-action-btn">
-                <i class="fa-solid fa-building-columns" style="color: #4f46e5;"></i>
-                Finance & Fees
             </a>
             <a href="{% url 'students:job_vacancy_list_admin' %}" class="quick-action-btn">
                 <i class="fa-solid fa-briefcase"></i>
@@ -874,50 +920,76 @@
         </div>
     </div>
 
-    <!-- PENDING FEE / FEE ACCOUNT STATUS CARD -->
-    <a href="{% url 'fees:student_fee_detail' student_record.id %}" style="text-decoration: none; display: block; margin-bottom: 1rem; color: inherit;">
-        <div class="card p-3 shadow-sm" style="border-radius: 16px; border: 1.5px solid {% if has_pending_fees %}#fca5a5{% else %}#bbf7d0{% endif %}; background: {% if has_pending_fees %}linear-gradient(135deg, #fff1f2 0%, #fee2e2 50%, #fef2f2 100%){% else %}linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%){% endif %}; transition: all 0.25s ease; cursor: pointer;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 22px rgba(0,0,0,0.08)';" onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadow-soft)';">
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
-                <div style="display: flex; align-items: center; gap: 0.85rem; min-width: 0;">
-                    <div style="width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; background: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.06); flex-shrink: 0; color: {% if has_pending_fees %}#e11d48{% else %}#16a34a{% endif %};">
-                        <i class="fa-solid {% if has_pending_fees %}fa-file-invoice-dollar{% else %}fa-circle-check{% endif %}"></i>
-                    </div>
-                    <div style="min-width: 0;">
-                        <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
-                            <span style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: {% if has_pending_fees %}#9f1239{% else %}#166534{% endif %};">
-                                Fee Account Status
-                            </span>
-                            {% if has_pending_fees %}
-                            <span class="badge" style="background: #be123c; color: #ffffff; font-size: 0.68rem; font-weight: 800; padding: 2px 7px; border-radius: 6px;">
-                                Due Pending ({{ pending_fee_count }} item{{ pending_fee_count|pluralize }})
-                            </span>
-                            {% else %}
-                            <span class="badge" style="background: #15803d; color: #ffffff; font-size: 0.68rem; font-weight: 800; padding: 2px 7px; border-radius: 6px;">
-                                All Dues Cleared
-                            </span>
-                            {% endif %}
-                        </div>
-                        <div style="font-size: 1.3rem; font-weight: 800; color: {% if has_pending_fees %}#be123c{% else %}#15803d{% endif %}; margin-top: 2px; line-height: 1.2;">
-                            {% if has_pending_fees %}
-                                ₹{{ pending_fee_amount|floatformat:2 }} <span style="font-size: 0.76rem; font-weight: 600; color: #9f1239;">Pending Dues</span>
-                            {% else %}
-                                ₹0.00 <span style="font-size: 0.76rem; font-weight: 600; color: #166534;">No Outstanding Dues</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="font-size: 0.78rem; font-weight: 700; color: {% if has_pending_fees %}#be123c{% else %}#15803d{% endif %};">
-                        View Detailed Fee Ledger
-                    </span>
-                    <div style="width: 28px; height: 28px; border-radius: 50%; background: #ffffff; display: flex; align-items: center; justify-content: center; color: {% if has_pending_fees %}#be123c{% else %}#15803d{% endif %}; box-shadow: 0 2px 6px rgba(0,0,0,0.08); font-size: 0.75rem;">
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </div>
+    <!-- Student Today's Class Timetable Card -->
+    <div class="card mb-3" style="border-radius: 16px; padding: 1.15rem 1.15rem; background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <h4 style="margin: 0; font-weight: 800; font-size: 1rem; color: #0f172a; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-calendar-days" style="color: #8b5cf6;"></i> Today's Class Schedule
+                </h4>
+                <div style="font-size: 0.76rem; color: #64748b; font-weight: 700; margin-top: 2px;">
+                    <span style="color: #7c3aed; font-weight: 800;">{{ today_day_name }}</span> &bull; Class {{ student_record.grade.name }}{% if student_record.division %} ({{ student_record.division.name }}){% endif %}
                 </div>
             </div>
+            <a href="{% url 'students:class_timetable_view' %}" class="btn" style="padding: 0.4rem 0.85rem; font-size: 0.75rem; font-weight: 700; border-radius: 8px; margin: 0; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; text-decoration: none;">
+                <i class="fa-solid fa-table"></i> Full Timetable
+            </a>
         </div>
-    </a>
+
+        {% if today_schedule %}
+        <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+            {% for item in today_schedule %}
+            {% if item.is_break %}
+            <div style="background: #fffbeb; border: 1px dashed #f59e0b; border-left: 4px solid #f59e0b; border-radius: 10px; padding: 0.5rem 0.75rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; font-weight: 700; color: #92400e;">
+                <span>☕ {{ item.timing.name }}</span>
+                <span style="font-size: 0.72rem; opacity: 0.85;">{{ item.timing.start_time|time:"H:i" }} - {{ item.timing.end_time|time:"H:i" }}</span>
+            </div>
+            {% else %}
+            <div style="background: {% if item.slot %}linear-gradient(180deg, #f5f3ff 0%, #ffffff 100%){% else %}#f8fafc{% endif %}; border: 1px solid {% if item.slot %}#ddd6fe{% else %}#e2e8f0{% endif %}; border-left: 4px solid {% if item.slot %}#8b5cf6{% else %}#cbd5e1{% endif %}; border-radius: 12px; padding: 0.65rem 0.85rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                    <span style="font-size: 0.75rem; font-weight: 800; color: {% if item.slot %}#6d28d9{% else %}#64748b{% endif %};">
+                        <i class="fa-solid fa-clock" style="font-size: 0.7rem; margin-right: 3px;"></i> {{ item.timing.name }}
+                    </span>
+                    <span style="font-size: 0.7rem; font-weight: 700; color: #64748b; background: rgba(0,0,0,0.04); padding: 1px 6px; border-radius: 4px;">
+                        {{ item.timing.start_time|time:"H:i" }} - {{ item.timing.end_time|time:"H:i" }}
+                    </span>
+                </div>
+                {% if item.slot %}
+                <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; flex-wrap: wrap;">
+                    <div style="font-weight: 800; font-size: 0.95rem; color: #1e293b;">
+                        {{ item.slot.subject.name }}
+                        {% if item.slot.division %}
+                        <span style="font-size: 0.65rem; background: #e0e7ff; color: #4338ca; padding: 1px 5px; border-radius: 4px; font-weight: 800; margin-left: 4px;">
+                            {{ item.slot.division.name }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div style="font-size: 0.78rem; color: #475569; font-weight: 600;">
+                        <i class="fa-solid fa-chalkboard-user" style="color: #8b5cf6;"></i> {{ item.slot.teacher.get_full_name|default:item.slot.teacher.username }}
+                        {% if item.slot.room_number %}
+                        <span style="color: #64748b; margin-left: 0.35rem;">📍 {{ item.slot.room_number }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div style="color: #94a3b8; font-size: 0.78rem; font-weight: 600;">
+                    - Free / Self-Study Period -
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 1.5rem 1rem; color: var(--gray);">
+            <i class="fa-solid fa-calendar-xmark" style="font-size: 1.75rem; opacity: 0.3; margin-bottom: 0.5rem;"></i>
+            <div style="font-weight: 600; font-size: 0.85rem;">No timetable slots scheduled for today.</div>
+            <a href="{% url 'students:class_timetable_view' %}" style="color: var(--primary); font-size: 0.8rem; font-weight: 700; text-decoration: underline; margin-top: 0.35rem; display: inline-block;">
+                View Weekly Timetable Noticeboard
+            </a>
+        </div>
+        {% endif %}
+    </div>
 
     <!-- Academic Performance Trend Card -->
     <div class="card mb-3" style="border-radius: 16px; padding: 1rem 1.1rem;">

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Courses & Fees | MADEENATHU CM OLAVANNA</title>
+    <title>Courses Offered | MADEENATHU CM OLAVANNA</title>
     <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/app_icon.png' %}?v=4">
     <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/app_icon.png' %}?v=4">
     <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}?v=4">
@@ -120,154 +120,6 @@
             margin-bottom: 25px;
         }
 
-        .btn-view-fees {
-            background: var(--text-gold);
-            color: var(--primary);
-            padding: 10px 20px;
-            border-radius: 50px;
-            text-decoration: none;
-            font-weight: 700;
-            text-transform: uppercase;
-            font-size: 0.85rem;
-            transition: all 0.3s;
-            display: inline-block;
-        }
-
-        .btn-view-fees:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
-        }
-
-        /* Calculator Section */
-        #calculator {
-            background: rgba(255,255,255,0.03);
-            border-radius: 40px;
-            padding: 60px 40px;
-            margin-top: 50px;
-            border: 1px solid var(--glass-border);
-        }
-
-        .calc-form {
-            display: grid;
-            grid-template-columns: 1fr 1fr auto;
-            gap: 20px;
-            align-items: end;
-            margin-bottom: 40px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        label {
-            font-weight: 600;
-            color: var(--text-gold);
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        select {
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--glass-border);
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
-            font-size: 1rem;
-            width: 100%;
-            cursor: pointer;
-        }
-
-        select:focus {
-            outline: none;
-            border-color: var(--text-gold);
-        }
-
-        .btn-calculate {
-            background: #a00000;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s;
-            height: 54px;
-        }
-
-        .btn-calculate:hover {
-            background: #c00000;
-            transform: translateY(-2px);
-        }
-
-        /* Fee Results */
-        .fee-results {
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .year-section {
-            margin-bottom: 40px;
-            background: var(--glass);
-            border-radius: 20px;
-            overflow: hidden;
-            border: 1px solid var(--glass-border);
-        }
-
-        .year-header {
-            background: rgba(160, 0, 0, 0.4);
-            padding: 15px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--glass-border);
-        }
-
-        .year-title {
-            font-family: 'Cinzel', serif;
-            font-size: 1.3rem;
-            color: var(--text-gold);
-        }
-
-        .year-total {
-            font-size: 1.2rem;
-            font-weight: 700;
-        }
-
-        .fee-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .fee-table th, .fee-table td {
-            padding: 15px 30px;
-            text-align: left;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .fee-table th {
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 1px;
-            opacity: 0.6;
-        }
-
-        .fee-item-name { font-weight: 500; }
-        .fee-amount { text-align: right; font-weight: 600; font-family: monospace; font-size: 1.1rem; }
-
-        .no-results {
-            text-align: center;
-            padding: 40px;
-            opacity: 0.6;
-            font-style: italic;
-        }
-
         .back-link {
             display: inline-block;
             margin-bottom: 20px;
@@ -278,10 +130,8 @@
 
         /* Responsive */
         @media (max-width: 768px) {
-            .calc-form { grid-template-columns: 1fr; }
             .section { padding: 40px 15px; }
             .hero-title { font-size: 2.5rem; }
-            .year-header { flex-direction: column; align-items: flex-start; gap: 5px; }
         }
     </style>
 </head>
@@ -289,8 +139,8 @@
     <header class="page-hero">
         <div class="hero-content">
             <a href="{% url 'students:landing' %}" class="back-link"><i class="fas fa-arrow-left"></i> Back to Home</a>
-            <h1 class="hero-title">Courses & Fees</h1>
-            <p style="opacity: 0.9; margin-top: 10px;">Transparent pricing for a brighter future.</p>
+            <h1 class="hero-title">Courses Offered</h1>
+            <p style="opacity: 0.9; margin-top: 10px;">Excellence in Islamic & Academic Education.</p>
         </div>
     </header>
 
@@ -298,7 +148,7 @@
         <h2 class="section-title">Explore Our Courses</h2>
         <div class="course-grid">
             {% for course in divisions %}
-            <div class="course-card" onclick="window.open('{% url 'students:course_fee_calculator' course.id %}', '_blank')">
+            <div class="course-card">
                 <div>
                     <div class="course-icon">
                         {% if 'B COM' in course.name or 'Commerce' in course.name %}
@@ -317,9 +167,6 @@
                     <p class="course-desc">
                         {% if course.description %}{{ course.description }}{% else %}Comprehensive professional training in {{ course.name }} with experienced faculty and modern facilities.{% endif %}
                     </p>
-                </div>
-                <div>
-                    <a href="{% url 'students:course_fee_calculator' course.id %}" target="_blank" onclick="event.stopPropagation();" class="btn-view-fees">Calculate Fees <i class="fas fa-calculator"></i></a>
                 </div>
             </div>
             {% endfor %}

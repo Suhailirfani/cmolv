@@ -1,395 +1,666 @@
 {% extends 'students/base.html' %}
 {% load students_extras %}
 
-{% block title %}Mark Attendance - {{ class_name }}{% endblock %}
+{% block title %}Mark Attendance - {{ class_name }} - HadiyAdmin{% endblock %}
+{% block page_heading %}Mark Class Attendance{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* Responsive Header and Card styles */
-    .custom-header {
+    /* =========================================================
+       PERIOD BUTTONS & STREAM TABS ATTENDANCE STYLES
+       ========================================================= */
+
+    .custom-header-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--border, #e2e8f0);
+        margin-bottom: 1.5rem;
+    }
+
+    /* Period Buttons Container */
+    .period-buttons-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .period-nav-btn {
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 0.75rem 0.5rem;
+        text-align: center;
+        text-decoration: none;
+        color: #1e293b;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    }
+
+    .period-nav-btn:hover {
+        border-color: #818cf8;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px rgba(99, 102, 241, 0.15);
+        color: #1e293b;
+    }
+
+    .period-nav-btn.active-period {
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+        border-color: #4338ca !important;
+        color: white !important;
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35) !important;
+        transform: translateY(-2px);
+    }
+
+    .period-nav-btn.active-period .p-time {
+        color: #e0e7ff !important;
+    }
+
+    .period-nav-btn.active-period .p-status-pill {
+        background: rgba(255, 255, 255, 0.25) !important;
+        color: white !important;
+        border-color: rgba(255, 255, 255, 0.4) !important;
+    }
+
+    .period-nav-btn .p-name {
+        font-weight: 800;
+        font-size: 0.95rem;
+        line-height: 1.2;
+        margin-bottom: 0.2rem;
+    }
+
+    .period-nav-btn .p-time {
+        font-size: 0.7rem;
+        color: #64748b;
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+    }
+
+    .p-status-pill {
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 0.2rem 0.5rem;
+        border-radius: 6px;
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .p-status-pill.complete {
+        background: #dcfce7;
+        color: #15803d;
+        border-color: #86efac;
+    }
+
+    .p-status-pill.partial {
+        background: #fef3c7;
+        color: #b45309;
+        border-color: #fcd34d;
+    }
+
+    .p-status-pill.unmarked {
+        background: #f1f5f9;
+        color: #64748b;
+        border-color: #e2e8f0;
+    }
+
+    /* Stream Tabs Bar */
+    .stream-tabs-bar {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 1.25rem;
+        background: white;
+        padding: 0.6rem 0.75rem;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .stream-tab-btn {
+        padding: 0.5rem 1.15rem;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        font-weight: 700;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+    }
+
+    .stream-tab-btn:hover {
+        background: #f1f5f9;
+        color: #1e293b;
+    }
+
+    .stream-tab-btn.active {
+        background: #6366f1;
+        color: white;
+        border-color: #6366f1;
+        box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);
+    }
+
+    /* Active Period Banner */
+    .active-period-banner {
+        background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
+        border: 1px solid #c7d2fe;
+        border-left: 5px solid #6366f1;
+        border-radius: 14px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    /* Quick Fill Buttons */
+    .quick-action-btns {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .quick-btn {
+        padding: 0.4rem 0.85rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        border: 1px solid #cbd5e1;
+        background: white;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .quick-btn:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+    }
+
+    /* Attendance Card */
+    .attendance-sheet-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--border, #e2e8f0);
+        padding: 1.5rem;
         margin-bottom: 2rem;
-        background: #fff;
-        padding: 1.5rem;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
 
-    .attendance-card {
-        background: #fff;
+    /* Radio Status Group Buttons */
+    .status-toggle-container {
+        display: inline-flex;
+        gap: 0.35rem;
+        background: #f8fafc;
+        padding: 0.3rem 0.4rem;
         border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        padding: 1.5rem;
+        border: 1px solid #e2e8f0;
     }
 
-    /* Desktop table wrapper - hidden on mobile */
-    .desktop-table-wrapper {
-        display: block;
+    .status-toggle-option {
+        position: relative;
     }
-    
-    /* Mobile cards wrapper - hidden on desktop */
+
+    .status-toggle-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .status-toggle-label {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 34px;
+        border-radius: 8px;
+        font-weight: 800;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border: 1px solid transparent;
+        color: #64748b;
+    }
+
+    .status-toggle-option input[type="radio"]:checked + .lbl-present {
+        background: #dcfce7;
+        color: #15803d;
+        border-color: #86efac;
+        box-shadow: 0 2px 6px rgba(34, 197, 94, 0.2);
+    }
+
+    .status-toggle-option input[type="radio"]:checked + .lbl-absent {
+        background: #fee2e2;
+        color: #b91c1c;
+        border-color: #fca5a5;
+        box-shadow: 0 2px 6px rgba(239, 68, 68, 0.2);
+    }
+
+    .status-toggle-option input[type="radio"]:checked + .lbl-late {
+        background: #fef3c7;
+        color: #b45309;
+        border-color: #fcd34d;
+        box-shadow: 0 2px 6px rgba(245, 158, 11, 0.2);
+    }
+
+    .status-toggle-option input[type="radio"]:checked + .lbl-excused {
+        background: #e0f2fe;
+        color: #0369a1;
+        border-color: #7dd3fc;
+        box-shadow: 0 2px 6px rgba(14, 165, 233, 0.2);
+    }
+
+    /* Save Submit Button */
+    .save-attendance-btn {
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 0.9rem 2.5rem;
+        font-size: 1.05rem;
+        font-weight: 800;
+        box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .save-attendance-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(99, 102, 241, 0.45);
+        color: white;
+    }
+
+    /* Stream Tag in Table */
+    .stream-badge {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0.15rem 0.45rem;
+        border-radius: 6px;
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+    }
+
+    /* Mobile Buttons */
     .mobile-cards-wrapper {
         display: none;
     }
 
-    /* Mobile Selector Buttons Styling */
-    .mob-status-btn {
-        padding: 0.65rem 0.2rem;
-        border-radius: 10px;
-        font-weight: 700;
-        font-size: 0.9rem;
-        border: 1px solid #cbd5e1;
-        background: #f8fafc;
-        color: #475569;
-        transition: all 0.2s ease;
-        cursor: pointer;
-        outline: none;
-        text-align: center;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-
-    .mob-status-btn:active {
-        transform: scale(0.95);
-    }
-
-    .mob-status-btn.active-present {
-        background: #d4edda !important;
-        color: #155724 !important;
-        border-color: #c3e6cb !important;
-        box-shadow: 0 4px 6px -1px rgba(40, 167, 69, 0.15) !important;
-    }
-
-    .mob-status-btn.active-absent {
-        background: #f8d7da !important;
-        color: #721c24 !important;
-        border-color: #f5c6cb !important;
-        box-shadow: 0 4px 6px -1px rgba(220, 53, 69, 0.15) !important;
-    }
-
-    .mob-status-btn.active-late {
-        background: #fff3cd !important;
-        color: #856404 !important;
-        border-color: #ffeeba !important;
-        box-shadow: 0 4px 6px -1px rgba(255, 193, 7, 0.15) !important;
-    }
-
-    .mob-status-btn.active-excused {
-        background: #d1ecf1 !important;
-        color: #0c5460 !important;
-        border-color: #bee5eb !important;
-        box-shadow: 0 4px 6px -1px rgba(23, 162, 184, 0.15) !important;
-    }
-
-    /* Status Badge Styling for Mobile Cards */
-    .status-badge {
-        display: inline-block;
-        padding: 0.35rem 0.75rem;
-        border-radius: 20px;
-        font-weight: 700;
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        text-align: center;
-        flex-shrink: 0;
-    }
-    
-    .status-present {
-        background: #e6f4ea;
-        color: #137333;
-    }
-    
-    .status-absent {
-        background: #fce8e6;
-        color: #c5221f;
-    }
-    
-    .status-late {
-        background: #fef7e0;
-        color: #b06000;
-    }
-    
-    .status-excused {
-        background: #e8f0fe;
-        color: #1a73e8;
-    }
-
-    /* Info Badge styles in header */
-    .header-info-badges {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        margin-top: 0.5rem;
-    }
-
-    .info-badge {
-        display: inline-flex;
-        align-items: center;
-        background: #f1f5f9;
-        color: #475569;
-        padding: 0.4rem 0.75rem;
-        border-radius: 8px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        border: 1px solid #e2e8f0;
-    }
-
-    /* Submit Section Styles */
-    .submit-container {
-        margin-top: 2rem;
-        text-align: right;
-    }
-
-    .submit-btn {
-        background: #2ecc71;
-        color: white;
-        padding: 0.8rem 2.5rem;
-        border-radius: 8px;
-        border: none;
-        font-size: 1.1rem;
-        font-weight: 700;
-        cursor: pointer;
-        box-shadow: 0 4px 12px rgba(46, 204, 113, 0.2);
-        width: 100%;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        max-width: 320px;
-        transition: all 0.2s ease;
-    }
-
-    .submit-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(46, 204, 113, 0.3);
-    }
-
-    /* Media queries for viewport breakpoints */
-    @media (max-width: 768px) {
-        .custom-header {
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .attendance-card {
-            padding: 1rem;
-        }
-
+    @media (max-width: 991px) {
         .desktop-table-wrapper {
             display: none;
         }
-
         .mobile-cards-wrapper {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
-        }
-
-        .submit-container {
-            text-align: center;
-        }
-
-        .submit-btn {
-            max-width: 100%;
+            gap: 0.85rem;
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="page-header custom-header">
-    <a href="{% url 'students:mark_attendance' %}?date={{ selected_date }}&type={{ attendance_type }}{% if selected_period %}&period={{ selected_period }}{% endif %}{% if selected_activity %}&activity={{ selected_activity }}{% endif %}" class="btn btn-secondary" style="margin-bottom: 1rem; padding: 0.5rem 1rem; border-radius: 6px; background: #6c757d; color: white; text-decoration: none; display: inline-block;">← Back to Classes</a>
-    <h1 style="color: #1a202c; font-size: 2rem; margin-bottom: 0.5rem; font-weight: 700;">📝 Mark Attendance: {{ class_name }}</h1>
-    <div class="header-info-badges">
-        <span class="info-badge">
-            <i class="fa-regular fa-calendar" style="margin-right: 0.35rem; color: var(--primary);"></i>
-            {{ selected_date }}
-        </span>
-        <span class="info-badge">
-            <i class="fa-solid fa-list-check" style="margin-right: 0.35rem; color: var(--primary);"></i>
-            Type: {{ attendance_type|title }}
-        </span>
-        {% if selected_period %}
-        <span class="info-badge">
-            <i class="fa-regular fa-clock" style="margin-right: 0.35rem; color: var(--primary);"></i>
-            Period: {{ selected_period }}
-        </span>
-        {% endif %}
-        {% if selected_activity %}
-        <span class="info-badge">
-            <i class="fa-solid fa-running" style="margin-right: 0.35rem; color: var(--primary);"></i>
-            Activity: {{ selected_activity }}
-        </span>
-        {% endif %}
+<!-- Top Class Info & Back Button -->
+<div class="custom-header-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <a href="{% url 'students:mark_attendance' %}?date={{ selected_date }}" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px; font-weight: 700; margin-bottom: 0.5rem; text-decoration: none;">
+                <i class="fa-solid fa-arrow-left"></i> Back to Classes
+            </a>
+            <h1 style="color: #1e293b; font-size: 1.75rem; margin: 0; font-weight: 800;">
+                🏫 {{ class_name }}
+            </h1>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <!-- Date Switcher -->
+            <form method="get" style="display: flex; align-items: center; gap: 0.4rem; background: #f8fafc; padding: 0.35rem 0.75rem; border-radius: 10px; border: 1px solid #cbd5e1; margin: 0;">
+                <input type="hidden" name="period" value="{{ selected_period }}">
+                <i class="fa-regular fa-calendar" style="color: #6366f1;"></i>
+                <input type="date" name="date" value="{{ selected_date }}" onchange="this.form.submit()" style="border: none; background: transparent; font-weight: 800; color: #1e293b; font-size: 0.9rem; cursor: pointer; outline: none;">
+            </form>
+
+            <span class="badge bg-primary" style="font-size: 0.85rem; padding: 0.5rem 0.85rem; border-radius: 8px; font-weight: 700;">
+                <i class="fa-solid fa-users"></i> Total: {{ all_enrollments|length }} Students
+            </span>
+        </div>
     </div>
 </div>
 
-{% if enrollments %}
-<div class="card attendance-card">
+<!-- =========================================================
+     PERIOD BUTTONS BAR - CLICK BUTTON TO SWITCH PERIOD
+     ========================================================= -->
+<div style="margin-bottom: 0.75rem; font-size: 0.85rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.04em;">
+    <i class="fa-solid fa-hand-pointer" style="color: #6366f1; margin-right: 0.3rem;"></i> Select Period to Mark:
+</div>
+
+<div class="period-buttons-container">
+    {% for p_info in periods_with_status %}
+    <a href="?date={{ selected_date }}&type=period&period={{ p_info.period.id }}" 
+       class="period-nav-btn {% if p_info.is_selected %}active-period{% endif %}"
+       title="{{ p_info.period.name }} ({{ p_info.period.start_time|time:'H:i' }} - {{ p_info.period.end_time|time:'H:i' }})">
+        
+        <div class="p-name">
+            {% if p_info.is_selected %}
+            <i class="fa-solid fa-circle-dot" style="font-size: 0.75rem; margin-right: 0.2rem;"></i>
+            {% endif %}
+            P{{ forloop.counter }}
+        </div>
+        <div class="p-time">{{ p_info.period.start_time|time:"H:i" }} - {{ p_info.period.end_time|time:"H:i" }}</div>
+        
+        <div>
+            {% if p_info.is_complete %}
+            <span class="p-status-pill complete">
+                <i class="fa-solid fa-check"></i> Marked ({{ p_info.marked_count }})
+            </span>
+            {% elif p_info.is_partial %}
+            <span class="p-status-pill partial">
+                <i class="fa-solid fa-exclamation"></i> {{ p_info.marked_count }}/{{ p_info.total_students }}
+            </span>
+            {% else %}
+            <span class="p-status-pill unmarked">
+                <i class="fa-solid fa-minus"></i> Not Marked
+            </span>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+<!-- =========================================================
+     STREAM / BATCH FILTER TABS (DEFAULT: ALL)
+     ========================================================= -->
+{% if stream_tabs|length > 1 %}
+<div class="stream-tabs-bar">
+    <span style="font-size: 0.8rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-right: 0.25rem;">
+        <i class="fa-solid fa-layer-group"></i> Class Filter:
+    </span>
+    {% for tab in stream_tabs %}
+    <button type="button" 
+            class="stream-tab-btn {% if tab.id == 0 %}active{% endif %}" 
+            data-stream-id="{{ tab.id }}" 
+            onclick="switchStreamFilter('{{ tab.id }}')">
+        {% if tab.id == 0 %}
+        <i class="fa-solid fa-users"></i>
+        {% else %}
+        <i class="fa-solid fa-book-open"></i>
+        {% endif %}
+        {{ tab.name }} ({{ tab.count }})
+    </button>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- =========================================================
+     ACTIVE PERIOD ATTENDANCE FORM
+     ========================================================= -->
+{% if all_enrollments %}
+<div class="attendance-sheet-card">
     <form method="post" id="attendanceMarkForm">
         {% csrf_token %}
 
-        <h2 style="margin: 0 0 1.25rem 0; color: #2c3e50; font-size: 1.25rem; font-weight: 700;">Students ({{ enrollments.count }})</h2>
+        <!-- Active Period Banner -->
+        <div class="active-period-banner">
+            <div>
+                <span style="font-size: 0.75rem; font-weight: 700; color: #6366f1; text-transform: uppercase; letter-spacing: 0.05em;">Currently Marking</span>
+                <h3 style="margin: 0.2rem 0 0 0; font-size: 1.3rem; font-weight: 800; color: #1e293b;">
+                    📝 {{ selected_period_obj.name|default:"Selected Period" }}
+                </h3>
+            </div>
 
-        <!-- Unified Hidden Inputs container to prevent any duplicates on submission -->
+            <!-- Quick-Fill Action Buttons (Applies to currently filtered stream) -->
+            <div class="quick-action-btns">
+                <button type="button" class="quick-btn" onclick="markAllVisibleStatus('present')" style="color: #15803d;">
+                    <i class="fa-solid fa-circle-check"></i> Mark Filtered Present (P)
+                </button>
+                <button type="button" class="quick-btn" onclick="markAllVisibleStatus('absent')" style="color: #b91c1c;">
+                    <i class="fa-solid fa-circle-xmark"></i> Mark Filtered Absent (A)
+                </button>
+                <button type="button" class="quick-btn" onclick="resetAttendance()">
+                    <i class="fa-solid fa-rotate-left"></i> Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Hidden Inputs for Form Submit -->
         <div id="hidden-inputs-container">
-            {% for enrollment in enrollments %}
+            {% for enrollment in all_enrollments %}
                 {% with status=existing_attendance|get_item:enrollment.id %}
                 <input type="hidden" name="attendance" id="hidden_attendance_{{ enrollment.id }}" value="{{ enrollment.id }}|{% if status %}{{ status }}{% else %}present{% endif %}">
                 {% endwith %}
             {% endfor %}
         </div>
 
-        <!-- 1. DESKTOP VIEW LAYOUT (TABLE) -->
+        <!-- 1. DESKTOP VIEW TABLE -->
         <div class="desktop-table-wrapper">
-            <div class="table-wrapper" style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
                     <thead>
-                        <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                            <th style="padding: 1rem; text-align: left; color: #495057; font-weight: 600;">Student ID</th>
-                            <th style="padding: 1rem; text-align: left; color: #495057; font-weight: 600;">Name</th>
-                            <th style="padding: 1rem; text-align: center; color: #495057; font-weight: 600;">Status</th>
+                        <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                            <th style="padding: 0.85rem 1rem; text-align: left; color: #475569; font-weight: 700; width: 50px;">#</th>
+                            <th style="padding: 0.85rem 1rem; text-align: left; color: #475569; font-weight: 700; width: 130px;">Student ID</th>
+                            <th style="padding: 0.85rem 1rem; text-align: left; color: #475569; font-weight: 700;">Student Name</th>
+                            <th style="padding: 0.85rem 1rem; text-align: left; color: #475569; font-weight: 700; width: 140px;">Stream / Division</th>
+                            <th style="padding: 0.85rem 1rem; text-align: left; color: #475569; font-weight: 700; width: 100px;">Type</th>
+                            <th style="padding: 0.85rem 1rem; text-align: center; color: #475569; font-weight: 700; width: 220px;">Attendance Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for enrollment in enrollments %}
-                        <tr style="border-bottom: 1px solid #e9ecef;">
-                            <td style="padding: 1rem; color: #495057;">{{ enrollment.student.student_id }}</td>
-                            <td style="padding: 1rem; font-weight: 500; color: #2c3e50;">{{ enrollment.student.full_name }}</td>
-                            <td style="padding: 1rem; text-align: center;">
-                                {% with status=existing_attendance|get_item:enrollment.id %}
-                                <div class="status-radio-group" style="display: inline-flex; gap: 1rem; background: #f8f9fa; padding: 0.5rem 1rem; border-radius: 50px; border: 1px solid #e9ecef;">
-                                    <label style="display: flex; align-items: center; gap: 0.25rem; cursor: pointer; color: #2ecc71; font-weight: 500;">
-                                        <input type="radio" name="attendance_{{ enrollment.id }}" value="{{ enrollment.id }}|present" id="radio_{{ enrollment.id }}_present" {% if status == 'present' or not status %}checked{% endif %} style="accent-color: #2ecc71;"> P
+                        {% for enrollment in all_enrollments %}
+                        {% with status=existing_attendance|get_item:enrollment.id %}
+                        <tr class="student-attendance-row" 
+                            data-division-id="{{ enrollment.division.id|default:0 }}"
+                            style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" 
+                            onmouseover="this.style.background='#f8faff';" 
+                            onmouseout="this.style.background='white';">
+                            
+                            <td style="padding: 0.85rem 1rem; color: #94a3b8; font-weight: 700;">{{ forloop.counter }}</td>
+                            <td style="padding: 0.85rem 1rem; color: #475569; font-weight: 600;">{{ enrollment.student.student_id }}</td>
+                            <td style="padding: 0.85rem 1rem;">
+                                <a href="{% url 'students:student_profile' enrollment.student.id %}" style="font-weight: 700; color: #1e293b; text-decoration: none;">
+                                    {{ enrollment.student.full_name }}
+                                </a>
+                            </td>
+                            <td style="padding: 0.85rem 1rem;">
+                                <span class="stream-badge">{{ enrollment.division.name|default:"General" }}</span>
+                            </td>
+                            <td style="padding: 0.85rem 1rem;">
+                                {% if enrollment.student.student_type == 'hostel' %}
+                                <span style="background: #ede9fe; color: #6d28d9; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 700;">Hostel</span>
+                                {% else %}
+                                <span style="background: #e0f2fe; color: #0369a1; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 700;">Day</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 0.85rem 1rem; text-align: center;">
+                                <div class="status-toggle-container">
+                                    <label class="status-toggle-option">
+                                        <input type="radio" name="attendance_{{ enrollment.id }}" value="{{ enrollment.id }}|present" id="radio_{{ enrollment.id }}_present" {% if status == 'present' or not status %}checked{% endif %} onchange="updateRowStatus('{{ enrollment.id }}', 'present')">
+                                        <span class="status-toggle-label lbl-present" title="Present">P</span>
                                     </label>
-                                    <label style="display: flex; align-items: center; gap: 0.25rem; cursor: pointer; color: #e74c3c; font-weight: 500;">
-                                        <input type="radio" name="attendance_{{ enrollment.id }}" value="{{ enrollment.id }}|absent" id="radio_{{ enrollment.id }}_absent" {% if status == 'absent' %}checked{% endif %} style="accent-color: #e74c3c;"> A
+                                    <label class="status-toggle-option">
+                                        <input type="radio" name="attendance_{{ enrollment.id }}" value="{{ enrollment.id }}|absent" id="radio_{{ enrollment.id }}_absent" {% if status == 'absent' %}checked{% endif %} onchange="updateRowStatus('{{ enrollment.id }}', 'absent')">
+                                        <span class="status-toggle-label lbl-absent" title="Absent">A</span>
                                     </label>
-                                    <label style="display: flex; align-items: center; gap: 0.25rem; cursor: pointer; color: #f1c40f; font-weight: 500;">
-                                        <input type="radio" name="attendance_{{ enrollment.id }}" value="{{ enrollment.id }}|late" id="radio_{{ enrollment.id }}_late" {% if status == 'late' %}checked{% endif %} style="accent-color: #f1c40f;"> L
+                                    <label class="status-toggle-option">
+                                        <input type="radio" name="attendance_{{ enrollment.id }}" value="{{ enrollment.id }}|late" id="radio_{{ enrollment.id }}_late" {% if status == 'late' %}checked{% endif %} onchange="updateRowStatus('{{ enrollment.id }}', 'late')">
+                                        <span class="status-toggle-label lbl-late" title="Late">L</span>
                                     </label>
-                                    <label style="display: flex; align-items: center; gap: 0.25rem; cursor: pointer; color: #3498db; font-weight: 500;">
-                                        <input type="radio" name="attendance_{{ enrollment.id }}" value="{{ enrollment.id }}|excused" id="radio_{{ enrollment.id }}_excused" {% if status == 'excused' %}checked{% endif %} style="accent-color: #3498db;"> E
+                                    <label class="status-toggle-option">
+                                        <input type="radio" name="attendance_{{ enrollment.id }}" value="{{ enrollment.id }}|excused" id="radio_{{ enrollment.id }}_excused" {% if status == 'excused' %}checked{% endif %} onchange="updateRowStatus('{{ enrollment.id }}', 'excused')">
+                                        <span class="status-toggle-label lbl-excused" title="Excused">E</span>
                                     </label>
                                 </div>
-                                {% endwith %}
                             </td>
                         </tr>
+                        {% endwith %}
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- 2. MOBILE VIEW LAYOUT (CARDS LIST) - NO SIDE SCROLLING -->
+        <!-- 2. MOBILE VIEW CARDS -->
         <div class="mobile-cards-wrapper">
-            {% for enrollment in enrollments %}
+            {% for enrollment in all_enrollments %}
             {% with status=existing_attendance|get_item:enrollment.id %}
-            <div class="student-mobile-card" style="background: white; border-radius: 16px; padding: 1.25rem; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 1rem;">
+            <div class="student-attendance-card" 
+                 data-division-id="{{ enrollment.division.id|default:0 }}"
+                 style="background: white; border-radius: 14px; padding: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 2px 6px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 0.75rem;">
                 
-                <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; width: 100%;">
-                    <div style="min-width: 0; flex: 1;">
-                        <div style="font-weight: 700; color: #1e293b; font-size: 1.1rem; line-height: 1.2; word-wrap: break-word; overflow-wrap: break-word;">{{ enrollment.student.full_name }}</div>
-                        <div style="font-size: 0.8rem; color: #64748b; margin-top: 4px;">ID: {{ enrollment.student.student_id }}</div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 800; color: #1e293b; font-size: 1rem;">{{ enrollment.student.full_name }}</div>
+                        <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">
+                            ID: {{ enrollment.student.student_id }} &bull; <span class="stream-badge">{{ enrollment.division.name|default:"General" }}</span>
+                        </div>
                     </div>
-                    <!-- Current Status badge -->
-                    <span id="badge_{{ enrollment.id }}" class="status-badge {% if status %}status-{{ status }}{% else %}status-present{% endif %}">
-                        {% if status %}{{ status }}{% else %}Present{% endif %}
+                    <span id="mob_badge_{{ enrollment.id }}" class="p-status-pill {% if status == 'absent' %}complete" style="background: #fee2e2; color: #b91c1c;{% elif status == 'late' %}complete" style="background: #fef3c7; color: #b45309;{% else %}complete{% endif %}">
+                        {% if status %}{{ status|title }}{% else %}Present{% endif %}
                     </span>
                 </div>
-                
-                <!-- Tap-to-select mobile selector grid -->
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
-                    <button type="button" class="mob-status-btn btn-mob-{{ enrollment.id }} {% if status == 'present' or not status %}active-present{% endif %}" id="btn_{{ enrollment.id }}_present" onclick="selectMobileStatus('{{ enrollment.id }}', 'present')" style="width: 100%;">
+
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem;">
+                    <button type="button" class="btn btn-sm btn-mob-{{ enrollment.id }} {% if status == 'present' or not status %}btn-success{% else %}btn-outline-secondary{% endif %}" id="mob_btn_{{ enrollment.id }}_present" onclick="updateRowStatus('{{ enrollment.id }}', 'present')" style="font-weight: 800; border-radius: 8px; padding: 0.5rem 0;">
                         P
                     </button>
-                    <button type="button" class="mob-status-btn btn-mob-{{ enrollment.id }} {% if status == 'absent' %}active-absent{% endif %}" id="btn_{{ enrollment.id }}_absent" onclick="selectMobileStatus('{{ enrollment.id }}', 'absent')" style="width: 100%;">
+                    <button type="button" class="btn btn-sm btn-mob-{{ enrollment.id }} {% if status == 'absent' %}btn-danger{% else %}btn-outline-secondary{% endif %}" id="mob_btn_{{ enrollment.id }}_absent" onclick="updateRowStatus('{{ enrollment.id }}', 'absent')" style="font-weight: 800; border-radius: 8px; padding: 0.5rem 0;">
                         A
                     </button>
-                    <button type="button" class="mob-status-btn btn-mob-{{ enrollment.id }} {% if status == 'late' %}active-late{% endif %}" id="btn_{{ enrollment.id }}_late" onclick="selectMobileStatus('{{ enrollment.id }}', 'late')" style="width: 100%;">
+                    <button type="button" class="btn btn-sm btn-mob-{{ enrollment.id }} {% if status == 'late' %}btn-warning text-dark{% else %}btn-outline-secondary{% endif %}" id="mob_btn_{{ enrollment.id }}_late" onclick="updateRowStatus('{{ enrollment.id }}', 'late')" style="font-weight: 800; border-radius: 8px; padding: 0.5rem 0;">
                         L
                     </button>
-                    <button type="button" class="mob-status-btn btn-mob-{{ enrollment.id }} {% if status == 'excused' %}active-excused{% endif %}" id="btn_{{ enrollment.id }}_excused" onclick="selectMobileStatus('{{ enrollment.id }}', 'excused')" style="width: 100%;">
+                    <button type="button" class="btn btn-sm btn-mob-{{ enrollment.id }} {% if status == 'excused' %}btn-info text-white{% else %}btn-outline-secondary{% endif %}" id="mob_btn_{{ enrollment.id }}_excused" onclick="updateRowStatus('{{ enrollment.id }}', 'excused')" style="font-weight: 800; border-radius: 8px; padding: 0.5rem 0;">
                         E
                     </button>
                 </div>
-                
             </div>
             {% endwith %}
             {% endfor %}
         </div>
-        
-        <div class="submit-container">
-            <button type="submit" class="submit-btn">
-                <i class="fa-solid fa-cloud-arrow-up"></i> Save Attendance for Class
+
+        <!-- Submit Button Container -->
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid #f1f5f9; text-align: center;">
+            <button type="submit" class="save-attendance-btn">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                Save Attendance for {{ selected_period_obj.name|default:"Period" }}
             </button>
         </div>
     </form>
 </div>
 
 <script>
-// 1. Sync mobile selector button selections to the unified hidden inputs
-function selectMobileStatus(enrollmentId, status) {
-    // Update hidden input value
+var activeStreamId = '0'; // 0 = ALL
+
+// Stream filter tab switcher
+function switchStreamFilter(streamId) {
+    activeStreamId = streamId.toString();
+
+    // Update active tab button style
+    document.querySelectorAll('.stream-tab-btn').forEach(btn => {
+        if (btn.getAttribute('data-stream-id') === activeStreamId) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    // Filter desktop rows
+    document.querySelectorAll('.student-attendance-row').forEach(row => {
+        var rowDivId = (row.getAttribute('data-division-id') || '0').toString();
+        if (activeStreamId === '0' || rowDivId === activeStreamId) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    // Filter mobile cards
+    document.querySelectorAll('.student-attendance-card').forEach(card => {
+        var cardDivId = (card.getAttribute('data-division-id') || '0').toString();
+        if (activeStreamId === '0' || cardDivId === activeStreamId) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+// Synchronize status selection across hidden inputs, desktop radios, and mobile buttons
+function updateRowStatus(enrollmentId, status) {
+    // 1. Update hidden input value
     const hiddenInput = document.getElementById('hidden_attendance_' + enrollmentId);
     if (hiddenInput) {
         hiddenInput.value = enrollmentId + '|' + status;
     }
-    
-    // Sync desktop radio button selection state
+
+    // 2. Update desktop radio
     const radioBtn = document.getElementById('radio_' + enrollmentId + '_' + status);
     if (radioBtn) {
         radioBtn.checked = true;
     }
-    
-    // Update mobile button active states
+
+    // 3. Update mobile buttons
     document.querySelectorAll('.btn-mob-' + enrollmentId).forEach(btn => {
-        btn.classList.remove('active-present', 'active-absent', 'active-late', 'active-excused');
+        btn.className = 'btn btn-sm btn-mob-' + enrollmentId + ' btn-outline-secondary';
     });
-    const targetBtn = document.getElementById('btn_' + enrollmentId + '_' + status);
-    if (targetBtn) {
-        targetBtn.classList.add('active-' + status);
+    const mobBtn = document.getElementById('mob_btn_' + enrollmentId + '_' + status);
+    if (mobBtn) {
+        if (status === 'present') mobBtn.className = 'btn btn-sm btn-mob-' + enrollmentId + ' btn-success';
+        else if (status === 'absent') mobBtn.className = 'btn btn-sm btn-mob-' + enrollmentId + ' btn-danger';
+        else if (status === 'late') mobBtn.className = 'btn btn-sm btn-mob-' + enrollmentId + ' btn-warning text-dark';
+        else if (status === 'excused') mobBtn.className = 'btn btn-sm btn-mob-' + enrollmentId + ' btn-info text-white';
     }
-    
-    // Update status indicator text and styling classes
-    const badge = document.getElementById('badge_' + enrollmentId);
+
+    // 4. Update mobile badge
+    const badge = document.getElementById('mob_badge_' + enrollmentId);
     if (badge) {
         badge.innerText = status.charAt(0).toUpperCase() + status.slice(1);
-        badge.className = 'status-badge status-' + status;
     }
 }
 
-// 2. Keep desktop radio changes in sync with mobile card states
-document.querySelectorAll('input[type=radio]').forEach(radio => {
-    radio.addEventListener('change', function() {
-        const parts = this.value.split('|');
-        const enrollmentId = parts[0];
-        const status = parts[1];
-        
-        // Update hidden input value
-        const hiddenInput = document.getElementById('hidden_attendance_' + enrollmentId);
-        if (hiddenInput) {
-            hiddenInput.value = this.value;
-        }
-        
-        // Sync mobile buttons styling active classes
-        document.querySelectorAll('.btn-mob-' + enrollmentId).forEach(btn => {
-            btn.classList.remove('active-present', 'active-absent', 'active-late', 'active-excused');
-        });
-        const targetBtn = document.getElementById('btn_' + enrollmentId + '_' + status);
-        if (targetBtn) {
-            targetBtn.classList.add('active-' + status);
-        }
-        
-        // Sync mobile indicator badge status
-        const badge = document.getElementById('badge_' + enrollmentId);
-        if (badge) {
-            badge.innerText = status.charAt(0).toUpperCase() + status.slice(1);
-            badge.className = 'status-badge status-' + status;
+// Quick action: Mark all VISIBLE (filtered) students with a specific status
+function markAllVisibleStatus(status) {
+    document.querySelectorAll('.student-attendance-row').forEach(row => {
+        if (row.style.display !== 'none') {
+            const radio = row.querySelector('input[type="radio"]');
+            if (radio) {
+                const enrollmentId = radio.name.replace('attendance_', '');
+                updateRowStatus(enrollmentId, status);
+            }
         }
     });
-});
+}
+
+// Quick action: Reset attendance to initial page load
+function resetAttendance() {
+    window.location.reload();
+}
 </script>
 {% else %}
-<div style="text-align: center; padding: 3rem; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-    <p style="color: #6c757d; font-size: 1.2rem; margin: 0;">No students found in this class.</p>
+<div style="text-align: center; padding: 4rem 2rem; background: white; border-radius: 16px; border: 1px solid #e2e8f0; color: #64748b;">
+    <i class="fa-solid fa-user-slash" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
+    <p style="margin: 0; font-weight: 700; font-size: 1.1rem;">No students enrolled in this class.</p>
 </div>
 {% endif %}
 

@@ -93,30 +93,13 @@ def about_us(request):
 
 
 def courses_and_fees(request):
-    """Public page to view course details and link to calculators"""
+    """Public page to view course details"""
     divisions = Division.objects.all().order_by('name')
     context = {
         'divisions': divisions,
-        'page_title': 'Courses',
+        'page_title': 'Courses Offered',
     }
     return render(request, 'students/courses_and_fees.html', context)
-
-def course_fee_calculator(request, course_id):
-    """Public page to calculate itemized fees for a specific course"""
-    selected_division = get_object_or_404(Division, id=course_id)
-    active_year = AcademicYear.objects.filter(is_active=True).first()
-    admission_type = request.GET.get('admission_type', 'day_scholar')
-    
-    fee_breakdown = []
-    
-    context = {
-        'selected_division': selected_division,
-        'fee_breakdown': fee_breakdown,
-        'admission_type': admission_type,
-        'page_title': f'Course Details - {selected_division.name}',
-        'active_year': active_year,
-    }
-    return render(request, 'students/course_fee_calculator.html', context)
 
 
 def app_brochure_malayalam(request):
@@ -149,10 +132,10 @@ def home(request):
             hostel_students = Student.objects.filter(student_type='hostel', is_active=True).count()
             day_scholar_students = Student.objects.filter(student_type='day_scholar', is_active=True).count()
     
-            # Today's attendance stats
+            # Today's attendance stats (distinct students present today)
             today_attendance = Attendance.objects.filter(date=today)
-            today_present = today_attendance.filter(status='present').count()
-            today_absent = today_attendance.filter(status='absent').count()
+            today_present = today_attendance.filter(status='present').values('student_id').distinct().count()
+            today_absent = today_attendance.filter(status='absent').values('student_id').distinct().count()
     
             # Pending hostel movements (not returned)
             pending_movements = HostelMovement.objects.filter(is_returned=False).count()
@@ -164,6 +147,16 @@ def home(request):
             from .models import LandingPageStats
             stats, _ = LandingPageStats.objects.get_or_create(pk=1)
             visitor_count = stats.visit_count
+
+            # Today's teaching schedule for teacher
+            today_day_key = today.strftime('%A').lower()
+            today_day_name = today.strftime('%A')
+            teacher_today_slots = []
+            if profile.role == 'teacher':
+                teacher_today_slots = TimetableSlot.objects.filter(
+                    teacher=request.user,
+                    day_of_week=today_day_key
+                ).select_related('grade', 'division', 'subject', 'period_timing').order_by('period_timing__period_order')
     
             context.update({
                 'total_students': total_students,
@@ -174,6 +167,9 @@ def home(request):
                 'pending_movements': pending_movements,
                 'visitor_count': visitor_count,
                 'total_exams': total_exams,
+                'teacher_today_slots': teacher_today_slots,
+                'today_day_name': today_day_name,
+                'today_day_key': today_day_key,
             })
             
         elif profile.role == 'student' and profile.student_record:
@@ -195,25 +191,23 @@ def home(request):
             grade_obj = enrollment.grade if enrollment else st_grade
             if grade_obj and grade_obj.session_start_date:
                 session_start = grade_obj.session_start_date
-            elif context.get('active_year') and context['active_year'].start_date:
-                session_start = context['active_year'].start_date
+            elif active_year and active_year.start_date:
+                session_start = active_year.start_date
             else:
                 session_start = None
             context['session_start'] = session_start
             
             # Monthly attendance
             import calendar
-            try:
-                current_month = int(request.GET.get('month', today.month))
-                curr_year = int(request.GET.get('year', today.year))
-                if not (1 <= current_month <= 12):
-                    current_month = today.month
-                if not (1900 <= curr_year <= 2100):
-                    curr_year = today.year
-            except (ValueError, TypeError):
-                current_month = today.month
-                curr_year = today.year
-
+            curr_year = today.year
+            current_month = today.month
+            if 'month' in request.GET and 'year' in request.GET:
+                try:
+                    current_month = int(request.GET.get('month'))
+                    curr_year = int(request.GET.get('year'))
+                except ValueError:
+                    pass
+                    
             monthly_att = Attendance.objects.filter(
                 student=student, 
                 date__year=curr_year, 
@@ -381,31 +375,32 @@ def home(request):
                 open_movement = HostelMovement.objects.filter(student=student, is_returned=False).first()
                 hostel_status = 'away' if open_movement else 'present'
 
-            # 4. Fee & Dues Summary Data for Student
-            from decimal import Decimal
-            pending_fee_amount = Decimal('0.00')
-            total_fee_billed = Decimal('0.00')
-            total_fee_paid = Decimal('0.00')
-            total_fee_concessions = Decimal('0.00')
-            pending_fee_count = 0
-            has_pending_fees = False
+            # 4. Student Today's Timetable Schedule
+            today_day_key = today.strftime('%A').lower()
+            today_day_name = today.strftime('%A')
+            period_timings = PeriodTiming.objects.all().order_by('period_order')
+            today_schedule = []
+            has_timetable_slots = False
+            if student.grade:
+                slots_qs = TimetableSlot.objects.filter(
+                    grade=student.grade,
+                    day_of_week=today_day_key
+                )
+                if student.division:
+                    slots_qs = slots_qs.filter(
+                        Q(division=student.division) | Q(division__isnull=True)
+                    )
+                slots_by_pt = {s.period_timing_id: s for s in slots_qs.select_related('subject', 'teacher', 'period_timing', 'division')}
+                for pt in period_timings:
+                    slot = slots_by_pt.get(pt.id)
+                    if slot:
+                        has_timetable_slots = True
+                    today_schedule.append({
+                        'timing': pt,
+                        'is_break': pt.is_break,
+                        'slot': slot
+                    })
 
-            try:
-                from fees.services import sync_student_monthly_dues
-                sync_student_monthly_dues(student)
-                
-                st_fees = student.fees.all()
-                for sf in st_fees:
-                    total_fee_billed += sf.total_amount
-                    total_fee_concessions += sf.concession_amount
-                    total_fee_paid += sf.amount_paid
-                    if sf.balance > 0:
-                        pending_fee_amount += sf.balance
-                        pending_fee_count += 1
-                has_pending_fees = (pending_fee_amount > 0)
-            except Exception:
-                pass
-                
             context.update({
                 'student_record': student,
                 'today_status': today_status,
@@ -424,12 +419,10 @@ def home(request):
                 'exams_with_results': exams_with_results,
                 'performance_data_json': performance_data_json,
                 'hostel_status': hostel_status,
-                'pending_fee_amount': pending_fee_amount,
-                'has_pending_fees': has_pending_fees,
-                'pending_fee_count': pending_fee_count,
-                'total_fee_billed': total_fee_billed,
-                'total_fee_paid': total_fee_paid,
-                'total_fee_concessions': total_fee_concessions,
+                'today_schedule': today_schedule,
+                'has_timetable_slots': has_timetable_slots,
+                'today_day_name': today_day_name,
+                'today_day_key': today_day_key,
             })
         
     return render(request, 'students/home.html', context)
@@ -459,7 +452,6 @@ def student_create(request):
         email = request.POST.get('email', '')
         phone = request.POST.get('phone', '')
         address = request.POST.get('address', '')
-        bus_stop_id = request.POST.get('bus_stop') if student_type == 'day_scholar' else None
         
         form_year_id = request.POST.get('academic_year_id')
         form_year = None
@@ -480,7 +472,6 @@ def student_create(request):
                 email=email,
                 phone=phone,
                 address=address,
-                bus_stop_id=bus_stop_id,
             )
             
             siblings_ids = request.POST.getlist('siblings')
@@ -505,8 +496,6 @@ def student_create(request):
     sections = Section.objects.all().order_by('order', 'name')
     grades = Grade.objects.all().order_by('order', 'name')
     all_students = Student.objects.filter(is_active=True).order_by('first_name', 'last_name')
-    from fees.models import BusStop
-    bus_stops = BusStop.objects.all().order_by('stop_name')
     context = {
         'all_students': all_students,
         'divisions': divisions,
@@ -515,7 +504,6 @@ def student_create(request):
         'grades': grades,
         'academic_years': academic_years,
         'active_year': active_year,
-        'bus_stops': bus_stops,
     }
     return render(request, 'students/student_create.html', context)
 
@@ -1058,152 +1046,197 @@ def student_list(request):
 
 @role_required(['admin', 'teacher'])
 def mark_attendance(request):
-    """Mark attendance - Step 1: Select Date and Class"""
-    attendance_type = request.GET.get('type', 'daily')
+    """Mark attendance - Step 1: Select Date and Grade (No division separation needed on selection page)"""
+    # Ensure Period table is synced with PeriodTiming teaching periods
+    for pt in PeriodTiming.objects.filter(is_break=False).order_by('period_order'):
+        Period.objects.update_or_create(
+            id=pt.id,
+            defaults={
+                'name': f"{pt.name} ({pt.start_time.strftime('%H:%M')} - {pt.end_time.strftime('%H:%M')})",
+                'start_time': pt.start_time,
+                'end_time': pt.end_time,
+                'description': pt.name
+            }
+        )
+
+    periods = Period.objects.all().order_by('start_time')
+    total_periods_count = periods.count()
+    
     selected_date = request.GET.get('date', date.today().isoformat())
-    period_id = request.GET.get('period')
-    activity_id = request.GET.get('activity')
     
     # -------------------------------------------------
-    # CLASSROOM-WISE SUMMARY (GRADE + DIVISION)
+    # GRADE-WISE SUMMARY (ALL STUDENTS IN GRADE)
     # -------------------------------------------------
-    classroom_summary = OrderedDict()
+    grade_summary = OrderedDict()
     
     active_year = AcademicYear.objects.filter(is_active=True).first()
     if not active_year:
         messages.error(request, 'Please set an active academic year to mark attendance.')
         return redirect('students:home')
     
-    # Get all active classes
-    active_enrollments = Enrollment.objects.filter(
-        academic_year=active_year, 
-        student__is_active=True,
-        grade__isnull=False
-    ).values(
-        'grade__section__id', 'grade__section__name', 
-        'grade__id', 'grade__name', 
-        'division__id', 'division__name'
-    ).distinct()
+    # Get all active grades
+    grades = Grade.objects.filter(
+        enrollments__academic_year=active_year,
+        enrollments__student__is_active=True
+    ).distinct().order_by('order', 'name')
     
-    for cls in active_enrollments:
-        if not cls['grade__id']: # Skip students without a grade
-            continue
-        g_id = cls['grade__id']
-        g_name = cls['grade__name']
-        d_id = cls['division__id']
-        d_name = cls['division__name'] or 'No Division'
-        s_id = cls['grade__section__id']
-        s_name = cls['grade__section__name'] or 'No Section'
-        cls_name = f"{g_name} - {d_name}"
-        
-        # Get count of students in this class
-        student_count = Enrollment.objects.filter(academic_year=active_year, student__is_active=True, grade_id=g_id)
-        if d_id:
-            student_count = student_count.filter(division_id=d_id)
-        else:
-            student_count = student_count.filter(division__isnull=True)
-            
-        student_count = student_count.count()
+    for g in grades:
+        grade_enrollments = Enrollment.objects.filter(
+            academic_year=active_year, 
+            student__is_active=True, 
+            grade=g
+        )
+        student_count = grade_enrollments.count()
         if student_count == 0:
             continue
             
-        # Get count of recorded attendance for this class on selected date/type
-        recorded_query = Attendance.objects.filter(
-            date=selected_date,
-            attendance_type=attendance_type,
-            enrollment__grade_id=g_id,
-            enrollment__academic_year=active_year
-        )
-        if d_id:
-            recorded_query = recorded_query.filter(enrollment__division_id=d_id)
-        else:
-            recorded_query = recorded_query.filter(enrollment__division__isnull=True)
-            
-        if attendance_type == 'period' and period_id:
-            recorded_query = recorded_query.filter(period_id=period_id)
-        elif attendance_type == 'activity' and activity_id:
-            recorded_query = recorded_query.filter(activity_id=activity_id)
-
-        recorded_count = recorded_query.count()
+        # Get streams/divisions in this grade (e.g. Commerce, Humanities)
+        division_ids = grade_enrollments.values_list('division_id', flat=True).distinct()
+        streams = list(Division.objects.filter(id__in=division_ids).values_list('name', flat=True))
         
-        # Build status string (e.g., "12 / 12 Marked" or "0 / 12 Marked")
-        if recorded_count == student_count:
-            status = 'Complete'
+        # Count how many distinct periods have attendance recorded for this grade today
+        periods_marked = Attendance.objects.filter(
+            date=selected_date,
+            attendance_type='period',
+            enrollment__in=grade_enrollments
+        ).values('period_id').distinct().count()
+        
+        # Overall grade status across all periods
+        if periods_marked == total_periods_count and total_periods_count > 0:
+            status = f'All {total_periods_count} Periods Complete'
             status_class = 'success'
-        elif recorded_count > 0:
-            status = 'Partial'
+        elif periods_marked > 0:
+            status = f'{periods_marked} / {total_periods_count} Periods Marked'
             status_class = 'warning'
         else:
-            status = 'Not Marked'
+            status = 'Not Started'
             status_class = 'danger'
             
-        classroom_summary[cls_name] = {
-            'section_id': s_id,
-            'section': s_name,
-            'grade_id': g_id, # Pass grade ID
-            'grade_name': g_name, # Pass grade name
-            'division_id': d_id,
-            'division': d_name,
+        grade_summary[g.id] = {
+            'grade_id': g.id,
+            'grade_name': g.name,
+            'section_name': g.section.name if g.section else 'General',
             'student_count': student_count,
-            'recorded_count': recorded_count,
+            'streams': streams,
+            'periods_marked': periods_marked,
+            'total_periods': total_periods_count,
             'status': status,
             'status_class': status_class
         }
 
-    # Sorting
-    division_summary = {k: v for k, v in classroom_summary.items() if v['division'] != 'No Division'}
-
-    periods = Period.objects.all()
-    activities = Activity.objects.filter(date=selected_date) if selected_date else Activity.objects.none()
-
     context = {
-        'attendance_type': attendance_type,
         'selected_date': selected_date,
-        'periods': periods,
-        'activities': activities,
-        'selected_period': period_id,
-        'selected_activity': activity_id,
-        'classroom_summary': classroom_summary,
-        'division_summary': division_summary,
+        'grade_summary': grade_summary,
+        'total_periods_count': total_periods_count,
     }
     return render(request, 'students/mark_attendance.html', context)
 
 @role_required(['admin', 'teacher'])
-def mark_attendance_class(request, grade_id, division_id): # Changed grade to grade_id
-    """Mark attendance - Step 2: Enter attendance for specific class"""
-    attendance_type = request.GET.get('type', 'daily')
+def mark_attendance_class(request, grade_id, division_id=0):
+    """Mark attendance - Step 2: Period Attendance taking screen (Defaults to ALL students in grade, with Stream Tabs)"""
+    # Ensure Period table is synced with PeriodTiming teaching periods
+    for pt in PeriodTiming.objects.filter(is_break=False).order_by('period_order'):
+        Period.objects.update_or_create(
+            id=pt.id,
+            defaults={
+                'name': f"{pt.name} ({pt.start_time.strftime('%H:%M')} - {pt.end_time.strftime('%H:%M')})",
+                'start_time': pt.start_time,
+                'end_time': pt.end_time,
+                'description': pt.name
+            }
+        )
+
+    periods = list(Period.objects.all().order_by('start_time'))
+    attendance_type = request.GET.get('type', 'period')
     selected_date = request.GET.get('date', date.today().isoformat())
     period_id = request.GET.get('period')
+    
+    # Auto-select first period if none provided
+    if attendance_type == 'period' and not period_id and periods:
+        period_id = str(periods[0].id)
+
     activity_id = request.GET.get('activity')
     section_id = request.GET.get('section')
-    
-    # Handle division matching 'None' (from URL)
-    actual_division_id = None if division_id == 0 else division_id
     
     active_year = AcademicYear.objects.filter(is_active=True).first()
     if not active_year:
         messages.error(request, 'Please set an active academic year to mark attendance.')
         return redirect('students:home')
 
-    grade_obj = get_object_or_404(Grade, id=grade_id) # Get Grade object
+    grade_obj = get_object_or_404(Grade, id=grade_id)
 
-    # Get enrollments based on class
-    enrollments = Enrollment.objects.filter(academic_year=active_year, student__is_active=True, grade=grade_obj).select_related('student', 'division', 'room', 'section')
+    # Get ALL active enrollments for this grade
+    all_enrollments = list(Enrollment.objects.filter(
+        academic_year=active_year, 
+        student__is_active=True, 
+        grade=grade_obj
+    ).select_related('student', 'division', 'room', 'section', 'grade__section'))
     
-    if grade_obj.section:
-        section_name = grade_obj.section.name
-    else:
-        section_name = "No Section"
-        
-    if actual_division_id:
-        enrollments = enrollments.filter(division_id=actual_division_id)
-        division = get_object_or_404(Division, id=actual_division_id)
-        class_name = f"{section_name} - {grade_obj.name} - {division.name}" 
-    else:
-        enrollments = enrollments.filter(division__isnull=True)
-        class_name = f"{section_name} - {grade_obj.name} - No Division"
+    section_name = grade_obj.section.name if grade_obj.section else "General"
+    class_name = f"{section_name} - {grade_obj.name}"
 
-    # Get existing attendance for the date
+    # Get distinct divisions / streams in this grade
+    distinct_div_ids = [e.division_id for e in all_enrollments if e.division_id]
+    grade_divisions = list(Division.objects.filter(id__in=distinct_div_ids).distinct().order_by('name'))
+
+    stream_tabs = [
+        {
+            'id': 0,
+            'name': 'All (Combined)',
+            'count': len(all_enrollments),
+            'is_active': (division_id == 0)
+        }
+    ]
+    for d in grade_divisions:
+        d_count = sum(1 for e in all_enrollments if e.division_id == d.id)
+        stream_tabs.append({
+            'id': d.id,
+            'name': d.name,
+            'count': d_count,
+            'is_active': (division_id == d.id)
+        })
+
+    # By default, show ALL students (or filtered by division_id if specifically requested)
+    if division_id and division_id > 0:
+        enrollments = [e for e in all_enrollments if e.division_id == division_id]
+    else:
+        enrollments = all_enrollments
+
+    # Build period-by-period status information for the period buttons
+    periods_with_status = []
+    for p in periods:
+        p_attendances = Attendance.objects.filter(
+            date=selected_date,
+            attendance_type='period',
+            period=p,
+            enrollment__in=all_enrollments
+        )
+        marked_count = p_attendances.count()
+        present_count = p_attendances.filter(status='present').count()
+        absent_count = p_attendances.filter(status='absent').count()
+        late_count = p_attendances.filter(status='late').count()
+        excused_count = p_attendances.filter(status='excused').count()
+        
+        is_complete = (marked_count == len(all_enrollments) and len(all_enrollments) > 0)
+        is_partial = (0 < marked_count < len(all_enrollments))
+        is_unmarked = (marked_count == 0)
+        is_selected = (str(p.id) == str(period_id))
+        
+        periods_with_status.append({
+            'period': p,
+            'marked_count': marked_count,
+            'present_count': present_count,
+            'absent_count': absent_count,
+            'late_count': late_count,
+            'excused_count': excused_count,
+            'total_students': len(all_enrollments),
+            'is_complete': is_complete,
+            'is_partial': is_partial,
+            'is_unmarked': is_unmarked,
+            'is_selected': is_selected,
+        })
+
+    # Get existing attendance for the selected period (across all students)
     existing_attendance = {}
     if attendance_type == 'period' and period_id:
         existing_attendance = {
@@ -1212,7 +1245,7 @@ def mark_attendance_class(request, grade_id, division_id): # Changed grade to gr
                 date=selected_date,
                 attendance_type='period',
                 period_id=period_id,
-                enrollment__in=enrollments
+                enrollment__in=all_enrollments
             )
         }
     elif attendance_type == 'activity' and activity_id:
@@ -1222,7 +1255,7 @@ def mark_attendance_class(request, grade_id, division_id): # Changed grade to gr
                 date=selected_date,
                 attendance_type='activity',
                 activity_id=activity_id,
-                enrollment__in=enrollments
+                enrollment__in=all_enrollments
             )
         }
     elif attendance_type == 'daily':
@@ -1231,16 +1264,12 @@ def mark_attendance_class(request, grade_id, division_id): # Changed grade to gr
             for att in Attendance.objects.filter(
                 date=selected_date,
                 attendance_type='daily',
-                enrollment__in=enrollments
+                enrollment__in=all_enrollments
             )
         }
 
     if request.method == 'POST':
-        # Automatically determine who is marking the attendance from the logged-in user
-        marked_by = request.user.get_full_name() or request.user.username
-        if not marked_by:
-            marked_by = "Admin" # Fallback if user somehow has no name/username
-            
+        marked_by = request.user.get_full_name() or request.user.username or "Admin"
         attendance_data = request.POST.getlist('attendance')
         success_count = 0
 
@@ -1249,7 +1278,6 @@ def mark_attendance_class(request, grade_id, division_id): # Changed grade to gr
             enrollment = get_object_or_404(Enrollment, id=enrollment_id)
             student = enrollment.student
 
-            # Build filter for finding existing attendance
             filter_kwargs = {
                 'student': student,
                 'enrollment': enrollment,
@@ -1261,17 +1289,17 @@ def mark_attendance_class(request, grade_id, division_id): # Changed grade to gr
                 if period_id:
                     filter_kwargs['period_id'] = period_id
                 else:
-                    continue  # Skip if period is required but not provided
+                    continue
             elif attendance_type == 'activity':
                 if activity_id:
                     filter_kwargs['activity_id'] = activity_id
                 else:
-                    continue  # Skip if activity is required but not provided
-            else:  # daily
+                    continue
+            else:
                 filter_kwargs['period__isnull'] = True
                 filter_kwargs['activity__isnull'] = True
 
-            attendance, created = Attendance.objects.update_or_create(
+            Attendance.objects.update_or_create(
                 defaults={
                     'status': status,
                     'marked_by': marked_by,
@@ -1280,24 +1308,38 @@ def mark_attendance_class(request, grade_id, division_id): # Changed grade to gr
             )
             success_count += 1
 
+        selected_p_obj = Period.objects.filter(id=period_id).first() if period_id else None
+        p_name = selected_p_obj.name if selected_p_obj else "Period"
+        messages.success(request, f"Attendance successfully saved for {p_name} ({success_count} students)!")
+
         params = [f"type={attendance_type}", f"date={selected_date}"]
         if period_id: params.append(f"period={period_id}")
         if activity_id: params.append(f"activity={activity_id}")
         
-        return redirect(f"{reverse('students:mark_attendance')}?{'&'.join(params)}")
+        # Redirect back to the same class attendance page
+        return redirect(f"{reverse('students:mark_attendance_class', args=[grade_id, division_id])}?{'&'.join(params)}")
+
+    selected_period_obj = Period.objects.filter(id=period_id).first() if period_id else None
+    selected_activity_obj = Activity.objects.filter(id=activity_id).first() if activity_id else None
 
     context = {
         'class_name': class_name,
-        'grade_id': grade_id, # Pass grade ID
-        'grade_name': grade_obj.name, # Pass grade name
+        'grade_id': grade_id,
+        'grade_name': grade_obj.name,
         'division_id': division_id,
         'section_id': section_id,
         'enrollments': enrollments,
+        'all_enrollments': all_enrollments,
+        'stream_tabs': stream_tabs,
         'attendance_type': attendance_type,
         'selected_date': selected_date,
         'existing_attendance': existing_attendance,
+        'periods': periods,
+        'periods_with_status': periods_with_status,
         'selected_period': period_id,
+        'selected_period_obj': selected_period_obj,
         'selected_activity': activity_id,
+        'selected_activity_obj': selected_activity_obj,
     }
     return render(request, 'students/mark_attendance_class.html', context)
 
@@ -1614,46 +1656,154 @@ def attendance_list(request):
 
 @role_required(['admin', 'teacher'])
 def today_attendance_view(request):
+    """View period-wise attendance matrix for today or selected date"""
     active_year = AcademicYear.objects.filter(is_active=True).first()
     if not active_year:
         messages.error(request, 'Please set an active academic year to view attendance.')
         return redirect('students:home')
 
-    today = date.today()
-    today_holiday = Holiday.objects.filter(date=today).first()
-    enrollments = Enrollment.objects.filter(
+    date_str = request.GET.get('date')
+    if date_str:
+        try:
+            selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            selected_date = date.today()
+    else:
+        selected_date = date.today()
+
+    prev_date = selected_date - timedelta(days=1)
+    next_date = selected_date + timedelta(days=1)
+    is_today = (selected_date == date.today())
+
+    # Ensure Period table is synced with PeriodTiming teaching periods
+    for pt in PeriodTiming.objects.filter(is_break=False).order_by('period_order'):
+        Period.objects.update_or_create(
+            id=pt.id,
+            defaults={
+                'name': f"{pt.name} ({pt.start_time.strftime('%H:%M')} - {pt.end_time.strftime('%H:%M')})",
+                'start_time': pt.start_time,
+                'end_time': pt.end_time,
+                'description': pt.name
+            }
+        )
+
+    periods = list(Period.objects.all().order_by('start_time'))
+    today_holiday = Holiday.objects.filter(date=selected_date).first()
+
+    grade_id = request.GET.get('grade')
+    division_id = request.GET.get('division')
+    student_type = request.GET.get('student_type')
+
+    enrollments_qs = Enrollment.objects.filter(
         academic_year=active_year, 
         student__is_active=True
-    ).select_related('student', 'grade', 'division', 'section')
+    ).select_related('student', 'grade', 'division', 'section', 'grade__section')
 
-    attendances = Attendance.objects.filter(date=today, attendance_type='daily')
-    att_map = {att.student_id: att.status for att in attendances}
+    if grade_id:
+        enrollments_qs = enrollments_qs.filter(grade_id=grade_id)
+    if division_id:
+        enrollments_qs = enrollments_qs.filter(division_id=division_id)
+    if student_type:
+        enrollments_qs = enrollments_qs.filter(student__student_type=student_type)
 
-    status_display_map = {
-        'present': 'Present',
-        'absent': 'Absent',
-        'late': 'Late',
-        'excused': 'Excused',
-        'not_marked': 'Not Marked',
-        'not marked': 'Not Marked',
-    }
+    enrollments = list(enrollments_qs)
+
+    # Fetch period attendances for selected date
+    attendances = Attendance.objects.filter(
+        date=selected_date, 
+        attendance_type='period', 
+        enrollment__in=enrollments
+    ).select_related('period')
+    att_map = {(att.enrollment_id, att.period_id): att for att in attendances}
+
     student_stats = []
     for env in enrollments:
-        raw_status = att_map.get(env.student_id, 'not_marked')
-        status = raw_status.replace(' ', '_')
-        env_grade = env.grade
-        student_holiday = Holiday.objects.filter(date=today).filter(Q(grades__isnull=True) | Q(grades=env_grade)).first() if env_grade else Holiday.objects.filter(date=today, grades__isnull=True).first()
+        student = env.student
+        p_items = []
+        present_count = 0
+        absent_count = 0
+        late_count = 0
+        excused_count = 0
+        not_marked_count = 0
 
-        status_disp = status_display_map.get(status, status_display_map.get(raw_status, 'Not Marked'))
-        if student_holiday and raw_status == 'not_marked':
-            status = 'holiday'
-            status_disp = f"Holiday ({student_holiday.title})"
+        for p in periods:
+            att = att_map.get((env.id, p.id))
+            if att:
+                status = att.status
+                if status == 'present':
+                    code = 'P'
+                    badge_class = 'present'
+                    present_count += 1
+                elif status == 'absent':
+                    code = 'A'
+                    badge_class = 'absent'
+                    absent_count += 1
+                elif status == 'late':
+                    code = 'L'
+                    badge_class = 'late'
+                    late_count += 1
+                elif status == 'excused':
+                    code = 'E'
+                    badge_class = 'excused'
+                    excused_count += 1
+                else:
+                    code = '-'
+                    badge_class = 'not-marked'
+                    not_marked_count += 1
+                marked_by = att.marked_by
+            else:
+                status = 'not_marked'
+                code = '-'
+                badge_class = 'not-marked'
+                not_marked_count += 1
+                marked_by = ''
+
+            p_items.append({
+                'period': p,
+                'status': status,
+                'code': code,
+                'badge_class': badge_class,
+                'marked_by': marked_by,
+            })
+
+        total_p = len(periods)
+        marked_p = present_count + absent_count + late_count + excused_count
+        
+        if total_p > 0:
+            percentage = round(((present_count + late_count + excused_count) / total_p) * 100)
+        else:
+            percentage = 0
+
+        if marked_p == 0:
+            day_status = 'not_marked'
+            day_status_display = 'Not Marked'
+        elif absent_count == 0:
+            day_status = 'present'
+            day_status_display = 'All Present'
+        elif present_count == 0 and late_count == 0 and excused_count == 0:
+            day_status = 'absent'
+            day_status_display = 'Full Absent'
+        else:
+            day_status = 'partial'
+            day_status_display = f"{absent_count} Absent / {present_count} Present"
 
         student_stats.append({
             'enrollment': env,
-            'student': env.student,
-            'status': status,
-            'status_display': status_disp,
+            'student': student,
+            'class_name': env.class_name,
+            'grade_id': env.grade.id if env.grade else None,
+            'division_id': env.division.id if env.division else 0,
+            'section_name': env.grade.section.name if (env.grade and env.grade.section) else (env.section.name if env.section else 'General'),
+            'periods': p_items,
+            'present_count': present_count,
+            'absent_count': absent_count,
+            'late_count': late_count,
+            'excused_count': excused_count,
+            'not_marked_count': not_marked_count,
+            'marked_count': marked_p,
+            'percentage': percentage,
+            'day_status': day_status,
+            'day_status_display': day_status_display,
         })
 
     # Custom Sorting: First 11, then 12, then Degree, then others
@@ -1680,66 +1830,200 @@ def today_attendance_view(request):
 
     student_stats.sort(key=get_today_attendance_sort_key)
 
-    present_count = len([s for s in student_stats if s['status'] == 'present'])
-    absent_count = len([s for s in student_stats if s['status'] == 'absent'])
-    late_count = len([s for s in student_stats if s['status'] == 'late'])
-    excused_count = len([s for s in student_stats if s['status'] == 'excused'])
-    not_marked_count = len([s for s in student_stats if s['status'] == 'not_marked'])
-    total_present_all = present_count + late_count + excused_count
+    # Period-wise Aggregate Summary
+    period_stats = []
+    for p in periods:
+        p_present = sum(1 for s in student_stats if any(pi['period'].id == p.id and pi['status'] == 'present' for pi in s['periods']))
+        p_absent = sum(1 for s in student_stats if any(pi['period'].id == p.id and pi['status'] == 'absent' for pi in s['periods']))
+        p_late = sum(1 for s in student_stats if any(pi['period'].id == p.id and pi['status'] == 'late' for pi in s['periods']))
+        p_excused = sum(1 for s in student_stats if any(pi['period'].id == p.id and pi['status'] == 'excused' for pi in s['periods']))
+        p_not_marked = sum(1 for s in student_stats if any(pi['period'].id == p.id and pi['status'] == 'not_marked' for pi in s['periods']))
+        p_marked = p_present + p_absent + p_late + p_excused
+        p_pct = round(((p_present + p_late + p_excused) / p_marked * 100)) if p_marked > 0 else 0
+
+        period_stats.append({
+            'period': p,
+            'present': p_present,
+            'absent': p_absent,
+            'late': p_late,
+            'excused': p_excused,
+            'not_marked': p_not_marked,
+            'marked': p_marked,
+            'percentage': p_pct,
+        })
+
+    # Overall Summary Badges
+    total_students = len(student_stats)
+    fully_present_count = sum(1 for s in student_stats if s['day_status'] == 'present')
+    partial_absent_count = sum(1 for s in student_stats if s['day_status'] == 'partial')
+    fully_absent_count = sum(1 for s in student_stats if s['day_status'] == 'absent')
+    unmarked_count = sum(1 for s in student_stats if s['day_status'] == 'not_marked')
+    
+    total_slots = total_students * len(periods)
+    total_present_slots = sum(ps['present'] for ps in period_stats)
+    total_absent_slots = sum(ps['absent'] for ps in period_stats)
+    total_late_slots = sum(ps['late'] for ps in period_stats)
+    total_excused_slots = sum(ps['excused'] for ps in period_stats)
+    total_marked_slots = total_present_slots + total_absent_slots + total_late_slots + total_excused_slots
+    overall_percentage = round(((total_present_slots + total_late_slots + total_excused_slots) / total_marked_slots * 100)) if total_marked_slots > 0 else 0
+
+    all_grades = Grade.objects.all().order_by('order', 'name')
+    all_divisions = Division.objects.all().order_by('name')
 
     context = {
-        'today': today,
+        'today': date.today(),
+        'selected_date': selected_date,
+        'prev_date': prev_date,
+        'next_date': next_date,
+        'is_today': is_today,
+        'periods': periods,
+        'period_stats': period_stats,
         'student_stats': student_stats,
-        'present_count': present_count,
-        'absent_count': absent_count,
-        'late_count': late_count,
-        'excused_count': excused_count,
-        'not_marked_count': not_marked_count,
-        'total_present_all': total_present_all,
-        'total_count': len(student_stats),
+        'total_students': total_students,
+        'fully_present_count': fully_present_count,
+        'partial_absent_count': partial_absent_count,
+        'fully_absent_count': fully_absent_count,
+        'unmarked_count': unmarked_count,
+        'total_present_slots': total_present_slots,
+        'total_absent_slots': total_absent_slots,
+        'total_late_slots': total_late_slots,
+        'total_marked_slots': total_marked_slots,
+        'total_slots': total_slots,
+        'overall_percentage': overall_percentage,
         'today_holiday': today_holiday,
+        'all_grades': all_grades,
+        'all_divisions': all_divisions,
+        'selected_grade': grade_id,
+        'selected_division': division_id,
+        'selected_student_type': student_type,
     }
     return render(request, 'students/today_attendance.html', context)
 
 @role_required(['admin', 'ntstaff'])
 def hostel_movement_list(request):
-    """List hostel movements with stats and enhanced search"""
+    """List hostel movements with stats, dedicated OUT/IN separation tabs, and quick return actions"""
     from django.db.models import Q
-    movements = HostelMovement.objects.select_related('student')
+    from datetime import date, datetime
+    today = timezone.now().date()
+    now_time = timezone.now().time()
 
-    # Calculate Stats
+    # Handle quick return / check-in action (Mark IN)
+    if request.method == 'POST' and 'quick_return_id' in request.POST:
+        movement_id = request.POST.get('quick_return_id')
+        movement = get_object_or_404(HostelMovement, id=movement_id)
+        movement.is_returned = True
+        movement.arrival_date = today
+        movement.arrival_time = now_time
+        movement.sign = request.user.get_full_name() or request.user.username or "Warden"
+        remarks_extra = request.POST.get('quick_remarks', '').strip()
+        if remarks_extra:
+            movement.remarks = f"{movement.remarks}\n{remarks_extra}".strip()
+        movement.save()
+
+        messages.success(request, f"🟢 {movement.student.full_name} ({movement.student.student_id}) marked IN (Returned) at {now_time.strftime('%I:%M %p')}.")
+        return redirect('students:hostel_movement_list')
+
+    # Handle quick out action (Mark OUT - records current date and time)
+    if request.method == 'POST' and 'quick_out_student_id' in request.POST:
+        student_id = request.POST.get('quick_out_student_id')
+        student = get_object_or_404(Student, id=student_id, student_type='hostel')
+        
+        # Check if student is already marked OUT
+        existing_away = HostelMovement.objects.filter(student=student, is_returned=False).first()
+        if existing_away:
+            messages.warning(request, f"⚠️ {student.full_name} is already marked OUT (since {existing_away.departure_date} {existing_away.departure_time}).")
+        else:
+            escort = request.POST.get('escorting_person', '').strip() or getattr(student, 'guardian_name', '') or "Self / Guardian"
+            reason = request.POST.get('reason', '').strip() or "Outing / Leave"
+            expected_return = request.POST.get('expected_return_date') or None
+            
+            movement = HostelMovement.objects.create(
+                student=student,
+                departure_date=today,
+                departure_time=now_time,
+                escorting_person=escort,
+                reason=reason,
+                expected_return_date=expected_return,
+                is_returned=False
+            )
+            messages.success(request, f"🔴 {student.full_name} ({student.student_id}) marked OUT at {now_time.strftime('%I:%M %p')}.")
+        return redirect('students:hostel_movement_list')
+
+    # Total active hostel students
     total_hostel_students = Student.objects.filter(student_type='hostel', is_active=True).count()
-    # Away students are those with a movement log where is_returned is False
-    away_students = HostelMovement.objects.filter(is_returned=False, student__is_active=True).values('student').distinct().count()
-    present_students = total_hostel_students - away_students
 
-    # Filters
+    # Active AWAY movements (students currently OUT of hostel)
+    away_movements = list(
+        HostelMovement.objects.filter(is_returned=False, student__is_active=True)
+        .select_related('student')
+        .order_by('-departure_date', '-departure_time')
+    )
+
+    for m in away_movements:
+        m.days_away = (today - m.departure_date).days
+        m.is_overdue = bool(m.expected_return_date and m.expected_return_date < today)
+
+    away_student_ids = {m.student_id for m in away_movements}
+    away_students_count = len(away_student_ids)
+    present_students_count = max(0, total_hostel_students - away_students_count)
+
+    # Students currently IN hostel (present)
+    present_students = list(
+        Student.objects.filter(student_type='hostel', is_active=True)
+        .exclude(id__in=away_student_ids)
+        .order_by('first_name', 'last_name')
+    )
+
+    # All movements for history log tab
+    movements_qs = HostelMovement.objects.select_related('student')
+
+    # Filters for history log
     student_id = request.GET.get('student_id')
     is_returned = request.GET.get('is_returned')
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
+    active_tab = request.GET.get('tab', 'away' if away_students_count > 0 else 'all')
 
     if student_id:
-        movements = movements.filter(
+        movements_qs = movements_qs.filter(
             Q(student__student_id__icontains=student_id) | 
             Q(student__first_name__icontains=student_id) |
             Q(student__last_name__icontains=student_id)
         )
-    if is_returned is not None:
-        movements = movements.filter(is_returned=is_returned == '1')
+    if is_returned is not None and is_returned != '':
+        movements_qs = movements_qs.filter(is_returned=is_returned == '1')
     if date_from:
-        movements = movements.filter(departure_date__gte=date_from)
+        movements_qs = movements_qs.filter(departure_date__gte=date_from)
     if date_to:
-        movements = movements.filter(departure_date__lte=date_to)
+        movements_qs = movements_qs.filter(departure_date__lte=date_to)
 
-    movements = movements.order_by('-departure_date', '-departure_time')
+    all_movements = list(movements_qs.order_by('-departure_date', '-departure_time')[:200])
+
+    # Map student_id -> active movement for quick lookup
+    away_movement_map = {m.student_id: m for m in away_movements}
+
+    # All active hostel students for the small cards grid view
+    all_hostel_students = list(
+        Student.objects.filter(student_type='hostel', is_active=True)
+        .exclude(alumni_record__isnull=False)
+        .order_by('first_name', 'last_name')
+    )
+
+    for st in all_hostel_students:
+        st.is_away = st.id in away_movement_map
+        st.active_movement = away_movement_map.get(st.id)
 
     context = {
-        'movements': movements,
+        'today': today,
+        'active_tab': active_tab,
+        'all_hostel_students': all_hostel_students,
+        'away_movements': away_movements,
+        'present_students': present_students,
+        'all_movements': all_movements,
         'stats': {
             'total': total_hostel_students,
-            'present': present_students,
-            'away': away_students
+            'present': present_students_count,
+            'away': away_students_count,
         },
         'current_filters': {
             'student_id': student_id,
@@ -3316,7 +3600,6 @@ def student_edit(request, pk):
         email = request.POST.get('email', '')
         phone = request.POST.get('phone', '')
         address = request.POST.get('address', '')
-        bus_stop_id = request.POST.get('bus_stop') if student_type == 'day_scholar' else None
         
         # Get the selected academic year from the form
         form_year_id = request.POST.get('academic_year_id')
@@ -3378,7 +3661,6 @@ def student_edit(request, pk):
                 student.email = email
                 student.phone = phone
                 student.address = address
-                student.bus_stop_id = bus_stop_id
                 student.save()
                 
                 siblings_ids = request.POST.getlist('siblings')
@@ -3411,8 +3693,6 @@ def student_edit(request, pk):
     sections = Section.objects.all().order_by('order', 'name')
     grades = Grade.objects.all().order_by('order', 'name')
     all_students = Student.objects.filter(is_active=True).exclude(id=student.id).order_by('first_name', 'last_name')
-    from fees.models import BusStop
-    bus_stops = BusStop.objects.all().order_by('stop_name')
 
     context = {
         'student': student,
@@ -3425,7 +3705,6 @@ def student_edit(request, pk):
         'selected_year': selected_year,
         'active_year': active_year,
         'enrollment': enrollment,
-        'bus_stops': bus_stops,
     }
     return render(request, 'students/student_edit.html', context)
 
@@ -5360,12 +5639,51 @@ def section_list(request):
 
 @role_required(['admin', 'ntstaff'])
 def hostel_student_list_view(request):
-    """List all students registered to the hostel"""
+    """List all students registered to the hostel with 1-click IN/OUT toggle"""
     if hasattr(request.user, 'profile') and request.user.profile.role == 'student':
         messages.error(request, "Access denied. Students are not allowed to view the hostel student directory.")
         return redirect('students:home')
         
     from django.db.models import Q
+    today = timezone.now().date()
+    now_time = timezone.now().time()
+
+    # 1-Click Mark OUT from directory
+    if request.method == 'POST' and 'quick_out_student_id' in request.POST:
+        student_id = request.POST.get('quick_out_student_id')
+        student = get_object_or_404(Student, id=student_id, student_type='hostel')
+        existing_away = HostelMovement.objects.filter(student=student, is_returned=False).first()
+        if existing_away:
+            messages.warning(request, f"⚠️ {student.full_name} is already marked OUT.")
+        else:
+            escort = request.POST.get('escorting_person', '').strip() or getattr(student, 'guardian_name', '') or "Self / Guardian"
+            reason = request.POST.get('reason', '').strip() or "Outing / Leave"
+            HostelMovement.objects.create(
+                student=student,
+                departure_date=today,
+                departure_time=now_time,
+                escorting_person=escort,
+                reason=reason,
+                is_returned=False
+            )
+            messages.success(request, f"🔴 {student.full_name} marked OUT at {now_time.strftime('%I:%M %p')}.")
+        return redirect('students:hostel_student_list')
+
+    # 1-Click Mark IN from directory
+    if request.method == 'POST' and 'quick_return_student_id' in request.POST:
+        student_id = request.POST.get('quick_return_student_id')
+        student = get_object_or_404(Student, id=student_id, student_type='hostel')
+        movement = HostelMovement.objects.filter(student=student, is_returned=False).first()
+        if movement:
+            movement.is_returned = True
+            movement.arrival_date = today
+            movement.arrival_time = now_time
+            movement.sign = request.user.get_full_name() or request.user.username or "Warden"
+            movement.save()
+            messages.success(request, f"🟢 {student.full_name} marked IN (Returned) at {now_time.strftime('%I:%M %p')}.")
+        else:
+            messages.info(request, f"{student.full_name} is already in the hostel.")
+        return redirect('students:hostel_student_list')
     
     students = Student.objects.filter(student_type='hostel', is_active=True).exclude(alumni_record__isnull=False)
     
@@ -5392,7 +5710,7 @@ def hostel_student_list_view(request):
 
 @role_required(['admin', 'ntstaff', 'student'])
 def hostel_student_detail_view(request, pk):
-    """Detailed profile for a specific hostel student"""
+    """Detailed profile for a specific hostel student with 1-click IN/OUT button"""
     # Data isolation for students
     if hasattr(request.user, 'profile') and request.user.profile.role == 'student':
         if not request.user.profile.student_record or request.user.profile.student_record.id != int(pk):
@@ -5402,6 +5720,39 @@ def hostel_student_detail_view(request, pk):
     from datetime import datetime, date
     
     student = get_object_or_404(Student, pk=pk, student_type='hostel')
+    today = timezone.now().date()
+    now_time = timezone.now().time()
+
+    # 1-Click IN/OUT on detail page
+    if request.method == 'POST':
+        if 'quick_out' in request.POST:
+            existing_away = HostelMovement.objects.filter(student=student, is_returned=False).first()
+            if existing_away:
+                messages.warning(request, f"⚠️ {student.full_name} is already marked OUT.")
+            else:
+                escort = request.POST.get('escorting_person', '').strip() or getattr(student, 'guardian_name', '') or "Self / Guardian"
+                reason = request.POST.get('reason', '').strip() or "Outing / Leave"
+                HostelMovement.objects.create(
+                    student=student,
+                    departure_date=today,
+                    departure_time=now_time,
+                    escorting_person=escort,
+                    reason=reason,
+                    is_returned=False
+                )
+                messages.success(request, f"🔴 {student.full_name} marked OUT at {now_time.strftime('%I:%M %p')}.")
+            return redirect('students:hostel_student_detail', pk=pk)
+
+        elif 'quick_return' in request.POST:
+            movement = HostelMovement.objects.filter(student=student, is_returned=False).first()
+            if movement:
+                movement.is_returned = True
+                movement.arrival_date = today
+                movement.arrival_time = now_time
+                movement.sign = request.user.get_full_name() or request.user.username or "Warden"
+                movement.save()
+                messages.success(request, f"🟢 {student.full_name} marked IN (Returned) at {now_time.strftime('%I:%M %p')}.")
+            return redirect('students:hostel_student_detail', pk=pk)
     movements = HostelMovement.objects.filter(student=student).order_by('-departure_date', '-departure_time')
     
     # Calculate historical away days
@@ -7496,22 +7847,6 @@ def student_credentials_print(request):
     return render(request, 'students/student_credentials_print.html', context)
 
 
-@role_required(['admin'])
-@require_POST
-def toggle_fee_maintenance(request):
-    """Toggle fee section maintenance suspension for student portal"""
-    from .models import GlobalSettings
-    settings = GlobalSettings.load()
-    settings.suspend_student_fees = not settings.suspend_student_fees
-    settings.save()
-    
-    status_str = "SUSPENDED FOR MAINTENANCE" if settings.suspend_student_fees else "ACTIVE (Normal Mode)"
-    messages.success(request, f"Student Fee Portal status updated to: {status_str}")
-    
-    referer = request.META.get('HTTP_REFERER')
-    if referer:
-        return redirect(referer)
-    return redirect('students:home')
 
 
 @login_required
@@ -8187,10 +8522,36 @@ def teacher_my_schedule(request):
 def class_timetable_view(request, grade_id=None):
     """Public / Printable View of Class Timetable for students, parents, and teachers"""
     grades = Grade.objects.all()
-    selected_grade = Grade.objects.filter(pk=grade_id).first() if grade_id else grades.first()
 
-    division_id = request.GET.get('division_id')
-    selected_division = Division.objects.filter(pk=division_id).first() if division_id else None
+    user_grade = None
+    user_division = None
+    if hasattr(request.user, 'profile') and request.user.profile.role == 'student':
+        student_obj = Student.objects.filter(user=request.user).first() or Student.objects.filter(admission_number=request.user.username).first()
+        if student_obj:
+            user_grade = student_obj.grade
+            user_division = student_obj.division
+
+    # Grade selection priority: URL parameter -> GET param -> Student's enrolled grade -> First grade
+    grade_param = grade_id or request.GET.get('grade_id')
+    if grade_param:
+        selected_grade = Grade.objects.filter(pk=grade_param).first()
+    elif user_grade:
+        selected_grade = user_grade
+    else:
+        selected_grade = grades.first()
+
+    # Division selection priority: GET param -> Student's enrolled division (if viewing same grade) -> None (All)
+    division_param = request.GET.get('division_id')
+    if division_param:
+        selected_division = Division.objects.filter(pk=division_param).first()
+    elif 'division_id' in request.GET and not division_param:
+        selected_division = None
+    elif user_division and (selected_grade == user_grade or not grade_param):
+        selected_division = user_division
+    else:
+        selected_division = None
+
+    divisions = Division.objects.filter(grade=selected_grade) if selected_grade else Division.objects.all()
 
     period_timings = PeriodTiming.objects.all().order_by('period_order')
     days_of_week = [
@@ -8204,17 +8565,22 @@ def class_timetable_view(request, grade_id=None):
 
     slots_map = {}
     if selected_grade:
-        existing_slots = TimetableSlot.objects.filter(
-            grade=selected_grade,
-            division=selected_division
-        ).select_related('subject', 'teacher', 'period_timing')
+        slots_qs = TimetableSlot.objects.filter(grade=selected_grade)
+        if selected_division:
+            slots_qs = slots_qs.filter(
+                Q(division=selected_division) | Q(division__isnull=True)
+            )
+        existing_slots = slots_qs.select_related('subject', 'teacher', 'period_timing', 'division').order_by('day_of_week', 'period_timing__period_order')
 
         for slot in existing_slots:
             key = f"{slot.day_of_week}_{slot.period_timing_id}"
-            slots_map[key] = slot
+            if key not in slots_map:
+                slots_map[key] = []
+            slots_map[key].append(slot)
 
     context = {
         'grades': grades,
+        'divisions': divisions,
         'selected_grade': selected_grade,
         'selected_division': selected_division,
         'period_timings': period_timings,

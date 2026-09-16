@@ -26,7 +26,6 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
     path('', include('students.urls')),
     path('alumni/', include('alumni.urls')),
-    path('fees/', include('fees.urls')),
     path('awards/', include('awards.urls')),
 ]
 

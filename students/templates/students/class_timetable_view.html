@@ -197,22 +197,33 @@
                     {% else %}
 
                     {% for day_key, day_label in days_of_week %}
-                    {% with slot_key=day_key|add:"_"|add:pt.id %}
-                    {% with slot=slots_map|get_item:slot_key %}
+                    {% with slot_key=day_key|concat_key:pt.id %}
+                    {% with slot_list=slots_map|get_item:slot_key %}
                     
-                    <td style="border: 1px solid #cbd5e1; padding: 0.75rem; vertical-align: middle; background: {% if slot %}#ffffff{% else %}#fafafa{% endif %};">
-                        {% if slot %}
-                        <div style="font-weight: 800; color: #0f172a; font-size: 0.95rem;">
-                            {{ slot.subject.name }}
+                    <td style="border: 1px solid #cbd5e1; padding: 0.65rem 0.5rem; vertical-align: middle; background: {% if slot_list %}#ffffff{% else %}#fafafa{% endif %};">
+                        {% if slot_list %}
+                        {% for slot in slot_list %}
+                        <div style="{% if not forloop.first %}margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cbd5e1;{% endif %}">
+                            <div style="font-weight: 800; color: #0f172a; font-size: 0.92rem; line-height: 1.2;">
+                                {{ slot.subject.name }}
+                            </div>
+                            <div style="font-size: 0.78rem; color: #475569; font-weight: 600; margin-top: 2px;">
+                                {{ slot.teacher.get_full_name|default:slot.teacher.username }}
+                            </div>
+                            {% if slot.division %}
+                            <div style="margin-top: 3px;">
+                                <span style="font-size: 0.65rem; background: #e0e7ff; color: #4338ca; padding: 1px 6px; border-radius: 4px; font-weight: 800; display: inline-block;">
+                                    {{ slot.division.name }}
+                                </span>
+                            </div>
+                            {% endif %}
+                            {% if slot.room_number %}
+                            <div style="font-size: 0.68rem; color: #64748b; margin-top: 2px;">
+                                📍 Room {{ slot.room_number }}
+                            </div>
+                            {% endif %}
                         </div>
-                        <div style="font-size: 0.8rem; color: #475569; font-weight: 600; margin-top: 3px;">
-                            {{ slot.teacher.get_full_name|default:slot.teacher.username }}
-                        </div>
-                        {% if slot.room_number %}
-                        <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">
-                            Room {{ slot.room_number }}
-                        </div>
-                        {% endif %}
+                        {% endfor %}
                         {% else %}
                         <span style="color: #cbd5e1;">-</span>
                         {% endif %}
@@ -261,10 +272,10 @@
         </div>
         {% else %}
 
-        {% with slot_key=day_key|add:"_"|add:pt.id %}
-        {% with slot=slots_map|get_item:slot_key %}
+        {% with slot_key=day_key|concat_key:pt.id %}
+        {% with slot_list=slots_map|get_item:slot_key %}
 
-        <div class="mobile-slot-card {% if slot %}assigned{% else %}empty{% endif %}">
+        <div class="mobile-slot-card {% if slot_list %}assigned{% else %}empty{% endif %}">
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
                 <div style="font-weight: 800; color: #1e293b; font-size: 0.9rem;">
@@ -275,20 +286,31 @@
                 </div>
             </div>
 
-            {% if slot %}
-            <div style="font-size: 1.1rem; font-weight: 800; color: #6d28d9; margin-bottom: 0.25rem;">
-                {{ slot.subject.name }}
-            </div>
-            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; font-size: 0.85rem; color: #334155; font-weight: 700;">
-                <div>
-                    <i class="fa-solid fa-chalkboard-user" style="color: #8b5cf6;"></i> {{ slot.teacher.get_full_name|default:slot.teacher.username }}
+            {% if slot_list %}
+            {% for slot in slot_list %}
+            <div style="{% if not forloop.first %}margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed #e2e8f0;{% endif %}">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
+                    <div style="font-size: 1.05rem; font-weight: 800; color: #6d28d9; margin-bottom: 0.2rem;">
+                        {{ slot.subject.name }}
+                    </div>
+                    {% if slot.division %}
+                    <span style="font-size: 0.68rem; background: #e0e7ff; color: #4338ca; padding: 2px 6px; border-radius: 6px; font-weight: 800; white-space: nowrap;">
+                        {{ slot.division.name }}
+                    </span>
+                    {% endif %}
                 </div>
-                {% if slot.room_number %}
-                <div style="color: #64748b;">
-                    📍 Room: {{ slot.room_number }}
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; font-size: 0.85rem; color: #334155; font-weight: 700;">
+                    <div>
+                        <i class="fa-solid fa-chalkboard-user" style="color: #8b5cf6;"></i> {{ slot.teacher.get_full_name|default:slot.teacher.username }}
+                    </div>
+                    {% if slot.room_number %}
+                    <div style="color: #64748b;">
+                        📍 Room: {{ slot.room_number }}
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
+            {% endfor %}
             {% else %}
             <div style="color: #cbd5e1; font-size: 0.85rem; font-weight: 600; margin-top: 0.25rem;">
                 - No Subject Assigned -

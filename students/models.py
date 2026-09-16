@@ -100,9 +100,7 @@ class Student(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
-    advance_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     uses_bus = models.BooleanField(default=False, help_text="Designates whether the student uses institutional transport")
-    bus_stop = models.ForeignKey('fees.BusStop', on_delete=models.SET_NULL, null=True, blank=True, related_name='students')
 
     class Meta:
         ordering = ['last_name', 'first_name']
@@ -546,7 +544,6 @@ class GlobalSettings(models.Model):
         default="We have received your application. Your application number is {app_no}. You can check your application status directly by clicking this link: {status_link}",
         help_text="Available placeholders: {name}, {app_no}, {status_link}"
     )
-    suspend_student_fees = models.BooleanField(default=False, help_text="Suspend student portal fee section for maintenance")
 
     def save(self, *args, **kwargs):
         self.pk = 1 # Ensure only one instance exists
@@ -783,6 +780,25 @@ class PeriodTiming(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')})"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if not self.is_break:
+            Period.objects.update_or_create(
+                id=self.id,
+                defaults={
+                    'name': f"{self.name} ({self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')})",
+                    'start_time': self.start_time,
+                    'end_time': self.end_time,
+                    'description': self.name
+                }
+            )
+        else:
+            Period.objects.filter(id=self.id).delete()
+
+    def delete(self, *args, **kwargs):
+        Period.objects.filter(id=self.id).delete()
+        super().delete(*args, **kwargs)
 
 
 class TeacherSubjectAssignment(models.Model):

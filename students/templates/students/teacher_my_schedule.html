@@ -155,7 +155,7 @@
                 {% else %}
 
                 {% for day_key, day_label in days_of_week %}
-                {% with slot_key=day_key|add:"_"|add:pt.id %}
+                {% with slot_key=day_key|concat_key:pt.id %}
                 {% with slot=schedule_map|get_item:slot_key %}
                 
                 <td style="background: {% if slot %}#f0f9ff{% else %}#ffffff{% endif %}; 
@@ -175,7 +175,7 @@
                     </div>
                     {% endif %}
                     <div style="margin-top: 6px;">
-                        <a href="{% url 'students:mark_attendance_class' slot.grade.id slot.division.id|default:0 %}" class="btn btn-sm btn-success" style="padding: 0.25rem 0.6rem; font-size: 0.7rem; font-weight: 700; border-radius: 6px; text-decoration: none;">
+                        <a href="{% url 'students:mark_attendance_class' slot.grade.id slot.division.id|default:0 %}?type=period&period={{ slot.period_timing.id }}" class="btn btn-sm btn-success" style="padding: 0.25rem 0.6rem; font-size: 0.7rem; font-weight: 700; border-radius: 6px; text-decoration: none;">
                             <i class="fa-solid fa-check"></i> Attendance
                         </a>
                     </div>
@@ -208,7 +208,7 @@
         {% for day_key, day_label in days_of_week %}
         <button type="button" 
                 class="mobile-day-pill {% if forloop.first %}active{% endif %}" 
-                id="schedule_pill_{{ day_key }}"
+                id="schedule_pill_{{ day_key }}" 
                 onclick="switchScheduleDay('{{ day_key }}')">
             {{ day_label }}
         </button>
@@ -228,7 +228,7 @@
         </div>
         {% else %}
 
-        {% with slot_key=day_key|add:"_"|add:pt.id %}
+        {% with slot_key=day_key|concat_key:pt.id %}
         {% with slot=schedule_map|get_item:slot_key %}
 
         <div class="mobile-slot-card {% if slot %}assigned{% else %}free{% endif %}">
@@ -251,7 +251,7 @@
                     🏫 Class: {{ slot.grade.name }} {% if slot.division %}- {{ slot.division.name }}{% endif %}
                     {% if slot.room_number %}<span style="color: #64748b; font-weight: 600; margin-left: 0.5rem;">📍 {{ slot.room_number }}</span>{% endif %}
                 </div>
-                <a href="{% url 'students:mark_attendance_class' slot.grade.id slot.division.id|default:0 %}" class="btn btn-success" style="padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 700; border-radius: 10px; text-decoration: none; min-height: 38px; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <a href="{% url 'students:mark_attendance_class' slot.grade.id slot.division.id|default:0 %}?type=period&period={{ slot.period_timing.id }}" class="btn btn-success" style="padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 700; border-radius: 10px; text-decoration: none; min-height: 38px; display: inline-flex; align-items: center; gap: 0.35rem;">
                     <i class="fa-solid fa-check-double"></i> Mark Attendance
                 </a>
             </div>

@@ -173,24 +173,42 @@
             <!-- Current Hostel Status Badge -->
             <div class="info-row" style="margin-top: 0.25rem;">
                 {% if student.is_away %}
-                    <span style="background-color: #fff7ed; color: #c2410c; padding: 0.35rem 0.75rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; border: 1px solid #fed7aa; display: inline-flex; align-items: center; gap: 4px;">
-                        <i class="fa-solid fa-walking"></i> Currently Away
+                    <span style="background-color: #fef2f2; color: #dc2626; padding: 0.35rem 0.75rem; border-radius: 8px; font-size: 0.75rem; font-weight: 800; border: 1px solid #fca5a5; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-person-walking-luggage"></i> 🔴 OUT (Away)
                     </span>
                 {% else %}
-                    <span style="background-color: #f0fdf4; color: #15803d; padding: 0.35rem 0.75rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; border: 1px solid #bbf7d0; display: inline-flex; align-items: center; gap: 4px;">
-                        <i class="fa-solid fa-house"></i> In Hostel
+                    <span style="background-color: #f0fdf4; color: #16a34a; padding: 0.35rem 0.75rem; border-radius: 8px; font-size: 0.75rem; font-weight: 800; border: 1px solid #86efac; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-house-circle-check"></i> 🟢 IN (Hostel)
                     </span>
                 {% endif %}
             </div>
 
             <!-- Card Actions -->
-            <div class="card-actions">
+            <div class="card-actions" style="display: flex; justify-content: space-between; align-items: center; gap: 0.4rem;">
+                {% if student.is_away %}
+                    <form method="post" onclick="event.stopPropagation();" onsubmit="return confirm('Mark {{ student.full_name }} as RETURNED / IN right now at current time?');" style="margin: 0;">
+                        {% csrf_token %}
+                        <input type="hidden" name="quick_return_student_id" value="{{ student.id }}">
+                        <button type="submit" style="background: #16a34a; color: white; border: none; padding: 0.35rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+                            <i class="fa-solid fa-check"></i> Mark IN
+                        </button>
+                    </form>
+                {% else %}
+                    <form method="post" onclick="event.stopPropagation();" onsubmit="return confirm('Mark {{ student.full_name }} as OUT (Leaving Hostel Now)?');" style="margin: 0;">
+                        {% csrf_token %}
+                        <input type="hidden" name="quick_out_student_id" value="{{ student.id }}">
+                        <button type="submit" style="background: #dc2626; color: white; border: none; padding: 0.35rem 0.65rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+                            <i class="fa-solid fa-person-walking"></i> Mark OUT
+                        </button>
+                    </form>
+                {% endif %}
+
                 <a href="{% url 'students:hostel_student_detail' student.pk %}" 
                    class="action-icon-btn" 
                    onclick="event.stopPropagation();" 
-                   style="background-color: rgba(99, 102, 241, 0.1); color: #4f46e5; text-decoration: none; padding: 0.4rem 0.8rem; font-size: 0.75rem; font-weight: 600; border-radius: 8px;" 
+                   style="background-color: rgba(99, 102, 241, 0.1); color: #4f46e5; text-decoration: none; padding: 0.35rem 0.6rem; font-size: 0.75rem; font-weight: 600; border-radius: 6px;" 
                    title="View Profile">
-                    <i class="fa-solid fa-eye" style="margin-right: 4px;"></i> View Profile
+                    <i class="fa-solid fa-eye"></i> Profile
                 </a>
             </div>
         </div>

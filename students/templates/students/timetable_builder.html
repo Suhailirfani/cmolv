@@ -248,7 +248,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 {% else %}
 
                 {% for day_key, day_label in days_of_week %}
-                {% with slot_key=day_key|add:"_"|add:pt.id %}
+                {% with slot_key=day_key|concat_key:pt.id %}
                 {% with slot=slots_map|get_item:slot_key %}
                 
                 <td class="timetable-cell" 
@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
         {% else %}
 
-        {% with slot_key=day_key|add:"_"|add:pt.id %}
+        {% with slot_key=day_key|concat_key:pt.id %}
         {% with slot=slots_map|get_item:slot_key %}
 
         <div class="mobile-slot-card {% if slot %}assigned{% else %}empty{% endif %}"
