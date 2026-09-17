@@ -10,6 +10,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunSQL(
+            sql="DROP INDEX IF EXISTS students_student_bus_stop_id_372cd484;",
+            reverse_sql=migrations.RunSQL.noop,
+        ),
         migrations.RemoveField(
             model_name='globalsettings',
             name='suspend_student_fees',
