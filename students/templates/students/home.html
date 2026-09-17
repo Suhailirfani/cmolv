@@ -50,21 +50,22 @@
     .quick-actions-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 1.25rem;
+        gap: 1.15rem;
     }
 
     .quick-action-btn {
         display: flex;
         align-items: center;
-        gap: 1rem;
-        padding: 1.25rem;
-        border-radius: 20px;
+        gap: 0.85rem;
+        padding: 1rem 1.15rem;
+        border-radius: 18px;
         background: var(--light);
         border: 1px solid var(--border);
         text-decoration: none;
         color: var(--dark);
-        font-weight: 600;
-        transition: all 0.3s ease;
+        font-weight: 700;
+        font-size: 0.92rem;
+        transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
         box-shadow: var(--shadow-soft);
         backface-visibility: hidden;
         transform: translateZ(0);
@@ -78,6 +79,26 @@
         box-shadow: var(--shadow-float);
     }
 
+    .quick-action-btn:hover i {
+        background: rgba(255, 255, 255, 0.2);
+        color: white !important;
+    }
+
+    .quick-action-btn i {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(99, 102, 241, 0.08);
+        color: var(--primary);
+        font-size: 1.15rem;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+    }
+
     /* Hover Bridge for Quick Actions */
     .quick-action-btn:hover::after {
         content: "";
@@ -89,52 +110,61 @@
         z-index: -1;
     }
 
-    .quick-action-btn i {
-        font-size: 1.25rem;
-        opacity: 0.8;
+    /* Quick Actions Tablet & Mobile */
+    @media (max-width: 1024px) {
+        .quick-actions-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.85rem;
+        }
     }
 
-    /* Quick Actions Mobile Responsive 3 Cards Per Row */
-    @media (max-width: 768px) {
+    @media (max-width: 640px) {
         .quick-actions-grid {
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 0.5rem !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 0.65rem !important;
         }
 
-        .quick-actions-grid .quick-action-btn {
-            padding: 0.65rem 0.35rem !important;
-            flex-direction: column !important;
-            justify-content: center !important;
+        .quick-action-btn {
+            padding: 0.85rem 0.75rem !important;
+            flex-direction: row !important;
+            justify-content: flex-start !important;
             align-items: center !important;
-            text-align: center !important;
-            gap: 0.35rem !important;
-            border-radius: 14px !important;
-            font-size: 0.72rem !important;
+            text-align: left !important;
+            gap: 0.65rem !important;
+            border-radius: 16px !important;
+            font-size: 0.8rem !important;
             font-weight: 700 !important;
-            line-height: 1.2 !important;
+            line-height: 1.25 !important;
             word-break: break-word !important;
         }
 
-        .quick-actions-grid .quick-action-btn i {
-            font-size: 1.15rem !important;
-            margin: 0 !important;
+        .quick-action-btn i {
+            width: 34px !important;
+            height: 34px !important;
+            min-width: 34px !important;
+            border-radius: 10px !important;
+            font-size: 0.95rem !important;
         }
     }
 
-    @media (max-width: 400px) {
+    @media (max-width: 360px) {
         .quick-actions-grid {
-            gap: 0.35rem !important;
+            gap: 0.45rem !important;
         }
 
-        .quick-actions-grid .quick-action-btn {
-            padding: 0.5rem 0.2rem !important;
-            border-radius: 12px !important;
-            font-size: 0.65rem !important;
-            line-height: 1.15 !important;
+        .quick-action-btn {
+            padding: 0.7rem 0.55rem !important;
+            border-radius: 14px !important;
+            font-size: 0.74rem !important;
+            gap: 0.5rem !important;
         }
 
-        .quick-actions-grid .quick-action-btn i {
-            font-size: 1rem !important;
+        .quick-action-btn i {
+            width: 30px !important;
+            height: 30px !important;
+            min-width: 30px !important;
+            font-size: 0.85rem !important;
+            border-radius: 8px !important;
         }
     }
 </style>
@@ -142,14 +172,14 @@
 {% if user.is_authenticated %}
 
     <!-- Academic Year Status Banner -->
-    <div class="card glass-card p-3 mb-4" style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.4) 100%); border-radius: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; border: 1px solid var(--border);">
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <div style="width: 42px; height: 42px; border-radius: 12px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+    <div class="card glass-card p-3 mb-4" style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.5) 100%); border-radius: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.85rem; border: 1px solid var(--border);">
+        <div style="display: flex; align-items: center; gap: 0.75rem; min-width: 0;">
+            <div style="width: 44px; height: 44px; min-width: 44px; border-radius: 14px; background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);">
                 <i class="fa-solid fa-calendar-days"></i>
             </div>
-            <div>
-                <div style="font-size: 0.75rem; color: var(--gray); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.2;">Current Academic Year</div>
-                <div style="font-size: 1.1rem; font-weight: 800; color: var(--dark-secondary); line-height: 1.2; margin-top: 2px;">
+            <div style="min-width: 0;">
+                <div style="font-size: 0.72rem; color: var(--gray); font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.2;">Current Academic Year</div>
+                <div style="font-size: 1.15rem; font-weight: 800; color: var(--dark-secondary); line-height: 1.2; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                     {% if active_year %}
                         {{ active_year.name }}
                     {% else %}
@@ -159,8 +189,8 @@
             </div>
         </div>
         {% if request.user.is_superuser or request.user.profile.role == 'admin' %}
-            <a href="{% url 'students:academic_year_list' %}" class="btn btn-xs btn-primary" style="margin: 0; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.8rem; width: auto;">
-                <i class="fa-solid fa-gear"></i> Manage Years
+            <a href="{% url 'students:academic_year_list' %}" class="btn btn-xs btn-primary" style="margin: 0; padding: 0.5rem 0.95rem; border-radius: 10px; font-size: 0.8rem; font-weight: 700; width: auto; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="fa-solid fa-gear"></i> <span>Manage Years</span>
             </a>
         {% endif %}
     </div>
@@ -283,52 +313,52 @@
             <i class="fa-solid fa-bolt" style="color: var(--warning);"></i> Quick Actions
         </h3>
         <div class="quick-actions-grid">
-            <a href="{% url 'students:face_attendance_scanner' %}" class="quick-action-btn" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%); border-color: rgba(99, 102, 241, 0.25);">
-                <i class="fa-solid fa-camera" style="color: var(--primary);"></i>
-                Face Scanner Terminal
+            <a href="{% url 'students:face_attendance_scanner' %}" class="quick-action-btn" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, #ffffff 100%); border-color: rgba(99, 102, 241, 0.25);">
+                <i class="fa-solid fa-camera" style="background: rgba(99, 102, 241, 0.15); color: #4f46e5;"></i>
+                <span>Face Scanner Terminal</span>
             </a>
             <a href="{% url 'students:mark_attendance' %}" class="quick-action-btn">
-                <i class="fa-solid fa-clipboard-user"></i>
-                Mark Attendance
+                <i class="fa-solid fa-clipboard-user" style="background: rgba(16, 185, 129, 0.12); color: #059669;"></i>
+                <span>Mark Attendance</span>
             </a>
             <a href="{% url 'students:class_timetable_view' %}" class="quick-action-btn">
-                <i class="fa-solid fa-table-cells" style="color: #8b5cf6;"></i>
-                Class Timetable
+                <i class="fa-solid fa-table-cells" style="background: rgba(139, 92, 246, 0.12); color: #7c3aed;"></i>
+                <span>Class Timetable</span>
             </a>
             {% if request.user.profile.role == 'teacher' %}
             <a href="{% url 'students:teacher_my_schedule' %}" class="quick-action-btn">
-                <i class="fa-solid fa-user-clock" style="color: #0ea5e9;"></i>
-                My Teaching Schedule
+                <i class="fa-solid fa-user-clock" style="background: rgba(14, 165, 233, 0.12); color: #0284c7;"></i>
+                <span>My Teaching Schedule</span>
             </a>
             {% else %}
             <a href="{% url 'students:timetable_dashboard' %}" class="quick-action-btn">
-                <i class="fa-solid fa-calendar-days" style="color: #6366f1;"></i>
-                Timetable Dashboard
+                <i class="fa-solid fa-calendar-days" style="background: rgba(99, 102, 241, 0.12); color: #4f46e5;"></i>
+                <span>Timetable Dashboard</span>
             </a>
             {% endif %}
             <a href="{% url 'students:hostel_movement_list' %}" class="quick-action-btn">
-                <i class="fa-solid fa-hotel" style="color: #6366f1;"></i>
-                Hostel Movements
+                <i class="fa-solid fa-hotel" style="background: rgba(249, 115, 22, 0.12); color: #ea580c;"></i>
+                <span>Hostel Movements</span>
             </a>
             <a href="{% url 'students:enquiry_create' %}" class="quick-action-btn">
-                <i class="fa-solid fa-headset"></i>
-                New Enquiry
+                <i class="fa-solid fa-headset" style="background: rgba(245, 158, 11, 0.12); color: #d97706;"></i>
+                <span>New Enquiry</span>
             </a>
             <a href="{% url 'students:student_list' %}" class="quick-action-btn">
-                <i class="fa-solid fa-address-book"></i>
-                Directory
+                <i class="fa-solid fa-address-book" style="background: rgba(20, 184, 166, 0.12); color: #0d9488;"></i>
+                <span>Directory</span>
             </a>
             <a href="{% url 'students:mark_entry' %}" class="quick-action-btn">
-                <i class="fa-solid fa-file-pen"></i>
-                Mark Entry
+                <i class="fa-solid fa-file-pen" style="background: rgba(244, 63, 94, 0.12); color: #e11d48;"></i>
+                <span>Mark Entry</span>
             </a>
             <a href="{% url 'students:examination_dashboard' %}" class="quick-action-btn">
-                <i class="fa-solid fa-graduation-cap"></i>
-                Exam Dashboard
+                <i class="fa-solid fa-graduation-cap" style="background: rgba(147, 51, 234, 0.12); color: #9333ea;"></i>
+                <span>Exam Dashboard</span>
             </a>
             <a href="{% url 'students:job_vacancy_list_admin' %}" class="quick-action-btn">
-                <i class="fa-solid fa-briefcase"></i>
-                Manage Vacancies
+                <i class="fa-solid fa-briefcase" style="background: rgba(100, 116, 139, 0.12); color: #475569;"></i>
+                <span>Manage Vacancies</span>
             </a>
         </div>
     </div>
