@@ -24,16 +24,11 @@ from .models import (
 from .forms import SectionForm, AcademicYearForm, EnquiryForm, GradeForm, DivisionForm, SubjectForm
 
 
-def get_holiday_dates(start_date, end_date, grade=None):
+def get_holidays_in_range(start_date, end_date, grade=None):
     """
-    Returns a set of date objects that are holidays (Sundays, Second Saturdays,
-    and manual holidays from the Holiday model) in the range [start_date, end_date].
-    If grade is provided, only includes holidays that apply to that grade (or all grades).
+    Returns a set of date objects that are declared holidays (from Holiday model)
+    between start_date and end_date. Classes run 7 days a week (week starts Saturday).
     """
-    from datetime import date, timedelta
-    from students.models import Holiday
-    from django.db.models import Q
-    
     if not start_date or not end_date:
         return set()
         
@@ -42,21 +37,9 @@ def get_holiday_dates(start_date, end_date, grade=None):
         holidays_qs = holidays_qs.filter(Q(grades__isnull=True) | Q(grades=grade)).distinct()
         
     holiday_dates = set(holidays_qs.values_list('date', flat=True))
-    
-    curr = start_date
-    while curr <= end_date:
-        weekday = curr.weekday()
-        if weekday == 6:  # Sunday
-            holiday_dates.add(curr)
-        elif weekday == 5:  # Saturday
-            # Second Saturday check
-            d = curr.day
-            first_weekday = date(curr.year, curr.month, 1).weekday()
-            if ((d + first_weekday) // 7 + 1) == 2:
-                holiday_dates.add(curr)
-        curr += timedelta(days=1)
-        
     return holiday_dates
+
+get_holiday_dates = get_holidays_in_range
 
 
 def landing_page(request):
@@ -1268,10 +1251,49 @@ def mark_attendance_class(request, grade_id, division_id=0):
             )
         }
 
+    initial_stream = request.GET.get('stream')
+    if initial_stream is not None and initial_stream != '':
+        try:
+            initial_stream_id = int(initial_stream)
+        except ValueError:
+            initial_stream_id = division_id if division_id else 0
+    else:
+        initial_stream_id = division_id if division_id else 0
+
     if request.method == 'POST':
         marked_by = request.user.get_full_name() or request.user.username or "Admin"
         attendance_data = request.POST.getlist('attendance')
+        excluded_ids = request.POST.getlist('excluded')
+        active_stream_tab = request.POST.get('active_stream_tab', '').strip()
         success_count = 0
+
+        # Handle excluded students (delete any existing record for this period/session if excluded)
+        for exc_id in excluded_ids:
+            try:
+                enrollment = Enrollment.objects.get(id=exc_id)
+                del_kwargs = {
+                    'student': enrollment.student,
+                    'enrollment': enrollment,
+                    'date': selected_date,
+                    'attendance_type': attendance_type,
+                }
+                if attendance_type == 'period':
+                    if period_id:
+                        del_kwargs['period_id'] = period_id
+                    else:
+                        continue
+                elif attendance_type == 'activity':
+                    if activity_id:
+                        del_kwargs['activity_id'] = activity_id
+                    else:
+                        continue
+                else:
+                    del_kwargs['period__isnull'] = True
+                    del_kwargs['activity__isnull'] = True
+
+                Attendance.objects.filter(**del_kwargs).delete()
+            except Enrollment.DoesNotExist:
+                pass
 
         for data in attendance_data:
             enrollment_id, status = data.split('|')
@@ -1310,11 +1332,16 @@ def mark_attendance_class(request, grade_id, division_id=0):
 
         selected_p_obj = Period.objects.filter(id=period_id).first() if period_id else None
         p_name = selected_p_obj.name if selected_p_obj else "Period"
-        messages.success(request, f"Attendance successfully saved for {p_name} ({success_count} students)!")
+        msg = f"Attendance successfully saved for {p_name} ({success_count} student(s) recorded"
+        if excluded_ids:
+            msg += f", {len(excluded_ids)} excluded"
+        msg += ")!"
+        messages.success(request, msg)
 
         params = [f"type={attendance_type}", f"date={selected_date}"]
         if period_id: params.append(f"period={period_id}")
         if activity_id: params.append(f"activity={activity_id}")
+        if active_stream_tab and active_stream_tab != '0': params.append(f"stream={active_stream_tab}")
         
         # Redirect back to the same class attendance page
         return redirect(f"{reverse('students:mark_attendance_class', args=[grade_id, division_id])}?{'&'.join(params)}")
@@ -1327,6 +1354,7 @@ def mark_attendance_class(request, grade_id, division_id=0):
         'grade_id': grade_id,
         'grade_name': grade_obj.name,
         'division_id': division_id,
+        'initial_stream_id': initial_stream_id,
         'section_id': section_id,
         'enrollments': enrollments,
         'all_enrollments': all_enrollments,
@@ -4805,7 +4833,6 @@ def attendance_update_tracking(request):
 
         for d in month_days:
             current_date = date(year, month, d)
-            weekday = current_date.weekday()
             grade_val = cd['grade']
             manual_holiday = Holiday.objects.filter(date=current_date).filter(
                 Q(grades__isnull=True) | Q(grades=grade_val) | Q(grades__name=grade_val)
@@ -4813,15 +4840,7 @@ def attendance_update_tracking(request):
 
             is_manual_holiday = manual_holiday is not None
             holiday_title = manual_holiday.title if manual_holiday else ''
-
-            # Holiday logic
-            is_sunday = weekday == 6
-            is_second_saturday = (
-                weekday == 5 and
-                ((d + date(year, month, 1).weekday()) // 7 + 1) == 2
-            )
-
-            is_holiday = is_sunday or is_second_saturday or is_manual_holiday
+            is_holiday = is_manual_holiday
 
             recorded = False
             if not is_holiday:
@@ -4837,12 +4856,7 @@ def attendance_update_tracking(request):
                 'day': d,
                 'recorded': recorded,
                 'is_holiday': is_holiday,
-                'holiday_type': (
-                    holiday_title if is_manual_holiday
-                    else 'Sunday' if is_sunday
-                    else 'Second Saturday' if is_second_saturday
-                    else ''
-                )
+                'holiday_type': holiday_title if is_manual_holiday else ''
             })
 
 
@@ -7084,21 +7098,10 @@ def monthly_attendance_grid(request, grade_id, division_id):
     dates_meta = []
     for d in range(1, num_days + 1):
         curr_date = date(year, month, d)
-        weekday = curr_date.weekday()
         
-        is_sunday = weekday == 6
-        is_second_saturday = (
-            weekday == 5 and
-            ((d + date(year, month, 1).weekday()) // 7 + 1) == 2
-        )
         is_manual_holiday = curr_date in holiday_map
-        is_holiday = is_sunday or is_second_saturday or is_manual_holiday
-        holiday_type = (
-            holiday_map[curr_date] if is_manual_holiday
-            else 'Sunday' if is_sunday
-            else 'Second Saturday' if is_second_saturday
-            else ''
-        )
+        is_holiday = is_manual_holiday
+        holiday_type = holiday_map[curr_date] if is_manual_holiday else ''
         
         is_future = curr_date > today
         
@@ -8259,12 +8262,13 @@ def timetable_builder(request):
 
     period_timings = PeriodTiming.objects.all().order_by('period_order')
     days_of_week = [
+        ('saturday', 'Saturday'),
+        ('sunday', 'Sunday'),
         ('monday', 'Monday'),
         ('tuesday', 'Tuesday'),
         ('wednesday', 'Wednesday'),
         ('thursday', 'Thursday'),
         ('friday', 'Friday'),
-        ('saturday', 'Saturday'),
     ]
 
     active_year = AcademicYear.objects.filter(is_active=True).first() or AcademicYear.objects.order_by('-start_date').first()
@@ -8490,12 +8494,13 @@ def teacher_my_schedule(request):
 
     period_timings = PeriodTiming.objects.all().order_by('period_order')
     days_of_week = [
+        ('saturday', 'Saturday'),
+        ('sunday', 'Sunday'),
         ('monday', 'Monday'),
         ('tuesday', 'Tuesday'),
         ('wednesday', 'Wednesday'),
         ('thursday', 'Thursday'),
         ('friday', 'Friday'),
-        ('saturday', 'Saturday'),
     ]
 
     slots = TimetableSlot.objects.filter(teacher=teacher).select_related('grade', 'division', 'subject', 'period_timing')
@@ -8555,12 +8560,13 @@ def class_timetable_view(request, grade_id=None):
 
     period_timings = PeriodTiming.objects.all().order_by('period_order')
     days_of_week = [
+        ('saturday', 'Saturday'),
+        ('sunday', 'Sunday'),
         ('monday', 'Monday'),
         ('tuesday', 'Tuesday'),
         ('wednesday', 'Wednesday'),
         ('thursday', 'Thursday'),
         ('friday', 'Friday'),
-        ('saturday', 'Saturday'),
     ]
 
     slots_map = {}

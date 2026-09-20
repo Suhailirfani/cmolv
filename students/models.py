@@ -821,15 +821,15 @@ class TeacherSubjectAssignment(models.Model):
 
 
 class TimetableSlot(models.Model):
-    """Stores individual weekly timetable slot assignments for classes."""
+    """Stores individual weekly timetable slot assignments for classes (7 days/week, starting Saturday)."""
     DAY_CHOICES = [
+        ('saturday', 'Saturday'),
+        ('sunday', 'Sunday'),
         ('monday', 'Monday'),
         ('tuesday', 'Tuesday'),
         ('wednesday', 'Wednesday'),
         ('thursday', 'Thursday'),
         ('friday', 'Friday'),
-        ('saturday', 'Saturday'),
-        ('sunday', 'Sunday'),
     ]
 
     academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, null=True, blank=True)

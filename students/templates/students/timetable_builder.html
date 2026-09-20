@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </td>
 
                 {% if pt.is_break %}
-                <td colspan="6" style="background: #fef3c7; color: #92400e; font-weight: 800; text-align: center; padding: 0.75rem; border-radius: 10px; border: 1px dashed #f59e0b; font-size: 0.9rem; letter-spacing: 1px;">
+                <td colspan="{{ days_of_week|length }}" style="background: #fef3c7; color: #92400e; font-weight: 800; text-align: center; padding: 0.75rem; border-radius: 10px; border: 1px dashed #f59e0b; font-size: 0.9rem; letter-spacing: 1px;">
                     ☕ {{ pt.name|upper }} INTERVAL
                 </td>
                 {% else %}

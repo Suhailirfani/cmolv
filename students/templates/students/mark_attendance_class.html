@@ -302,6 +302,102 @@
         border: 1px solid #e2e8f0;
     }
 
+    /* Consider in Attendance Toggle Switch */
+    .consider-toggle {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+        gap: 0.45rem;
+        margin: 0;
+    }
+
+    .consider-toggle input[type="checkbox"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .consider-track {
+        width: 36px;
+        height: 20px;
+        background-color: #cbd5e1;
+        border-radius: 20px;
+        position: relative;
+        transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+        flex-shrink: 0;
+    }
+
+    .consider-track::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 16px;
+        height: 16px;
+        background-color: white;
+        border-radius: 50%;
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    }
+
+    .consider-toggle input[type="checkbox"]:checked + .consider-track {
+        background-color: #10b981;
+    }
+
+    .consider-toggle input[type="checkbox"]:checked + .consider-track::after {
+        transform: translateX(16px);
+    }
+
+    .consider-badge-pill {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0.15rem 0.45rem;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        transition: all 0.2s ease;
+    }
+
+    .consider-badge-pill.on {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .consider-badge-pill.off {
+        background: #f1f5f9;
+        color: #64748b;
+        border: 1px dashed #cbd5e1;
+    }
+
+    /* Excluded Row Styling */
+    .student-attendance-row.row-excluded {
+        background-color: #f8fafc !important;
+        opacity: 0.55;
+    }
+
+    .student-attendance-row.row-excluded .status-toggle-container {
+        pointer-events: none;
+        filter: grayscale(100%);
+        opacity: 0.4;
+    }
+
+    .student-attendance-card.card-excluded {
+        background-color: #f8fafc !important;
+        opacity: 0.55;
+        border-style: dashed !important;
+    }
+
+    .student-attendance-card.card-excluded .btn-mob-status-group {
+        pointer-events: none;
+        filter: grayscale(100%);
+        opacity: 0.4;
+    }
+
     /* Mobile Buttons */
     .mobile-cards-wrapper {
         display: none;
@@ -398,8 +494,9 @@
     </span>
     {% for tab in stream_tabs %}
     <button type="button" 
-            class="stream-tab-btn {% if tab.id == 0 %}active{% endif %}" 
+            class="stream-tab-btn {% if tab.is_active %}active{% endif %}" 
             data-stream-id="{{ tab.id }}" 
+            data-stream-name="{{ tab.name }}"
             onclick="switchStreamFilter('{{ tab.id }}')">
         {% if tab.id == 0 %}
         <i class="fa-solid fa-users"></i>
@@ -419,6 +516,7 @@
 <div class="attendance-sheet-card">
     <form method="post" id="attendanceMarkForm">
         {% csrf_token %}
+        <input type="hidden" name="active_stream_tab" id="active_stream_tab" value="{{ initial_stream_id|default:0 }}">
 
         <!-- Active Period Banner -->
         <div class="active-period-banner">
@@ -431,11 +529,17 @@
 
             <!-- Quick-Fill Action Buttons (Applies to currently filtered stream) -->
             <div class="quick-action-btns">
+                <button type="button" class="quick-btn" onclick="toggleAllVisibleConsider(true)" style="color: #059669; font-weight: 800;" title="Consider all visible students in attendance">
+                    <i class="fa-solid fa-toggle-on"></i> Include All
+                </button>
+                <button type="button" class="quick-btn" onclick="toggleAllVisibleConsider(false)" style="color: #64748b; font-weight: 800;" title="Exclude all visible students from attendance">
+                    <i class="fa-solid fa-toggle-off"></i> Exclude All
+                </button>
                 <button type="button" class="quick-btn" onclick="markAllVisibleStatus('present')" style="color: #15803d;">
-                    <i class="fa-solid fa-circle-check"></i> Mark Filtered Present (P)
+                    <i class="fa-solid fa-circle-check"></i> Mark Present (P)
                 </button>
                 <button type="button" class="quick-btn" onclick="markAllVisibleStatus('absent')" style="color: #b91c1c;">
-                    <i class="fa-solid fa-circle-xmark"></i> Mark Filtered Absent (A)
+                    <i class="fa-solid fa-circle-xmark"></i> Mark Absent (A)
                 </button>
                 <button type="button" class="quick-btn" onclick="resetAttendance()">
                     <i class="fa-solid fa-rotate-left"></i> Reset
@@ -448,32 +552,35 @@
             {% for enrollment in all_enrollments %}
                 {% with status=existing_attendance|get_item:enrollment.id %}
                 <input type="hidden" name="attendance" id="hidden_attendance_{{ enrollment.id }}" value="{{ enrollment.id }}|{% if status %}{{ status }}{% else %}present{% endif %}">
+                <input type="hidden" name="excluded" id="hidden_excluded_{{ enrollment.id }}" value="{{ enrollment.id }}" disabled>
                 {% endwith %}
             {% endfor %}
         </div>
 
         <!-- 1. DESKTOP VIEW TABLE -->
-        <div class="desktop-table-wrapper">
+        <div class="desktop-table-wrapper" style="border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
             <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
-                        <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-                            <th style="padding: 0.85rem 1rem; text-align: left; color: #475569; font-weight: 700; width: 50px;">#</th>
-                            <th style="padding: 0.85rem 1rem; text-align: left; color: #475569; font-weight: 700; width: 130px;">Student ID</th>
-                            <th style="padding: 0.85rem 1rem; text-align: left; color: #475569; font-weight: 700;">Student Name</th>
-                            <th style="padding: 0.85rem 1rem; text-align: left; color: #475569; font-weight: 700; width: 140px;">Stream / Division</th>
-                            <th style="padding: 0.85rem 1rem; text-align: left; color: #475569; font-weight: 700; width: 100px;">Type</th>
-                            <th style="padding: 0.85rem 1rem; text-align: center; color: #475569; font-weight: 700; width: 220px;">Attendance Status</th>
+                        <tr style="background: #1e293b; color: #ffffff;">
+                            <th style="padding: 0.9rem 1rem; text-align: left; color: #ffffff !important; font-weight: 700; width: 45px; font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase;">#</th>
+                            <th style="padding: 0.9rem 1rem; text-align: left; color: #ffffff !important; font-weight: 700; width: 120px; font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase;">Student ID</th>
+                            <th style="padding: 0.9rem 1rem; text-align: left; color: #ffffff !important; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase;">Student Name</th>
+                            <th style="padding: 0.9rem 0.75rem; text-align: center; color: #ffffff !important; font-weight: 700; width: 90px; font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase;">Stream</th>
+                            <th style="padding: 0.9rem 0.75rem; text-align: center; color: #ffffff !important; font-weight: 700; width: 85px; font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase;">Consider</th>
+                            <th style="padding: 0.9rem 1rem; text-align: center; color: #ffffff !important; font-weight: 700; width: 220px; font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase;">Attendance Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for enrollment in all_enrollments %}
                         {% with status=existing_attendance|get_item:enrollment.id %}
                         <tr class="student-attendance-row" 
+                            id="row_{{ enrollment.id }}"
+                            data-enrollment-id="{{ enrollment.id }}"
                             data-division-id="{{ enrollment.division.id|default:0 }}"
-                            style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" 
-                            onmouseover="this.style.background='#f8faff';" 
-                            onmouseout="this.style.background='white';">
+                            style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s, opacity 0.2s;" 
+                            onmouseover="if(!this.classList.contains('row-excluded')) this.style.background='#f8faff';" 
+                            onmouseout="if(!this.classList.contains('row-excluded')) this.style.background='white';">
                             
                             <td style="padding: 0.85rem 1rem; color: #94a3b8; font-weight: 700;">{{ forloop.counter }}</td>
                             <td style="padding: 0.85rem 1rem; color: #475569; font-weight: 600;">{{ enrollment.student.student_id }}</td>
@@ -482,15 +589,14 @@
                                     {{ enrollment.student.full_name }}
                                 </a>
                             </td>
-                            <td style="padding: 0.85rem 1rem;">
-                                <span class="stream-badge">{{ enrollment.division.name|default:"General" }}</span>
+                            <td style="padding: 0.85rem 0.75rem; text-align: center;">
+                                <span class="stream-badge" title="{{ enrollment.division.name|default:'General' }}" style="font-weight: 800; font-size: 0.72rem; letter-spacing: 0.03em;">{{ enrollment.division.name|stream_code }}</span>
                             </td>
-                            <td style="padding: 0.85rem 1rem;">
-                                {% if enrollment.student.student_type == 'hostel' %}
-                                <span style="background: #ede9fe; color: #6d28d9; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 700;">Hostel</span>
-                                {% else %}
-                                <span style="background: #e0f2fe; color: #0369a1; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 700;">Day</span>
-                                {% endif %}
+                            <td style="padding: 0.85rem 0.75rem; text-align: center;">
+                                <label class="consider-toggle" title="Toggle attendance consideration (Default: ON)">
+                                    <input type="checkbox" id="consider_cb_{{ enrollment.id }}" checked onchange="toggleStudentConsider('{{ enrollment.id }}', this.checked)">
+                                    <span class="consider-track"></span>
+                                </label>
                             </td>
                             <td style="padding: 0.85rem 1rem; text-align: center;">
                                 <div class="status-toggle-container">
@@ -525,14 +631,16 @@
             {% for enrollment in all_enrollments %}
             {% with status=existing_attendance|get_item:enrollment.id %}
             <div class="student-attendance-card" 
+                 id="card_{{ enrollment.id }}"
+                 data-enrollment-id="{{ enrollment.id }}"
                  data-division-id="{{ enrollment.division.id|default:0 }}"
-                 style="background: white; border-radius: 14px; padding: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 2px 6px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 0.75rem;">
+                 style="background: white; border-radius: 14px; padding: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 2px 6px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 0.75rem; transition: background 0.2s, opacity 0.2s;">
                 
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <div style="font-weight: 800; color: #1e293b; font-size: 1rem;">{{ enrollment.student.full_name }}</div>
                         <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">
-                            ID: {{ enrollment.student.student_id }} &bull; <span class="stream-badge">{{ enrollment.division.name|default:"General" }}</span>
+                            ID: {{ enrollment.student.student_id }} &bull; <span class="stream-badge" title="{{ enrollment.division.name|default:'General' }}">{{ enrollment.division.name|stream_code }}</span>
                         </div>
                     </div>
                     <span id="mob_badge_{{ enrollment.id }}" class="p-status-pill {% if status == 'absent' %}complete" style="background: #fee2e2; color: #b91c1c;{% elif status == 'late' %}complete" style="background: #fef3c7; color: #b45309;{% else %}complete{% endif %}">
@@ -540,7 +648,18 @@
                     </span>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem;">
+                <!-- Mobile Consider Toggle Bar -->
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 0.45rem 0.75rem; border-radius: 10px; border: 1px solid #e2e8f0;">
+                    <span style="font-size: 0.78rem; font-weight: 700; color: #475569;">
+                        <i class="fa-solid fa-user-check" style="color: #6366f1;"></i> Consider in Attendance:
+                    </span>
+                    <label class="consider-toggle" title="Toggle attendance consideration (Default: ON)">
+                        <input type="checkbox" id="mob_consider_cb_{{ enrollment.id }}" checked onchange="toggleStudentConsider('{{ enrollment.id }}', this.checked)">
+                        <span class="consider-track"></span>
+                    </label>
+                </div>
+
+                <div class="btn-mob-status-group" id="mob_btn_group_{{ enrollment.id }}" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem;">
                     <button type="button" class="btn btn-sm btn-mob-{{ enrollment.id }} {% if status == 'present' or not status %}btn-success{% else %}btn-outline-secondary{% endif %}" id="mob_btn_{{ enrollment.id }}_present" onclick="updateRowStatus('{{ enrollment.id }}', 'present')" style="font-weight: 800; border-radius: 8px; padding: 0.5rem 0;">
                         P
                     </button>
@@ -561,49 +680,86 @@
 
         <!-- Submit Button Container -->
         <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid #f1f5f9; text-align: center;">
-            <button type="submit" class="save-attendance-btn">
+            <button type="submit" class="save-attendance-btn" id="saveAttendanceSubmitBtn">
                 <i class="fa-solid fa-cloud-arrow-up"></i>
-                Save Attendance for {{ selected_period_obj.name|default:"Period" }}
+                <span id="saveBtnText">Save Attendance for {{ selected_period_obj.name|default:"Period" }}</span>
             </button>
         </div>
     </form>
 </div>
 
 <script>
-var activeStreamId = '0'; // 0 = ALL
+var activeStreamId = '{{ initial_stream_id|default:0 }}';
 
-// Stream filter tab switcher
+// Synchronize hidden inputs for an enrollment based on tab visibility and consider switch
+function syncEnrollmentInputs(enrollmentId, isVisible) {
+    const hiddenAtt = document.getElementById('hidden_attendance_' + enrollmentId);
+    const hiddenExc = document.getElementById('hidden_excluded_' + enrollmentId);
+    const cb = document.getElementById('consider_cb_' + enrollmentId);
+    const isConsidered = cb ? cb.checked : true;
+
+    if (!isVisible) {
+        // Tab is NOT active for this student: DO NOT SUBMIT (remains untouched/unmarked in database)
+        if (hiddenAtt) hiddenAtt.disabled = true;
+        if (hiddenExc) hiddenExc.disabled = true;
+    } else {
+        // Tab IS active for this student: submit according to Consider toggle
+        if (hiddenAtt) hiddenAtt.disabled = !isConsidered;
+        if (hiddenExc) hiddenExc.disabled = isConsidered;
+    }
+}
+
+// Stream filter tab switcher: Filters UI and disables inputs for students in other streams
 function switchStreamFilter(streamId) {
     activeStreamId = streamId.toString();
 
-    // Update active tab button style
+    // 1. Update hidden form input for active stream
+    const activeStreamInput = document.getElementById('active_stream_tab');
+    if (activeStreamInput) {
+        activeStreamInput.value = activeStreamId;
+    }
+
+    // 2. Update active tab button style & get tab name
+    let selectedTabLabel = 'All (Combined)';
     document.querySelectorAll('.stream-tab-btn').forEach(btn => {
         if (btn.getAttribute('data-stream-id') === activeStreamId) {
             btn.classList.add('active');
+            selectedTabLabel = btn.getAttribute('data-stream-name') || btn.innerText.trim();
         } else {
             btn.classList.remove('active');
         }
     });
 
-    // Filter desktop rows
+    // 3. Filter desktop rows & sync input disabled status
+    let visibleCount = 0;
     document.querySelectorAll('.student-attendance-row').forEach(row => {
-        var rowDivId = (row.getAttribute('data-division-id') || '0').toString();
-        if (activeStreamId === '0' || rowDivId === activeStreamId) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
+        const rowDivId = (row.getAttribute('data-division-id') || '0').toString();
+        const enrollmentId = row.getAttribute('data-enrollment-id');
+        const isVisible = (activeStreamId === '0' || rowDivId === activeStreamId);
+        
+        row.style.display = isVisible ? '' : 'none';
+        if (isVisible) visibleCount++;
+
+        syncEnrollmentInputs(enrollmentId, isVisible);
     });
 
-    // Filter mobile cards
+    // 4. Filter mobile cards
     document.querySelectorAll('.student-attendance-card').forEach(card => {
-        var cardDivId = (card.getAttribute('data-division-id') || '0').toString();
-        if (activeStreamId === '0' || cardDivId === activeStreamId) {
-            card.style.display = '';
-        } else {
-            card.style.display = 'none';
-        }
+        const cardDivId = (card.getAttribute('data-division-id') || '0').toString();
+        const isVisible = (activeStreamId === '0' || cardDivId === activeStreamId);
+        card.style.display = isVisible ? '' : 'none';
     });
+
+    // 5. Update Submit Button text to reflect active stream scope
+    const saveBtnText = document.getElementById('saveBtnText');
+    if (saveBtnText) {
+        const periodName = "{{ selected_period_obj.name|default:'Period' }}";
+        if (activeStreamId === '0') {
+            saveBtnText.innerText = `Save Attendance for ${periodName} (All Students - ${visibleCount})`;
+        } else {
+            saveBtnText.innerText = `Save Attendance for ${periodName} (${selectedTabLabel} Only - ${visibleCount})`;
+        }
+    }
 }
 
 // Synchronize status selection across hidden inputs, desktop radios, and mobile buttons
@@ -634,15 +790,91 @@ function updateRowStatus(enrollmentId, status) {
 
     // 4. Update mobile badge
     const badge = document.getElementById('mob_badge_' + enrollmentId);
-    if (badge) {
+    const cb = document.getElementById('consider_cb_' + enrollmentId);
+    if (badge && (!cb || cb.checked)) {
         badge.innerText = status.charAt(0).toUpperCase() + status.slice(1);
+        if (status === 'absent') {
+            badge.className = 'p-status-pill complete';
+            badge.style.background = '#fee2e2';
+            badge.style.color = '#b91c1c';
+        } else if (status === 'late') {
+            badge.className = 'p-status-pill complete';
+            badge.style.background = '#fef3c7';
+            badge.style.color = '#b45309';
+        } else if (status === 'excused') {
+            badge.className = 'p-status-pill complete';
+            badge.style.background = '#e0f2fe';
+            badge.style.color = '#0369a1';
+        } else {
+            badge.className = 'p-status-pill complete';
+            badge.style.background = '#dcfce7';
+            badge.style.color = '#15803d';
+        }
     }
 }
 
-// Quick action: Mark all VISIBLE (filtered) students with a specific status
-function markAllVisibleStatus(status) {
+// Toggle whether a student is considered in attendance (Default ON)
+function toggleStudentConsider(enrollmentId, isConsidered) {
+    // 1. Sync checkboxes
+    const cbDesktop = document.getElementById('consider_cb_' + enrollmentId);
+    if (cbDesktop) cbDesktop.checked = isConsidered;
+    const cbMob = document.getElementById('mob_consider_cb_' + enrollmentId);
+    if (cbMob) cbMob.checked = isConsidered;
+
+    // 2. Determine visibility under current active stream tab
+    const row = document.getElementById('row_' + enrollmentId);
+    const rowDivId = row ? (row.getAttribute('data-division-id') || '0').toString() : '0';
+    const isVisible = (activeStreamId === '0' || rowDivId === activeStreamId);
+
+    // 3. Update hidden form inputs respecting tab visibility
+    syncEnrollmentInputs(enrollmentId, isVisible);
+
+    // 4. Update row and card excluded visual styles
+    if (row) {
+        if (isConsidered) row.classList.remove('row-excluded');
+        else row.classList.add('row-excluded');
+    }
+    const card = document.getElementById('card_' + enrollmentId);
+    if (card) {
+        if (isConsidered) card.classList.remove('card-excluded');
+        else card.classList.add('card-excluded');
+    }
+
+    // 5. Update mobile badge if excluded
+    const mobBadge = document.getElementById('mob_badge_' + enrollmentId);
+    if (mobBadge) {
+        if (!isConsidered) {
+            mobBadge.className = 'p-status-pill unmarked';
+            mobBadge.style.background = '#f1f5f9';
+            mobBadge.style.color = '#64748b';
+            mobBadge.innerText = 'Excluded';
+        } else {
+            let curStatus = 'present';
+            const hiddenAtt = document.getElementById('hidden_attendance_' + enrollmentId);
+            if (hiddenAtt && hiddenAtt.value) {
+                curStatus = hiddenAtt.value.split('|')[1] || 'present';
+            }
+            updateRowStatus(enrollmentId, curStatus);
+        }
+    }
+}
+
+// Quick action: Toggle all visible students Included or Excluded
+function toggleAllVisibleConsider(isConsidered) {
     document.querySelectorAll('.student-attendance-row').forEach(row => {
         if (row.style.display !== 'none') {
+            const enrollmentId = row.getAttribute('data-enrollment-id');
+            if (enrollmentId) {
+                toggleStudentConsider(enrollmentId, isConsidered);
+            }
+        }
+    });
+}
+
+// Quick action: Mark all VISIBLE and INCLUDED students with a specific status
+function markAllVisibleStatus(status) {
+    document.querySelectorAll('.student-attendance-row').forEach(row => {
+        if (row.style.display !== 'none' && !row.classList.contains('row-excluded')) {
             const radio = row.querySelector('input[type="radio"]');
             if (radio) {
                 const enrollmentId = radio.name.replace('attendance_', '');
@@ -656,6 +888,11 @@ function markAllVisibleStatus(status) {
 function resetAttendance() {
     window.location.reload();
 }
+
+// Initialize tab state and inputs on page load
+document.addEventListener('DOMContentLoaded', function() {
+    switchStreamFilter(activeStreamId);
+});
 </script>
 {% else %}
 <div style="text-align: center; padding: 4rem 2rem; background: white; border-radius: 16px; border: 1px solid #e2e8f0; color: #64748b;">

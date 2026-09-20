@@ -191,8 +191,8 @@
                     </td>
 
                     {% if pt.is_break %}
-                    <td colspan="6" style="background: #fef3c7; color: #92400e; font-weight: 800; padding: 0.65rem; border: 1px solid #f59e0b;">
-                        ☕ {{ pt.name|upper }} RECESSS
+                    <td colspan="{{ days_of_week|length }}" style="background: #fef3c7; color: #92400e; font-weight: 800; padding: 0.65rem; border: 1px solid #f59e0b;">
+                        ☕ {{ pt.name|upper }} RECESS
                     </td>
                     {% else %}
 
