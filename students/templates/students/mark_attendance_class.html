@@ -22,8 +22,8 @@
     /* Period Buttons Container */
     .period-buttons-container {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+        gap: 0.85rem;
         margin-bottom: 1.5rem;
     }
 
@@ -31,7 +31,7 @@
         background: white;
         border: 2px solid #e2e8f0;
         border-radius: 14px;
-        padding: 0.75rem 0.5rem;
+        padding: 0.85rem 0.75rem;
         text-align: center;
         text-decoration: none;
         color: #1e293b;
@@ -39,10 +39,11 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: space-between;
         position: relative;
         cursor: pointer;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+        min-height: 125px;
     }
 
     .period-nav-btn:hover {
@@ -60,8 +61,21 @@
         transform: translateY(-2px);
     }
 
+    .period-nav-btn.active-period .p-num-badge {
+        background: rgba(255, 255, 255, 0.25) !important;
+        color: white !important;
+    }
+
+    .period-nav-btn.active-period .p-subject-name {
+        color: white !important;
+    }
+
     .period-nav-btn.active-period .p-time {
         color: #e0e7ff !important;
+    }
+
+    .period-nav-btn.active-period .p-teacher-tag {
+        color: #c7d2fe !important;
     }
 
     .period-nav-btn.active-period .p-status-pill {
@@ -70,18 +84,45 @@
         border-color: rgba(255, 255, 255, 0.4) !important;
     }
 
-    .period-nav-btn .p-name {
+    .p-num-badge {
+        font-size: 0.72rem;
         font-weight: 800;
-        font-size: 0.95rem;
-        line-height: 1.2;
-        margin-bottom: 0.2rem;
+        color: #4f46e5;
+        background: #ede9fe;
+        padding: 0.15rem 0.45rem;
+        border-radius: 6px;
+        letter-spacing: 0.03em;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+    }
+
+    .p-subject-name {
+        font-weight: 800;
+        font-size: 1rem;
+        color: #0f172a;
+        line-height: 1.25;
+        margin: 0.35rem 0 0.15rem 0;
+        word-break: break-word;
+        text-align: center;
+    }
+
+    .p-teacher-tag {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #64748b;
+        margin-bottom: 0.35rem;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
     }
 
     .period-nav-btn .p-time {
         font-size: 0.7rem;
         color: #64748b;
         font-weight: 600;
-        margin-bottom: 0.4rem;
     }
 
     .p-status-pill {
@@ -453,19 +494,41 @@
 
 <div class="period-buttons-container">
     {% for p_info in periods_with_status %}
-    <a href="?date={{ selected_date }}&type=period&period={{ p_info.period.id }}" 
+    <a href="?date={{ selected_date }}&type=period&period={{ p_info.period.id }}{% if initial_stream_id %}&stream={{ initial_stream_id }}{% endif %}" 
        class="period-nav-btn {% if p_info.is_selected %}active-period{% endif %}"
-       title="{{ p_info.period.name }} ({{ p_info.period.start_time|time:'H:i' }} - {{ p_info.period.end_time|time:'H:i' }})">
+       data-default-subject="{% if p_info.subject_name %}{{ p_info.subject_name }}{% else %}{{ p_info.period.description|default:'No Subject' }}{% endif %}"
+       data-default-teacher="{{ p_info.teacher_name }}"
+       data-stream-subjects="{{ p_info.division_subjects_json }}"
+       title="{% if p_info.subject_name %}{{ p_info.subject_name }}{% if p_info.teacher_name %} ({{ p_info.teacher_name }}){% endif %} - {% endif %}{{ p_info.period.name }} ({{ p_info.period.start_time|time:'H:i' }} - {{ p_info.period.end_time|time:'H:i' }})">
         
-        <div class="p-name">
-            {% if p_info.is_selected %}
-            <i class="fa-solid fa-circle-dot" style="font-size: 0.75rem; margin-right: 0.2rem;"></i>
-            {% endif %}
-            P{{ forloop.counter }}
+        <!-- Header: Period Badge & Time -->
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 0.25rem;">
+            <span class="p-num-badge">
+                {% if p_info.is_selected %}
+                <i class="fa-solid fa-circle-dot" style="font-size: 0.65rem;"></i>
+                {% endif %}
+                P{{ forloop.counter }}
+            </span>
+            <span class="p-time">{{ p_info.period.start_time|time:"H:i" }} - {{ p_info.period.end_time|time:"H:i" }}</span>
         </div>
-        <div class="p-time">{{ p_info.period.start_time|time:"H:i" }} - {{ p_info.period.end_time|time:"H:i" }}</div>
-        
-        <div>
+
+        <!-- Real Subject Name -->
+        <div class="p-subject-name" title="{{ p_info.subject_details|default:p_info.subject_name }}">
+            {% if p_info.subject_name %}
+                {{ p_info.subject_name }}
+            {% else %}
+                <span style="opacity: 0.6; font-size: 0.85rem; font-weight: 600;">{{ p_info.period.description|default:"No Subject" }}</span>
+            {% endif %}
+        </div>
+
+        {% if p_info.teacher_name %}
+        <div class="p-teacher-tag" title="Teacher: {{ p_info.teacher_name }}">
+            <i class="fa-solid fa-chalkboard-user" style="font-size: 0.65rem; opacity: 0.8;"></i> {{ p_info.teacher_name }}
+        </div>
+        {% endif %}
+
+        <!-- Status Pill -->
+        <div style="width: 100%; text-align: center; margin-top: auto;">
             {% if p_info.is_complete %}
             <span class="p-status-pill complete">
                 <i class="fa-solid fa-check"></i> Marked ({{ p_info.marked_count }})
@@ -521,10 +584,20 @@
         <!-- Active Period Banner -->
         <div class="active-period-banner">
             <div>
-                <span style="font-size: 0.75rem; font-weight: 700; color: #6366f1; text-transform: uppercase; letter-spacing: 0.05em;">Currently Marking</span>
-                <h3 style="margin: 0.2rem 0 0 0; font-size: 1.3rem; font-weight: 800; color: #1e293b;">
-                    📝 {{ selected_period_obj.name|default:"Selected Period" }}
+                <span style="font-size: 0.75rem; font-weight: 700; color: #6366f1; text-transform: uppercase; letter-spacing: 0.05em;">Currently Marking ({{ selected_day_name }})</span>
+                <h3 style="margin: 0.2rem 0 0 0; font-size: 1.3rem; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                    <span>📝 {{ selected_period_obj.name|default:"Selected Period" }}</span>
+                    {% if selected_period_subject %}
+                    <span style="background: #e0e7ff; color: #4338ca; padding: 0.2rem 0.65rem; border-radius: 8px; font-size: 1.05rem; font-weight: 800; display: inline-flex; align-items: center; gap: 0.35rem;">
+                        <i class="fa-solid fa-book-open" style="font-size: 0.85rem;"></i> {{ selected_period_subject }}
+                    </span>
+                    {% endif %}
                 </h3>
+                {% if selected_period_details and selected_period_details != selected_period_subject %}
+                <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; margin-top: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
+                    <i class="fa-solid fa-circle-info" style="color: #6366f1;"></i> Streams: <strong>{{ selected_period_details }}</strong>
+                </div>
+                {% endif %}
             </div>
 
             <!-- Quick-Fill Action Buttons (Applies to currently filtered stream) -->
@@ -760,6 +833,33 @@ function switchStreamFilter(streamId) {
             saveBtnText.innerText = `Save Attendance for ${periodName} (${selectedTabLabel} Only - ${visibleCount})`;
         }
     }
+
+    // 6. Update Period Buttons subject label based on active stream
+    document.querySelectorAll('.period-nav-btn').forEach(btn => {
+        const streamDataRaw = btn.getAttribute('data-stream-subjects');
+        const defaultSubj = btn.getAttribute('data-default-subject') || '';
+        const defaultTeacher = btn.getAttribute('data-default-teacher') || '';
+        const subjElem = btn.querySelector('.p-subject-name');
+        const teacherElem = btn.querySelector('.p-teacher-tag');
+
+        if (streamDataRaw && streamDataRaw !== '{}' && activeStreamId !== '0') {
+            try {
+                const streamMap = JSON.parse(streamDataRaw);
+                const streamInfo = streamMap[activeStreamId] || streamMap[parseInt(activeStreamId)] || streamMap[0] || streamMap['0'];
+                if (streamInfo && streamInfo.subject && subjElem) {
+                    subjElem.innerText = streamInfo.subject;
+                    if (teacherElem) {
+                        teacherElem.innerHTML = streamInfo.teacher ? `<i class="fa-solid fa-chalkboard-user" style="font-size: 0.65rem; opacity: 0.8;"></i> ${streamInfo.teacher}` : '';
+                    }
+                }
+            } catch (e) {}
+        } else {
+            if (subjElem) subjElem.innerText = defaultSubj;
+            if (teacherElem) {
+                teacherElem.innerHTML = defaultTeacher ? `<i class="fa-solid fa-chalkboard-user" style="font-size: 0.65rem; opacity: 0.8;"></i> ${defaultTeacher}` : '';
+            }
+        }
+    });
 }
 
 // Synchronize status selection across hidden inputs, desktop radios, and mobile buttons

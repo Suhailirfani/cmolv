@@ -6,9 +6,11 @@ from django.contrib import messages
 from django.db import models
 from django.db.models import Q, Count
 from django.utils import timezone
+import json
 from django.http import JsonResponse, HttpResponse
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from django.db.models import Max
+from collections import OrderedDict
 
 try:
     import pandas as pd
@@ -1185,9 +1187,33 @@ def mark_attendance_class(request, grade_id, division_id=0):
     else:
         enrollments = all_enrollments
 
+    # 1. Parse date for timetable day lookup
+    if isinstance(selected_date, str):
+        try:
+            date_obj = datetime.strptime(selected_date, '%Y-%m-%d').date()
+        except ValueError:
+            date_obj = date.today()
+    else:
+        date_obj = selected_date
+    day_key = date_obj.strftime('%A').lower()
+
+    # Query TimetableSlot records for this grade & active academic year on this day
+    timetable_slots_qs = TimetableSlot.objects.filter(
+        grade=grade_obj,
+        day_of_week=day_key,
+        academic_year=active_year
+    ).select_related('period_timing', 'subject', 'teacher', 'division')
+
+    slots_by_period_timing = {}
+    for slot in timetable_slots_qs:
+        slots_by_period_timing.setdefault(slot.period_timing_id, []).append(slot)
+
+    selected_period_subject = ""
+    selected_period_details = ""
+
     # Build period-by-period status information for the period buttons
     periods_with_status = []
-    for p in periods:
+    for idx, p in enumerate(periods, 1):
         p_attendances = Attendance.objects.filter(
             date=selected_date,
             attendance_type='period',
@@ -1204,9 +1230,51 @@ def mark_attendance_class(request, grade_id, division_id=0):
         is_partial = (0 < marked_count < len(all_enrollments))
         is_unmarked = (marked_count == 0)
         is_selected = (str(p.id) == str(period_id))
+
+        # Real Subject and Teacher lookup from Timetable
+        matching_slots = slots_by_period_timing.get(p.id, [])
+        subject_name = ""
+        subject_details = ""
+        teacher_name = ""
+        division_subjects_map = {}
+
+        for s in matching_slots:
+            div_id = s.division_id if s.division_id else 0
+            t_name = s.teacher.get_full_name() or s.teacher.username if s.teacher else ""
+            division_subjects_map[div_id] = {
+                'subject': s.subject.name,
+                'teacher': t_name,
+                'room': s.room_number or '',
+            }
+
+        if matching_slots:
+            if division_id and division_id > 0:
+                div_slot = next((s for s in matching_slots if s.division_id == division_id), None)
+                if not div_slot:
+                    div_slot = next((s for s in matching_slots if not s.division_id), None)
+                if div_slot:
+                    subject_name = div_slot.subject.name
+                    teacher_name = div_slot.teacher.get_full_name() or div_slot.teacher.username if div_slot.teacher else ""
+                    subject_details = f"{div_slot.subject.name} ({teacher_name})" if teacher_name else div_slot.subject.name
+            else:
+                subjs = list(OrderedDict.fromkeys([s.subject.name for s in matching_slots]))
+                subject_name = " / ".join(subjs)
+                teachers = list(OrderedDict.fromkeys([s.teacher.get_full_name() or s.teacher.username for s in matching_slots if s.teacher]))
+                teacher_name = " / ".join(teachers)
+                div_details_list = [f"{s.division.name}: {s.subject.name}" if s.division else s.subject.name for s in matching_slots]
+                subject_details = " | ".join(div_details_list)
+
+        if is_selected:
+            selected_period_subject = subject_name
+            selected_period_details = subject_details
         
         periods_with_status.append({
             'period': p,
+            'period_order': idx,
+            'subject_name': subject_name,
+            'subject_details': subject_details,
+            'teacher_name': teacher_name,
+            'division_subjects_json': json.dumps(division_subjects_map) if division_subjects_map else '{}',
             'marked_count': marked_count,
             'present_count': present_count,
             'absent_count': absent_count,
@@ -1366,6 +1434,9 @@ def mark_attendance_class(request, grade_id, division_id=0):
         'periods_with_status': periods_with_status,
         'selected_period': period_id,
         'selected_period_obj': selected_period_obj,
+        'selected_period_subject': selected_period_subject,
+        'selected_period_details': selected_period_details,
+        'selected_day_name': date_obj.strftime('%A'),
         'selected_activity': activity_id,
         'selected_activity_obj': selected_activity_obj,
     }
@@ -1744,6 +1815,25 @@ def today_attendance_view(request):
     ).select_related('period')
     att_map = {(att.enrollment_id, att.period_id): att for att in attendances}
 
+    # Timetable slots lookup for today_attendance
+    day_key = selected_date.strftime('%A').lower()
+    day_name = selected_date.strftime('%A')
+
+    day_slots_qs = TimetableSlot.objects.filter(
+        academic_year=active_year,
+        day_of_week=day_key
+    ).select_related('grade', 'division', 'subject', 'teacher', 'period_timing')
+
+    slot_lookup = {}
+    grade_slots_by_pt = {}
+    for s in day_slots_qs:
+        slot_lookup[(s.grade_id, s.division_id, s.period_timing_id)] = s
+        if s.division_id is None:
+            slot_lookup[(s.grade_id, None, s.period_timing_id)] = s
+        if grade_id and str(s.grade_id) == str(grade_id):
+            if not division_id or not s.division_id or str(s.division_id) == str(division_id):
+                grade_slots_by_pt.setdefault(s.period_timing_id, []).append(s)
+
     student_stats = []
     for env in enrollments:
         student = env.student
@@ -1756,6 +1846,10 @@ def today_attendance_view(request):
 
         for p in periods:
             att = att_map.get((env.id, p.id))
+            st_slot = slot_lookup.get((env.grade_id, env.division_id, p.id)) or slot_lookup.get((env.grade_id, None, p.id))
+            st_subject = st_slot.subject.name if st_slot else ""
+            st_teacher = (st_slot.teacher.get_full_name() or st_slot.teacher.username) if (st_slot and st_slot.teacher) else ""
+
             if att:
                 status = att.status
                 if status == 'present':
@@ -1792,6 +1886,8 @@ def today_attendance_view(request):
                 'code': code,
                 'badge_class': badge_class,
                 'marked_by': marked_by,
+                'subject_name': st_subject,
+                'teacher_name': st_teacher,
             })
 
         total_p = len(periods)
@@ -1869,8 +1965,16 @@ def today_attendance_view(request):
         p_marked = p_present + p_absent + p_late + p_excused
         p_pct = round(((p_present + p_late + p_excused) / p_marked * 100)) if p_marked > 0 else 0
 
+        matching_g_slots = grade_slots_by_pt.get(p.id, [])
+        if matching_g_slots:
+            subjs = list(OrderedDict.fromkeys([s.subject.name for s in matching_g_slots]))
+            p_subject = " / ".join(subjs)
+        else:
+            p_subject = ""
+
         period_stats.append({
             'period': p,
+            'subject_name': p_subject,
             'present': p_present,
             'absent': p_absent,
             'late': p_late,

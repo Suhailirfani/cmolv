@@ -558,8 +558,17 @@
 <div class="period-strip-container">
     {% for ps in period_stats %}
     <div class="period-mini-card">
-        <div class="p-name">{{ ps.period.name|truncatechars:14 }}</div>
-        <div class="p-time">{{ ps.period.start_time|time:"H:i" }} - {{ ps.period.end_time|time:"H:i" }}</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+            <span style="font-size: 0.72rem; font-weight: 800; color: #6366f1; background: #e0e7ff; padding: 0.1rem 0.4rem; border-radius: 6px;">P{{ forloop.counter }}</span>
+            <span class="p-time" style="margin-bottom: 0;">{{ ps.period.start_time|time:"H:i" }} - {{ ps.period.end_time|time:"H:i" }}</span>
+        </div>
+        <div class="p-name" title="{{ ps.subject_name|default:ps.period.name }}">
+            {% if ps.subject_name %}
+                <span style="color: #0f172a; font-weight: 800;">{{ ps.subject_name|truncatechars:20 }}</span>
+            {% else %}
+                {{ ps.period.name|truncatechars:20 }}
+            {% endif %}
+        </div>
         <div class="p-stats">
             <span style="color: #15803d;" title="{{ ps.present }} Present"><i class="fa-solid fa-check"></i> {{ ps.present }}</span>
             <span style="color: #b91c1c;" title="{{ ps.absent }} Absent"><i class="fa-solid fa-xmark"></i> {{ ps.absent }}</span>
@@ -699,7 +708,7 @@
                 {% for p_stat in stat.periods %}
                 <td>
                     <span class="period-badge {{ p_stat.badge_class }}" 
-                          title="{{ p_stat.period.name }}: {{ p_stat.status|title }}{% if p_stat.marked_by %} (By {{ p_stat.marked_by }}){% endif %}">
+                          title="{% if p_stat.subject_name %}{{ p_stat.subject_name }}{% if p_stat.teacher_name %} ({{ p_stat.teacher_name }}){% endif %} - {% endif %}{{ p_stat.period.name }}: {{ p_stat.status|title }}{% if p_stat.marked_by %} (By {{ p_stat.marked_by }}){% endif %}">
                         {{ p_stat.code }}
                     </span>
                 </td>
@@ -781,9 +790,9 @@
 
         <div class="mobile-periods-row">
             {% for p_stat in stat.periods %}
-            <div class="mobile-p-col">
+            <div class="mobile-p-col" title="{% if p_stat.subject_name %}{{ p_stat.subject_name }} - {% endif %}{{ p_stat.period.name }}">
                 <div class="p-lbl">P{{ forloop.counter }}</div>
-                <span class="period-badge {{ p_stat.badge_class }}" style="width: 26px; height: 26px; font-size: 0.75rem;">
+                <span class="period-badge {{ p_stat.badge_class }}" style="width: 26px; height: 26px; font-size: 0.75rem;" title="{% if p_stat.subject_name %}{{ p_stat.subject_name }}: {% endif %}{{ p_stat.status|title }}">
                     {{ p_stat.code }}
                 </span>
             </div>
