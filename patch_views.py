@@ -22,9 +22,9 @@ view_roles = {
     'attendance_student_detail': ["@role_required(['admin', 'teacher'])"],
     'attendance_update_tracking': ["@role_required(['admin', 'teacher'])"],
     
-    'hostel_movement_list': ["@role_required(['admin', 'ntstaff'])"],
-    'hostel_movement_create': ["@role_required(['admin', 'ntstaff'])"],
-    'hostel_movement_update': ["@role_required(['admin', 'ntstaff'])"],
+    'hostel_movement_list': ["@role_required(['admin', 'teacher', 'ntstaff'])"],
+    'hostel_movement_create': ["@role_required(['admin', 'teacher', 'ntstaff'])"],
+    'hostel_movement_update': ["@role_required(['admin', 'teacher', 'ntstaff'])"],
     
     'exam_type_list': ["@role_required(['admin', 'teacher'])"],
     'exam_type_create': ["@role_required(['admin', 'teacher'])"],

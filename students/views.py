@@ -18,7 +18,7 @@ try:
 except ImportError:
     PANDAS_AVAILABLE = False
 from .models import (
-    Student, Attendance, HostelMovement, Period, Activity, Division, Room,
+    Student, Attendance, ClassPeriodCancellation, HostelMovement, Period, Activity, Division, Room,
     ExamType, Subject, MarkEntry, ProgressReport, AcademicYear, Enrollment,
     Grade, Section, Holiday, ExamSubjectMaxMark, NewsTickerItem,
     PeriodTiming, TeacherSubjectAssignment, TimetableSlot
@@ -1211,9 +1211,21 @@ def mark_attendance_class(request, grade_id, division_id=0):
     selected_period_subject = ""
     selected_period_details = ""
 
+    # Query any cancellations for this grade/division on the selected date
+    cancellations_qs = ClassPeriodCancellation.objects.filter(
+        grade=grade_obj,
+        date=selected_date
+    )
+    if division_id and division_id > 0:
+        cancellations_qs = cancellations_qs.filter(Q(division_id=division_id) | Q(division__isnull=True))
+    cancellations_map = {c.period_id: c for c in cancellations_qs}
+
     # Build period-by-period status information for the period buttons
     periods_with_status = []
     for idx, p in enumerate(periods, 1):
+        p_canc = cancellations_map.get(p.id)
+        is_cancelled = bool(p_canc)
+
         p_attendances = Attendance.objects.filter(
             date=selected_date,
             attendance_type='period',
@@ -1228,7 +1240,7 @@ def mark_attendance_class(request, grade_id, division_id=0):
         
         is_complete = (marked_count == len(all_enrollments) and len(all_enrollments) > 0)
         is_partial = (0 < marked_count < len(all_enrollments))
-        is_unmarked = (marked_count == 0)
+        is_unmarked = (marked_count == 0 and not is_cancelled)
         is_selected = (str(p.id) == str(period_id))
 
         # Real Subject and Teacher lookup from Timetable
@@ -1285,6 +1297,11 @@ def mark_attendance_class(request, grade_id, division_id=0):
             'is_partial': is_partial,
             'is_unmarked': is_unmarked,
             'is_selected': is_selected,
+            'is_cancelled': is_cancelled,
+            'cancellation': p_canc,
+            'cancellation_reason': p_canc.get_reason_type_display() if p_canc else '',
+            'cancellation_remarks': p_canc.remarks if p_canc else '',
+            'cancelled_by': p_canc.cancelled_by if p_canc else '',
         })
 
     # Get existing attendance for the selected period (across all students)
@@ -1329,11 +1346,77 @@ def mark_attendance_class(request, grade_id, division_id=0):
         initial_stream_id = division_id if division_id else 0
 
     if request.method == 'POST':
+        action = request.POST.get('action', '')
+        active_stream_tab = request.POST.get('active_stream_tab', '').strip()
+
+        # Handle "Mark Period as Not Conducted" action
+        if action == 'mark_not_conducted' and attendance_type == 'period' and period_id:
+            selected_p_obj = get_object_or_404(Period, id=period_id)
+            reason_type = request.POST.get('reason_type', 'staff_meeting')
+            remarks = request.POST.get('cancellation_remarks', '').strip()
+            cancelled_by = request.user.get_full_name() or request.user.username or "Teacher"
+            div_obj = Division.objects.filter(id=division_id).first() if division_id and division_id > 0 else None
+
+            canc_obj, _ = ClassPeriodCancellation.objects.update_or_create(
+                grade=grade_obj,
+                division=div_obj,
+                period=selected_p_obj,
+                date=selected_date,
+                defaults={
+                    'reason_type': reason_type,
+                    'remarks': remarks,
+                    'cancelled_by': cancelled_by,
+                }
+            )
+
+            # Clear individual student records for this period if any were previously marked
+            Attendance.objects.filter(
+                date=selected_date,
+                attendance_type='period',
+                period=selected_p_obj,
+                enrollment__in=all_enrollments
+            ).delete()
+
+            messages.warning(request, f"🚫 {selected_p_obj.name} marked as NOT CONDUCTED ({canc_obj.get_reason_type_display()}).")
+            params = [f"type={attendance_type}", f"date={selected_date}", f"period={period_id}"]
+            if active_stream_tab and active_stream_tab != '0': params.append(f"stream={active_stream_tab}")
+            return redirect(f"{reverse('students:mark_attendance_class', args=[grade_id, division_id])}?{'&'.join(params)}")
+
+        # Handle "Reopen Period for Attendance" action
+        elif action == 'reopen_period' and attendance_type == 'period' and period_id:
+            selected_p_obj = get_object_or_404(Period, id=period_id)
+            canc_filter = {
+                'grade': grade_obj,
+                'period': selected_p_obj,
+                'date': selected_date,
+            }
+            if division_id and division_id > 0:
+                canc_filter['division_id'] = division_id
+            else:
+                canc_filter['division__isnull'] = True
+
+            ClassPeriodCancellation.objects.filter(**canc_filter).delete()
+            messages.success(request, f"🔄 {selected_p_obj.name} reopened for attendance marking.")
+            params = [f"type={attendance_type}", f"date={selected_date}", f"period={period_id}"]
+            if active_stream_tab and active_stream_tab != '0': params.append(f"stream={active_stream_tab}")
+            return redirect(f"{reverse('students:mark_attendance_class', args=[grade_id, division_id])}?{'&'.join(params)}")
+
+        # Standard Attendance Submission
         marked_by = request.user.get_full_name() or request.user.username or "Admin"
         attendance_data = request.POST.getlist('attendance')
         excluded_ids = request.POST.getlist('excluded')
-        active_stream_tab = request.POST.get('active_stream_tab', '').strip()
         success_count = 0
+
+        # If marking attendance on a previously cancelled period, clear cancellation automatically
+        if attendance_type == 'period' and period_id:
+            selected_p_obj = Period.objects.filter(id=period_id).first()
+            if selected_p_obj:
+                canc_filter = {'grade': grade_obj, 'period': selected_p_obj, 'date': selected_date}
+                if division_id and division_id > 0:
+                    canc_filter['division_id'] = division_id
+                else:
+                    canc_filter['division__isnull'] = True
+                ClassPeriodCancellation.objects.filter(**canc_filter).delete()
 
         # Handle excluded students (delete any existing record for this period/session if excluded)
         for exc_id in excluded_ids:
@@ -1416,6 +1499,7 @@ def mark_attendance_class(request, grade_id, division_id=0):
 
     selected_period_obj = Period.objects.filter(id=period_id).first() if period_id else None
     selected_activity_obj = Activity.objects.filter(id=activity_id).first() if activity_id else None
+    active_cancellation = cancellations_map.get(int(period_id)) if (period_id and str(period_id).isdigit()) else None
 
     context = {
         'class_name': class_name,
@@ -1439,6 +1523,8 @@ def mark_attendance_class(request, grade_id, division_id=0):
         'selected_day_name': date_obj.strftime('%A'),
         'selected_activity': activity_id,
         'selected_activity_obj': selected_activity_obj,
+        'active_cancellation': active_cancellation,
+        'cancellation_reasons': ClassPeriodCancellation.REASON_CHOICES,
     }
     return render(request, 'students/mark_attendance_class.html', context)
 
@@ -1815,6 +1901,14 @@ def today_attendance_view(request):
     ).select_related('period')
     att_map = {(att.enrollment_id, att.period_id): att for att in attendances}
 
+    # Fetch any period cancellations for selected date
+    cancellations_today = ClassPeriodCancellation.objects.filter(date=selected_date)
+    canc_lookup = {}
+    for c in cancellations_today:
+        canc_lookup[(c.grade_id, c.division_id, c.period_id)] = c
+        if c.division_id is None:
+            canc_lookup[(c.grade_id, None, c.period_id)] = c
+
     # Timetable slots lookup for today_attendance
     day_key = selected_date.strftime('%A').lower()
     day_name = selected_date.strftime('%A')
@@ -1843,14 +1937,22 @@ def today_attendance_view(request):
         late_count = 0
         excused_count = 0
         not_marked_count = 0
+        cancelled_count = 0
 
         for p in periods:
             att = att_map.get((env.id, p.id))
+            canc = canc_lookup.get((env.grade_id, env.division_id, p.id)) or canc_lookup.get((env.grade_id, None, p.id))
             st_slot = slot_lookup.get((env.grade_id, env.division_id, p.id)) or slot_lookup.get((env.grade_id, None, p.id))
             st_subject = st_slot.subject.name if st_slot else ""
             st_teacher = (st_slot.teacher.get_full_name() or st_slot.teacher.username) if (st_slot and st_slot.teacher) else ""
 
-            if att:
+            if canc:
+                status = 'cancelled'
+                code = 'NC'
+                badge_class = 'cancelled'
+                marked_by = canc.cancelled_by or 'Staff'
+                cancelled_count += 1
+            elif att:
                 status = att.status
                 if status == 'present':
                     code = 'P'
@@ -1888,15 +1990,17 @@ def today_attendance_view(request):
                 'marked_by': marked_by,
                 'subject_name': st_subject,
                 'teacher_name': st_teacher,
+                'cancellation': canc,
             })
 
         total_p = len(periods)
+        conducted_p = max(0, total_p - cancelled_count)
         marked_p = present_count + absent_count + late_count + excused_count
         
-        if total_p > 0:
-            percentage = round(((present_count + late_count + excused_count) / total_p) * 100)
+        if conducted_p > 0:
+            percentage = round(((present_count + late_count + excused_count) / conducted_p) * 100)
         else:
-            percentage = 0
+            percentage = 100 if cancelled_count > 0 else 0
 
         if marked_p == 0:
             day_status = 'not_marked'
@@ -2031,13 +2135,14 @@ def today_attendance_view(request):
     }
     return render(request, 'students/today_attendance.html', context)
 
-@role_required(['admin', 'ntstaff'])
+@role_required(['admin', 'teacher', 'ntstaff'])
 def hostel_movement_list(request):
     """List hostel movements with stats, dedicated OUT/IN separation tabs, and quick return actions"""
     from django.db.models import Q
     from datetime import date, datetime
-    today = timezone.now().date()
-    now_time = timezone.now().time()
+    now_local = timezone.localtime()
+    today = now_local.date()
+    now_time = now_local.time()
 
     # Handle quick return / check-in action (Mark IN)
     if request.method == 'POST' and 'quick_return_id' in request.POST:
@@ -2167,7 +2272,7 @@ def hostel_movement_list(request):
     return render(request, 'students/hostel_movement_list.html', context)
 
 
-@role_required(['admin', 'ntstaff'])
+@role_required(['admin', 'teacher', 'ntstaff'])
 def hostel_movement_create(request):
     """Create hostel movement record"""
     if request.method == 'POST':
@@ -2202,7 +2307,7 @@ def hostel_movement_create(request):
     return render(request, 'students/hostel_movement_create.html', context)
 
 
-@role_required(['admin', 'ntstaff'])
+@role_required(['admin', 'teacher', 'ntstaff'])
 def hostel_movement_update(request, pk):
     """Update hostel movement (mark as returned)"""
     movement = get_object_or_404(HostelMovement, pk=pk)
@@ -5755,7 +5860,7 @@ def section_list(request):
     return render(request, 'students/section_list.html', context)
 
 
-@role_required(['admin', 'ntstaff'])
+@role_required(['admin', 'teacher', 'ntstaff'])
 def hostel_student_list_view(request):
     """List all students registered to the hostel with 1-click IN/OUT toggle"""
     if hasattr(request.user, 'profile') and request.user.profile.role == 'student':
@@ -5763,8 +5868,9 @@ def hostel_student_list_view(request):
         return redirect('students:home')
         
     from django.db.models import Q
-    today = timezone.now().date()
-    now_time = timezone.now().time()
+    now_local = timezone.localtime()
+    today = now_local.date()
+    now_time = now_local.time()
 
     # 1-Click Mark OUT from directory
     if request.method == 'POST' and 'quick_out_student_id' in request.POST:
@@ -5826,7 +5932,7 @@ def hostel_student_list_view(request):
     return render(request, 'students/hostel_student_list.html', context)
 
 
-@role_required(['admin', 'ntstaff', 'student'])
+@role_required(['admin', 'teacher', 'ntstaff', 'student'])
 def hostel_student_detail_view(request, pk):
     """Detailed profile for a specific hostel student with 1-click IN/OUT button"""
     # Data isolation for students
@@ -5838,8 +5944,9 @@ def hostel_student_detail_view(request, pk):
     from datetime import datetime, date
     
     student = get_object_or_404(Student, pk=pk, student_type='hostel')
-    today = timezone.now().date()
-    now_time = timezone.now().time()
+    now_local = timezone.localtime()
+    today = now_local.date()
+    now_time = now_local.time()
 
     # 1-Click IN/OUT on detail page
     if request.method == 'POST':
@@ -5875,7 +5982,7 @@ def hostel_student_detail_view(request, pk):
     
     # Calculate historical away days
     total_away_days = 0
-    today = timezone.now().date()
+    today = timezone.localtime().date()
     
     for movement in movements:
         end_date = movement.arrival_date if movement.is_returned else today
@@ -8621,6 +8728,7 @@ def teacher_my_schedule(request):
         'period_timings': period_timings,
         'days_of_week': days_of_week,
         'schedule_map': schedule_map,
+        'slots_map': schedule_map,
         'all_teachers': all_teachers,
         'total_periods': slots.count(),
     }
@@ -8629,8 +8737,10 @@ def teacher_my_schedule(request):
 
 @login_required
 def class_timetable_view(request, grade_id=None):
-    """Public / Printable View of Class Timetable for students, parents, and teachers"""
-    grades = Grade.objects.all()
+    """Public / Printable View of Class Timetable for students, parents, and teachers.
+    Supports viewing/printing all classes on the noticeboard or filtering to a specific class/division.
+    """
+    grades = Grade.objects.prefetch_related('divisions').all()
 
     user_grade = None
     user_division = None
@@ -8640,27 +8750,38 @@ def class_timetable_view(request, grade_id=None):
             user_grade = student_obj.grade
             user_division = student_obj.division
 
-    # Grade selection priority: URL parameter -> GET param -> Student's enrolled grade -> First grade
-    grade_param = grade_id or request.GET.get('grade_id')
-    if grade_param:
-        selected_grade = Grade.objects.filter(pk=grade_param).first()
-    elif user_grade:
-        selected_grade = user_grade
-    else:
-        selected_grade = grades.first()
+    # Grade selection priority: URL parameter -> GET param -> Student's enrolled grade -> None (show all)
+    param_grade_id = request.GET.get('grade_id') or (str(grade_id) if grade_id else None)
+    division_id = request.GET.get('division_id')
 
-    # Division selection priority: GET param -> Student's enrolled division (if viewing same grade) -> None (All)
-    division_param = request.GET.get('division_id')
-    if division_param:
-        selected_division = Division.objects.filter(pk=division_param).first()
-    elif 'division_id' in request.GET and not division_param:
-        selected_division = None
-    elif user_division and (selected_grade == user_grade or not grade_param):
-        selected_division = user_division
-    else:
-        selected_division = None
+    show_all = False
+    selected_grade = None
+    selected_division = None
+    divisions = Division.objects.none()
 
-    divisions = Division.objects.filter(grade=selected_grade) if selected_grade else Division.objects.all()
+    if not param_grade_id or param_grade_id == 'all':
+        if user_grade and not param_grade_id:
+            selected_grade = user_grade
+            divisions = selected_grade.divisions.all()
+            if user_division:
+                selected_division = user_division
+        else:
+            show_all = True
+    else:
+        try:
+            selected_grade = Grade.objects.filter(pk=int(param_grade_id)).first()
+        except (ValueError, TypeError):
+            selected_grade = None
+
+        if selected_grade:
+            divisions = selected_grade.divisions.all()
+            if division_id:
+                try:
+                    selected_division = divisions.filter(pk=int(division_id)).first()
+                except (ValueError, TypeError):
+                    selected_division = None
+        else:
+            show_all = True
 
     period_timings = PeriodTiming.objects.all().order_by('period_order')
     days_of_week = [
@@ -8673,20 +8794,92 @@ def class_timetable_view(request, grade_id=None):
         ('friday', 'Friday'),
     ]
 
-    slots_map = {}
-    if selected_grade:
+    # Pre-fetch timetable slots
+    if show_all:
+        all_slots = TimetableSlot.objects.all().select_related('subject', 'teacher', 'period_timing', 'division', 'grade')
+    else:
         slots_qs = TimetableSlot.objects.filter(grade=selected_grade)
         if selected_division:
-            slots_qs = slots_qs.filter(
-                Q(division=selected_division) | Q(division__isnull=True)
-            )
-        existing_slots = slots_qs.select_related('subject', 'teacher', 'period_timing', 'division').order_by('day_of_week', 'period_timing__period_order')
+            slots_qs = slots_qs.filter(Q(division=selected_division) | Q(division__isnull=True))
+        all_slots = slots_qs.select_related('subject', 'teacher', 'period_timing', 'division', 'grade')
 
-        for slot in existing_slots:
-            key = f"{slot.day_of_week}_{slot.period_timing_id}"
-            if key not in slots_map:
-                slots_map[key] = []
-            slots_map[key].append(slot)
+    # Index slots by (grade_id, division_id) and grade common slots
+    slots_by_key = {}
+    common_slots_by_grade = {}
+    slots_map = {}
+
+    for slot in all_slots:
+        g_id = slot.grade_id
+        d_id = slot.division_id
+        if d_id is None:
+            common_slots_by_grade.setdefault(g_id, []).append(slot)
+        slots_by_key.setdefault((g_id, d_id), []).append(slot)
+
+        key = f"{slot.day_of_week}_{slot.period_timing_id}"
+        if key not in slots_map:
+            slots_map[key] = []
+        slots_map[key].append(slot)
+
+    def build_slots_map(g_id, d_id):
+        s_map = {}
+        for s in common_slots_by_grade.get(g_id, []):
+            k = f"{s.day_of_week}_{s.period_timing_id}"
+            s_map[k] = s
+        if d_id is not None:
+            for s in slots_by_key.get((g_id, d_id), []):
+                k = f"{s.day_of_week}_{s.period_timing_id}"
+                s_map[k] = s
+        return s_map
+
+    class_timetables = []
+    if show_all:
+        for g in grades:
+            divs = list(g.divisions.all())
+            if divs:
+                for d in divs:
+                    class_timetables.append({
+                        'grade': g,
+                        'division': d,
+                        'title': f"{g.name} - Division {d.name}",
+                        'subtitle': f"Class: {g.name} &bull; Section {d.name}",
+                        'slots_map': build_slots_map(g.id, d.id),
+                    })
+            else:
+                class_timetables.append({
+                    'grade': g,
+                    'division': None,
+                    'title': g.name,
+                    'subtitle': f"Class: {g.name}",
+                    'slots_map': build_slots_map(g.id, None),
+                })
+    elif selected_grade:
+        if selected_division:
+            class_timetables.append({
+                'grade': selected_grade,
+                'division': selected_division,
+                'title': f"{selected_grade.name} - Division {selected_division.name}",
+                'subtitle': f"Class: {selected_grade.name} &bull; Section {selected_division.name}",
+                'slots_map': build_slots_map(selected_grade.id, selected_division.id),
+            })
+        else:
+            divs = list(selected_grade.divisions.all())
+            if divs:
+                for d in divs:
+                    class_timetables.append({
+                        'grade': selected_grade,
+                        'division': d,
+                        'title': f"{selected_grade.name} - Division {d.name}",
+                        'subtitle': f"Class: {selected_grade.name} &bull; Section {d.name}",
+                        'slots_map': build_slots_map(selected_grade.id, d.id),
+                    })
+            else:
+                class_timetables.append({
+                    'grade': selected_grade,
+                    'division': None,
+                    'title': selected_grade.name,
+                    'subtitle': f"Class: {selected_grade.name}",
+                    'slots_map': build_slots_map(selected_grade.id, None),
+                })
 
     context = {
         'grades': grades,
@@ -8696,6 +8889,8 @@ def class_timetable_view(request, grade_id=None):
         'period_timings': period_timings,
         'days_of_week': days_of_week,
         'slots_map': slots_map,
+        'class_timetables': class_timetables,
+        'show_all': show_all,
     }
     return render(request, 'students/class_timetable_view.html', context)
 

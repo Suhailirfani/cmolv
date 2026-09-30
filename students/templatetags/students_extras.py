@@ -23,6 +23,12 @@ def concat_key(val1, val2):
 
 
 @register.filter
+def slot_key(val1, val2):
+    """Alias for concat_key: e.g. monday_1"""
+    return f"{val1}_{val2}"
+
+
+@register.filter
 def stream_code(name):
     """Convert stream/division full name to compact short code"""
     if not name:

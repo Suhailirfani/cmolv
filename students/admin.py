@@ -2,10 +2,17 @@ from django.contrib import admin
 from django.utils.html import format_html
 from .models import (
     Student, Division, Room, Period, Activity,
-    Attendance, HostelMovement, ExamType, Subject,
+    Attendance, ClassPeriodCancellation, HostelMovement, ExamType, Subject,
     MarkEntry, ProgressReport, AcademicYear, Enrollment,
     UserProfile, StudentFace
 )
+
+@admin.register(ClassPeriodCancellation)
+class ClassPeriodCancellationAdmin(admin.ModelAdmin):
+    list_display = ['grade', 'division', 'period', 'date', 'reason_type', 'cancelled_by', 'created_at']
+    list_filter = ['reason_type', 'date', 'grade', 'division']
+    search_fields = ['grade__name', 'division__name', 'period__name', 'remarks', 'cancelled_by']
+    date_hierarchy = 'date'
 
 
 @admin.register(AcademicYear)

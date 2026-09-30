@@ -278,6 +278,43 @@ class Attendance(models.Model):
             raise ValidationError('Daily attendance should not have period or activity.')
 
 
+class ClassPeriodCancellation(models.Model):
+    """Records periods that were not conducted with reason (e.g. staff meeting, assembly, event, etc.)"""
+    REASON_CHOICES = [
+        ('staff_meeting', 'Staff Meeting'),
+        ('assembly', 'School Assembly / Gathering'),
+        ('special_program', 'Special Program / Celebration'),
+        ('teacher_leave', 'Teacher On Leave / No Substitution'),
+        ('exam', 'Examination / Test / Evaluation'),
+        ('sports_activity', 'Sports / Extra-Curricular Activity'),
+        ('emergency', 'Early Dismissal / Rain / Emergency'),
+        ('other', 'Other Reason'),
+    ]
+
+    grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name='period_cancellations')
+    division = models.ForeignKey(Division, on_delete=models.SET_NULL, null=True, blank=True, related_name='period_cancellations')
+    period = models.ForeignKey(Period, on_delete=models.CASCADE, related_name='cancellations')
+    date = models.DateField(default=timezone.now)
+    reason_type = models.CharField(max_length=50, choices=REASON_CHOICES, default='staff_meeting')
+    remarks = models.TextField(blank=True, help_text="Specific reason or notes for class not being conducted")
+    cancelled_by = models.CharField(max_length=150, blank=True, help_text="Name or role of person who logged this")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-date', 'grade', 'division', 'period']
+        unique_together = [['grade', 'division', 'period', 'date']]
+        indexes = [
+            models.Index(fields=['grade', 'date']),
+            models.Index(fields=['grade', 'division', 'date']),
+            models.Index(fields=['period', 'date']),
+        ]
+
+    def __str__(self):
+        div_str = f" {self.division.name}" if self.division else ""
+        return f"{self.grade.name}{div_str} - {self.period.name} on {self.date}: {self.get_reason_type_display()}"
+
+
 class HostelMovement(models.Model):
     """Hostel student movement record (departure and arrival)"""
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='hostel_movements',
