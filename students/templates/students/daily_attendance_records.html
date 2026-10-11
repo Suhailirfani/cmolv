@@ -1,7 +1,7 @@
 {% extends 'students/base.html' %}
 
-{% block title %}Daily Attendance Records (Morning & Evening) - Student Attendance System{% endblock %}
-{% block page_heading %}Daily Attendance Records{% endblock %}
+{% block title %}Morning & Evening Attendance Records - Student Attendance System{% endblock %}
+{% block page_heading %}Morning & Evening Attendance Records{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -156,7 +156,7 @@
             <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
                 <span style="font-size: 1.5rem;">📋</span>
                 <h1 style="color: #1e293b; margin: 0; font-size: 1.75rem; font-weight: 800;">
-                    Daily Attendance Records
+                    Morning & Evening Attendance Records
                 </h1>
             </div>
             <p style="margin: 0; color: #64748b; font-size: 0.9rem; font-weight: 500;">
@@ -165,9 +165,9 @@
         </div>
 
         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-            <!-- BUTTON IN THIS PAGE to go to Daily Attendance marking page -->
+            <!-- BUTTON IN THIS PAGE to go to Morning & Evening marking page -->
             <a href="{% url 'students:daily_attendance_mark' %}?date={{ current_filters.date_from }}" class="btn" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; border-radius: 10px; padding: 0.65rem 1.35rem; font-weight: 800; font-size: 0.92rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);">
-                <i class="fa-solid fa-pencil"></i> Mark Daily Attendance
+                <i class="fa-solid fa-pencil"></i> Mark Morning & Evening
             </a>
 
             <!-- Print Records -->
@@ -177,7 +177,7 @@
 
             <!-- Back to general attendance records -->
             <a href="{% url 'students:attendance_list' %}" class="btn" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.65rem 1rem; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
-                <i class="fa-solid fa-arrow-left"></i> Period Attendance
+                <i class="fa-solid fa-arrow-left"></i> Attendance Records
             </a>
         </div>
     </div>
@@ -421,7 +421,7 @@
                         <div style="font-size: 1.1rem; font-weight: 700; color: #475569; margin-bottom: 0.5rem;">No daily attendance records found</div>
                         <p style="margin: 0 0 1.25rem 0; font-size: 0.875rem;">Try adjusting the date filters or mark daily attendance now.</p>
                         <a href="{% url 'students:daily_attendance_mark' %}" class="btn" style="background: #0284c7; color: white; border-radius: 8px; padding: 0.6rem 1.25rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
-                            <i class="fa-solid fa-pencil"></i> Mark Daily Attendance
+                            <i class="fa-solid fa-pencil"></i> Mark Morning & Evening
                         </a>
                     </td>
                 </tr>
