@@ -2279,8 +2279,8 @@ def hostel_movement_create(request):
         student_id = request.POST.get('student')
         departure_date = request.POST.get('departure_date')
         departure_time = request.POST.get('departure_time')
-        escorting_person = request.POST.get('escorting_person')
-        reason = request.POST.get('reason')
+        escorting_person = request.POST.get('escorting_person', '').strip()
+        reason = request.POST.get('reason', '').strip()
         expected_return_date = request.POST.get('expected_return_date') or None
 
         student = get_object_or_404(Student, id=student_id, student_type='hostel')

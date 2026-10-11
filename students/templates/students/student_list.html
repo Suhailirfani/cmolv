@@ -105,6 +105,34 @@
         }
     }
 
+    /* Screen View Modes: Default is Cards, table strictly hidden */
+    .student-table-view {
+        display: none !important;
+    }
+    .student-cards-view {
+        display: grid !important;
+    }
+
+    /* Container explicitly set to Table Mode */
+    #studentViewContainer.view-mode-table .student-cards-view,
+    .view-mode-table .student-cards-view {
+        display: none !important;
+    }
+    #studentViewContainer.view-mode-table .student-table-view,
+    .view-mode-table .student-table-view {
+        display: block !important;
+    }
+
+    /* Container explicitly set to Cards Mode */
+    #studentViewContainer.view-mode-cards .student-table-view,
+    .view-mode-cards .student-table-view {
+        display: none !important;
+    }
+    #studentViewContainer.view-mode-cards .student-cards-view,
+    .view-mode-cards .student-cards-view {
+        display: grid !important;
+    }
+
     /* Responsive Grid for Student Cards */
     .student-cards-grid {
         display: grid;
@@ -256,6 +284,55 @@
         align-items: center;
         justify-content: center;
     }
+
+    /* Mobile Responsive: 2 buttons in a row for button group */
+    @media (max-width: 768px) {
+        .button-group {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 0.5rem !important;
+            width: 100% !important;
+            margin-bottom: 1rem !important;
+        }
+
+        .button-group .btn {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0.65rem 0.4rem !important;
+            font-size: 0.8rem !important;
+            font-weight: 700 !important;
+            text-align: center !important;
+            justify-content: center !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 0.35rem !important;
+            border-radius: 8px !important;
+            box-sizing: border-box !important;
+            line-height: 1.25 !important;
+        }
+
+        .filter-actions {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 0.5rem !important;
+            width: 100% !important;
+        }
+
+        .filter-actions .btn {
+            width: 100% !important;
+            margin: 0 !important;
+            min-width: 0 !important;
+            text-align: center !important;
+            justify-content: center !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 0.35rem !important;
+            padding: 0.65rem 0.4rem !important;
+            font-size: 0.8rem !important;
+            border-radius: 8px !important;
+            box-sizing: border-box !important;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -268,10 +345,10 @@
     <div style="display: flex; align-items: center; gap: 0.75rem;" class="no-print">
         <!-- View Mode Switcher Buttons -->
         <div style="display: flex; background: #e2e8f0; padding: 3px; border-radius: 8px; gap: 2px;">
-            <button type="button" id="btnCardsView" onclick="setStudentView('cards')" style="border: none; padding: 0.4rem 0.85rem; border-radius: 6px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease;">
+            <button type="button" id="btnCardsView" onclick="setStudentView('cards')" style="border: none; padding: 0.4rem 0.85rem; border-radius: 6px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; background: #ffffff; color: #0f172a; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 <i class="fa-solid fa-border-all"></i> Cards
             </button>
-            <button type="button" id="btnTableView" onclick="setStudentView('table')" style="border: none; padding: 0.4rem 0.85rem; border-radius: 6px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease;">
+            <button type="button" id="btnTableView" onclick="setStudentView('table')" style="border: none; padding: 0.4rem 0.85rem; border-radius: 6px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; background: transparent; color: #64748b;">
                 <i class="fa-solid fa-table-list"></i> Table
             </button>
         </div>
@@ -279,9 +356,9 @@
 </div>
 
 <div class="button-group no-print" style="margin-bottom: 1rem;">
-    <a href="{% url 'students:student_create' %}" class="btn btn-success">Add Single Student</a>
-    <a href="{% url 'students:student_bulk_import' %}" class="btn" style="background-color: #27ae60;">Bulk Import from Excel</a>
-    <a href="{% url 'students:student_upgrade' %}" class="btn" style="background-color: #9b59b6;">Upgrade Students</a>
+    <a href="{% url 'students:student_create' %}" class="btn btn-success"><i class="fa-solid fa-user-plus"></i> Add Single Student</a>
+    <a href="{% url 'students:student_bulk_import' %}" class="btn" style="background-color: #27ae60;"><i class="fa-solid fa-file-excel"></i> Bulk Import Excel</a>
+    <a href="{% url 'students:student_upgrade' %}" class="btn" style="background-color: #9b59b6;"><i class="fa-solid fa-arrow-trend-up"></i> Upgrade Students</a>
     <button type="submit" form="filterForm" name="export" value="excel" class="btn" style="background-color: #2980b9; color: white;"><i class="fas fa-file-excel"></i> Export to Excel</button>
 </div>
 
@@ -346,7 +423,7 @@
     </form>
 </div>
 
-<div class="card" style="background: transparent; box-shadow: none; border: none; padding: 0;">
+<div class="card view-mode-cards" id="studentViewContainer" style="background: transparent; box-shadow: none; border: none; padding: 0;">
     <h2 id="studentCountHeader" style="margin-bottom: 1rem; font-weight: 800;" class="no-print">Students ({{ students.count }})</h2>
     <div id="studentTableBody">
         {% include 'students/partials/student_table_body.html' %}
@@ -361,20 +438,60 @@
     }
 
     function applyStudentView(mode) {
-        if (!mode) mode = localStorage.getItem('student_view_mode') || 'cards';
+        if (!mode) {
+            mode = localStorage.getItem('student_view_mode') || 'cards';
+        }
+
+        const container = document.getElementById('studentViewContainer');
+        const btnCards = document.getElementById('btnCardsView');
+        const btnTable = document.getElementById('btnTableView');
+        const cardsEls = document.querySelectorAll('.student-cards-view');
+        const tableEls = document.querySelectorAll('.student-table-view');
 
         if (mode === 'table') {
-            $('.student-cards-view').hide();
-            $('.student-table-view').show();
-            $('#btnTableView').css({'background': '#ffffff', 'color': '#0f172a', 'box-shadow': '0 2px 4px rgba(0,0,0,0.1)'});
-            $('#btnCardsView').css({'background': 'transparent', 'color': '#64748b', 'box-shadow': 'none'});
+            if (container) {
+                container.classList.remove('view-mode-cards');
+                container.classList.add('view-mode-table');
+            }
+            cardsEls.forEach(el => el.style.setProperty('display', 'none', 'important'));
+            tableEls.forEach(el => el.style.setProperty('display', 'block', 'important'));
+
+            if (btnTable) {
+                btnTable.style.background = '#ffffff';
+                btnTable.style.color = '#0f172a';
+                btnTable.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            }
+            if (btnCards) {
+                btnCards.style.background = 'transparent';
+                btnCards.style.color = '#64748b';
+                btnCards.style.boxShadow = 'none';
+            }
         } else {
-            $('.student-table-view').hide();
-            $('.student-cards-view').show();
-            $('#btnCardsView').css({'background': '#ffffff', 'color': '#0f172a', 'box-shadow': '0 2px 4px rgba(0,0,0,0.1)'});
-            $('#btnTableView').css({'background': 'transparent', 'color': '#64748b', 'box-shadow': 'none'});
+            if (container) {
+                container.classList.remove('view-mode-table');
+                container.classList.add('view-mode-cards');
+            }
+            tableEls.forEach(el => el.style.setProperty('display', 'none', 'important'));
+            cardsEls.forEach(el => el.style.setProperty('display', 'grid', 'important'));
+
+            if (btnCards) {
+                btnCards.style.background = '#ffffff';
+                btnCards.style.color = '#0f172a';
+                btnCards.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            }
+            if (btnTable) {
+                btnTable.style.background = 'transparent';
+                btnTable.style.color = '#64748b';
+                btnTable.style.boxShadow = 'none';
+            }
         }
     }
+
+    // Run view mode setup immediately on script evaluation
+    applyStudentView();
+    document.addEventListener('DOMContentLoaded', function() {
+        applyStudentView();
+    });
 
     $(document).ready(function() {
         applyStudentView();

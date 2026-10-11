@@ -465,7 +465,6 @@
         .table-responsive,
         .desktop-table-wrapper,
         .matrix-table-wrapper,
-        .student-table-view,
         .timetable-wrapper {
             width: 100% !important;
             max-width: 100% !important;
@@ -1902,10 +1901,27 @@
                 </div>
             </div>
             {% endif %}
-            <a href="{% url 'students:hostel_movement_list' %}" class="nav-item">
-                <i class="fa-solid fa-bed"></i>
-                <span>Hostel</span>
-            </a>
+            <div class="nav-group">
+                <a href="#" class="nav-item nav-dropdown-btn" onclick="event.preventDefault(); const content = this.nextElementSibling; const icon = this.querySelector('.arrow'); const isClosed = content.style.display === 'none' || content.style.display === ''; content.style.display = isClosed ? 'block' : 'none'; icon.style.transform = isClosed ? 'rotate(180deg)' : 'none';">
+                    <i class="fa-solid fa-bed"></i>
+                    <span>Hostel Movements</span>
+                    <i class="fa-solid fa-chevron-down arrow" style="margin-left: auto; font-size: 0.8rem; transition: transform 0.3s;"></i>
+                </a>
+                <div class="nav-group-content" style="display: none; padding-left: 1.5rem; margin-top: 0.25rem;">
+                    <a href="{% url 'students:hostel_movement_list' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-clock-rotate-left" style="font-size: 0.9rem;"></i>
+                        <span>Live Movements</span>
+                    </a>
+                    <a href="{% url 'students:hostel_movement_create' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-pen-to-square" style="font-size: 0.9rem;"></i>
+                        <span>Detailed Outing Form</span>
+                    </a>
+                    <a href="{% url 'students:hostel_student_list' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-address-book" style="font-size: 0.9rem;"></i>
+                        <span>Hostel Directory</span>
+                    </a>
+                </div>
+            </div>
             {% endif %}
 
             {% if request.user.is_superuser or request.user.profile.role == 'admin' %}
@@ -2098,6 +2114,15 @@
             if (href && href.includes('examination/dashboard')) {
                 if (currentPath.includes('/examination/') || currentPath.includes('/marks/') || currentPath.includes('/exam-types/')) {
                     isMatch = true;
+                }
+            }
+
+            // Highlight Hostel Movement sidebar items when on hostel pages
+            if (href && (href.includes('/hostel-movements/') || href.includes('/hostel-students/'))) {
+                if (currentPath.includes('/hostel-movements/') || currentPath.includes('/hostel-students/')) {
+                    if (currentPath === href || (href.endsWith('/hostel-movements/') && (currentPath === '/hostel-movements/' || currentPath.startsWith('/hostel-movements/?')))) {
+                        isMatch = true;
+                    }
                 }
             }
             

@@ -333,8 +333,8 @@ class HostelMovement(models.Model):
     # Departure Part
     departure_date = models.DateField()
     departure_time = models.TimeField()
-    escorting_person = models.CharField(max_length=200)
-    reason = models.TextField()
+    escorting_person = models.CharField(max_length=200, blank=True)
+    reason = models.TextField(blank=True)
 
     # Arrival Part
     expected_return_date = models.DateField(null=True, blank=True)
