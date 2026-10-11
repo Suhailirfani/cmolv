@@ -1,0 +1,721 @@
+{% extends 'students/base.html' %}
+{% load students_extras %}
+
+{% block title %}Daily Attendance (Morning & Evening) - Student Attendance System{% endblock %}
+{% block page_heading %}Daily Attendance Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .daily-header-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        border: 1px solid var(--border, #e2e8f0);
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-toolbar {
+        background: white;
+        border-radius: 14px;
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--border, #e2e8f0);
+        margin-bottom: 1.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .filter-inputs-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .custom-input-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
+        padding: 0.45rem 0.85rem;
+        border-radius: 10px;
+    }
+
+    .custom-input-wrap input,
+    .custom-input-wrap select {
+        border: none;
+        background: transparent;
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 0.9rem;
+        outline: none;
+    }
+
+    /* 2 SESSIONS TABS */
+    .session-tabs-nav {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        background: #f1f5f9;
+        padding: 0.5rem;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .session-tab-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        border: 2px solid transparent;
+        background: transparent;
+        cursor: pointer;
+        font-weight: 800;
+        font-size: 1.05rem;
+        color: #64748b;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none;
+    }
+
+    .session-tab-btn:hover {
+        background: rgba(255, 255, 255, 0.7);
+        color: #1e293b;
+    }
+
+    .session-tab-btn.active-morning {
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+        border-color: #f59e0b !important;
+        color: #b45309 !important;
+        box-shadow: 0 4px 14px rgba(245, 158, 11, 0.2);
+    }
+
+    .session-tab-btn.active-evening {
+        background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%) !important;
+        border-color: #6366f1 !important;
+        color: #4338ca !important;
+        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.2);
+    }
+
+    .session-tab-btn .tab-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.6rem;
+        border-radius: 20px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .tab-badge.badge-done {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .tab-badge.badge-pending {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    /* KPI Summary Bars */
+    .kpi-stat-strip {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.25rem;
+    }
+
+    .kpi-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.45rem 0.85rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        background: white;
+        border: 1px solid #e2e8f0;
+    }
+
+    .kpi-chip.chip-present { background: #dcfce7; color: #15803d; border-color: #86efac; }
+    .kpi-chip.chip-absent { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+
+    /* Student Table & Toggles (P and A ONLY) */
+    .table-container {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .status-toggle-group {
+        display: inline-flex;
+        gap: 0.4rem;
+        background: #f1f5f9;
+        padding: 0.35rem 0.45rem;
+        border-radius: 12px;
+        border: 1px solid #cbd5e1;
+    }
+
+    .status-toggle-option {
+        position: relative;
+        cursor: pointer;
+        margin: 0;
+    }
+
+    .status-toggle-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .status-toggle-label {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 38px;
+        border-radius: 9px;
+        font-weight: 800;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid transparent;
+        color: #64748b;
+        user-select: none;
+    }
+
+    .status-toggle-option input[type="radio"]:checked + .lbl-present {
+        background: #16a34a !important;
+        color: white !important;
+        border-color: #15803d !important;
+        box-shadow: 0 3px 8px rgba(22, 163, 74, 0.35);
+    }
+
+    .status-toggle-option input[type="radio"]:checked + .lbl-absent {
+        background: #dc2626 !important;
+        color: white !important;
+        border-color: #b91c1c !important;
+        box-shadow: 0 3px 8px rgba(220, 38, 38, 0.35);
+    }
+
+    .quick-action-btn {
+        padding: 0.45rem 1rem;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        border: 1px solid #cbd5e1;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .quick-action-btn:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+    }
+
+    .save-bar-footer {
+        position: sticky;
+        bottom: 1rem;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 2px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1rem 1.5rem;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 100;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .btn-save-morning {
+        background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.75rem;
+        border-radius: 10px;
+        font-weight: 800;
+        font-size: 0.95rem;
+        box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: opacity 0.2s;
+    }
+
+    .btn-save-evening {
+        background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.75rem;
+        border-radius: 10px;
+        font-weight: 800;
+        font-size: 0.95rem;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: opacity 0.2s;
+    }
+
+    .btn-save-morning:hover, .btn-save-evening:hover {
+        opacity: 0.92;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Top Header Card -->
+<div class="daily-header-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+                <span style="font-size: 1.5rem;">☀️ / 🌙</span>
+                <h1 style="color: #1e293b; margin: 0; font-size: 1.75rem; font-weight: 800;">
+                    Daily Attendance
+                </h1>
+            </div>
+            <p style="margin: 0; color: #64748b; font-size: 0.9rem; font-weight: 500;">
+                Two daily attendances: <strong>Morning Attendance</strong> and <strong>Evening Attendance</strong> (Present & Absent only)
+            </p>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <!-- Button linking to Daily Attendance Records page -->
+            <a href="{% url 'students:daily_attendance_records' %}?date_from={{ selected_date }}&date_to={{ selected_date }}" class="btn" style="background: #4f46e5; color: white; border-radius: 10px; padding: 0.6rem 1.25rem; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);">
+                <i class="fa-solid fa-clipboard-list"></i> Daily Attendance Records
+            </a>
+            <!-- Back to period attendance list -->
+            <a href="{% url 'students:attendance_list' %}" class="btn" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.6rem 1rem; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="fa-solid fa-chart-pie"></i> Main Records
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Toolbar (Date, Class, Division, Search) -->
+<form method="get" id="filterForm" class="filter-toolbar">
+    <input type="hidden" name="session" id="activeSessionInput" value="{{ active_session_tab }}">
+
+    <div class="filter-inputs-group">
+        <!-- Date Selector -->
+        <div class="custom-input-wrap">
+            <i class="fa-regular fa-calendar" style="color: #6366f1;"></i>
+            <label style="font-size: 0.8rem; font-weight: 800; color: #475569; margin: 0;">Date:</label>
+            <input type="date" name="date" value="{{ selected_date }}" onchange="document.getElementById('filterForm').submit();">
+        </div>
+
+        <!-- Grade / Class Filter -->
+        <div class="custom-input-wrap">
+            <i class="fa-solid fa-school" style="color: #0284c7;"></i>
+            <label style="font-size: 0.8rem; font-weight: 800; color: #475569; margin: 0;">Class:</label>
+            <select name="grade" onchange="document.getElementById('filterForm').submit();">
+                <option value="">All Classes</option>
+                {% for g in grades %}
+                <option value="{{ g.id }}" {% if selected_grade == g.id %}selected{% endif %}>{{ g.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Division Filter -->
+        <div class="custom-input-wrap">
+            <i class="fa-solid fa-layer-group" style="color: #8b5cf6;"></i>
+            <label style="font-size: 0.8rem; font-weight: 800; color: #475569; margin: 0;">Division:</label>
+            <select name="division" onchange="document.getElementById('filterForm').submit();">
+                <option value="">All Streams</option>
+                {% for d in divisions %}
+                <option value="{{ d.id }}" {% if selected_division == d.id %}selected{% endif %}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <!-- Live Search -->
+    <div style="position: relative; min-width: 220px;">
+        <input type="text" id="studentQuickSearch" placeholder="🔍 Filter student..." onkeyup="filterStudentRows(this.value)" style="width: 100%; padding: 0.45rem 0.85rem; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 0.88rem; outline: none;">
+    </div>
+</form>
+
+<!-- =========================================================
+     2 TABS: 1. MORNING ATTENDANCE  |  2. EVENING ATTENDANCE
+     ========================================================= -->
+<div class="session-tabs-nav">
+    <!-- Tab 1: Morning Attendance -->
+    <button type="button" class="session-tab-btn {% if active_session_tab == 'morning' %}active-morning{% endif %}" onclick="switchSessionTab('morning')">
+        <span style="font-size: 1.25rem;">☀️</span>
+        <span>Tab 1: Morning Attendance</span>
+        {% if morning_stats.is_complete %}
+        <span class="tab-badge badge-done"><i class="fa-solid fa-check"></i> Complete ({{ morning_stats.marked }})</span>
+        {% elif morning_stats.marked > 0 %}
+        <span class="tab-badge" style="background: #fef3c7; color: #b45309;"><i class="fa-solid fa-clock"></i> {{ morning_stats.marked }}/{{ morning_stats.total }}</span>
+        {% else %}
+        <span class="tab-badge badge-pending">Pending</span>
+        {% endif %}
+    </button>
+
+    <!-- Tab 2: Evening Attendance -->
+    <button type="button" class="session-tab-btn {% if active_session_tab == 'evening' %}active-evening{% endif %}" onclick="switchSessionTab('evening')">
+        <span style="font-size: 1.25rem;">🌙</span>
+        <span>Tab 2: Evening Attendance</span>
+        {% if evening_stats.is_complete %}
+        <span class="tab-badge badge-done"><i class="fa-solid fa-check"></i> Complete ({{ evening_stats.marked }})</span>
+        {% elif evening_stats.marked > 0 %}
+        <span class="tab-badge" style="background: #e0e7ff; color: #4338ca;"><i class="fa-solid fa-clock"></i> {{ evening_stats.marked }}/{{ evening_stats.total }}</span>
+        {% else %}
+        <span class="tab-badge badge-pending">Pending</span>
+        {% endif %}
+    </button>
+</div>
+
+<!-- =========================================================
+     TAB 1 PANEL: MORNING ATTENDANCE
+     ========================================================= -->
+<div id="morningPanel" style="display: {% if active_session_tab == 'morning' %}block{% else %}none{% endif %};">
+    <form method="post" id="morningForm">
+        {% csrf_token %}
+        <input type="hidden" name="session" value="morning">
+        <input type="hidden" name="date" value="{{ selected_date }}">
+
+        <!-- KPI Strip & Quick Actions for Morning -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+            <div class="kpi-stat-strip" style="margin-bottom: 0;">
+                <span class="kpi-chip">Total: <strong>{{ morning_stats.total }}</strong></span>
+                <span class="kpi-chip chip-present">Present (P): <strong id="mCountPresent">{{ morning_stats.present }}</strong></span>
+                <span class="kpi-chip chip-absent">Absent (A): <strong id="mCountAbsent">{{ morning_stats.absent }}</strong></span>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button type="button" class="quick-action-btn" onclick="bulkSetStatus('morning', 'present')" style="color: #15803d; border-color: #86efac;">
+                    <i class="fa-solid fa-circle-check"></i> Mark All Present (P)
+                </button>
+                <button type="button" class="quick-action-btn" onclick="bulkSetStatus('morning', 'absent')" style="color: #b91c1c; border-color: #fca5a5;">
+                    <i class="fa-solid fa-circle-xmark"></i> Mark All Absent (A)
+                </button>
+            </div>
+        </div>
+
+        <!-- Hidden input containers for submission -->
+        <div id="morning-hidden-inputs">
+            {% for enrollment in enrollments %}
+            {% with att=morning_attendance_dict|get_item:enrollment.id %}
+            <input type="hidden" name="attendance" id="m_hidden_{{ enrollment.id }}" value="{{ enrollment.id }}|{% if att %}{{ att.status }}{% else %}present{% endif %}">
+            {% endwith %}
+            {% endfor %}
+        </div>
+
+        <!-- Student Table for Morning -->
+        <div class="table-container">
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #1e293b; color: white;">
+                            <th style="padding: 0.85rem 1rem; text-align: left; font-size: 0.82rem; text-transform: uppercase; width: 45px;">#</th>
+                            <th style="padding: 0.85rem 1rem; text-align: left; font-size: 0.82rem; text-transform: uppercase; width: 120px;">Student ID</th>
+                            <th style="padding: 0.85rem 1rem; text-align: left; font-size: 0.82rem; text-transform: uppercase;">Student Name</th>
+                            <th style="padding: 0.85rem 1rem; text-align: left; font-size: 0.82rem; text-transform: uppercase; width: 160px;">Class & Stream</th>
+                            <th style="padding: 0.85rem 1rem; text-align: center; font-size: 0.82rem; text-transform: uppercase; width: 160px;">Status (P / A)</th>
+                            <th style="padding: 0.85rem 1rem; text-align: left; font-size: 0.82rem; text-transform: uppercase;">Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody id="morningTableBody">
+                        {% for enrollment in enrollments %}
+                        {% with att=morning_attendance_dict|get_item:enrollment.id %}
+                        <tr class="student-row" id="m_row_{{ enrollment.id }}" data-search="{{ enrollment.student.full_name|lower }} {{ enrollment.student.student_id|lower }}" style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 0.85rem 1rem; color: #94a3b8; font-weight: 700;">{{ forloop.counter }}</td>
+                            <td style="padding: 0.85rem 1rem; font-weight: 700; color: #475569;">{{ enrollment.student.student_id }}</td>
+                            <td style="padding: 0.85rem 1rem;">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <div style="width: 34px; height: 34px; border-radius: 50%; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; flex-shrink: 0;">
+                                        {{ enrollment.student.first_name|slice:":1" }}{{ enrollment.student.last_name|slice:":1" }}
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 800; color: #1e293b;">{{ enrollment.student.full_name }}</div>
+                                        {% if enrollment.student.phone %}
+                                        <div style="font-size: 0.75rem; color: #94a3b8;">📞 {{ enrollment.student.phone }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="padding: 0.85rem 1rem;">
+                                <span style="font-weight: 700; color: #334155;">{{ enrollment.grade.name }}</span>
+                                {% if enrollment.division %}
+                                <span style="background: #f1f5f9; color: #64748b; font-size: 0.75rem; padding: 0.15rem 0.45rem; border-radius: 6px; font-weight: 700; margin-left: 0.35rem;">{{ enrollment.division.name }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 0.85rem 1rem; text-align: center;">
+                                <div class="status-toggle-group">
+                                    <label class="status-toggle-option">
+                                        <input type="radio" name="m_radio_{{ enrollment.id }}" value="present" {% if att.status == 'present' or not att %}checked{% endif %} onchange="updateDailyStatus('morning', '{{ enrollment.id }}', 'present')">
+                                        <span class="status-toggle-label lbl-present" title="Present (P)">P</span>
+                                    </label>
+                                    <label class="status-toggle-option">
+                                        <input type="radio" name="m_radio_{{ enrollment.id }}" value="absent" {% if att.status == 'absent' %}checked{% endif %} onchange="updateDailyStatus('morning', '{{ enrollment.id }}', 'absent')">
+                                        <span class="status-toggle-label lbl-absent" title="Absent (A)">A</span>
+                                    </label>
+                                </div>
+                            </td>
+                            <td style="padding: 0.85rem 1rem;">
+                                <input type="text" name="remarks_{{ enrollment.id }}" value="{{ att.remarks|default:'' }}" placeholder="Optional remarks..." style="width: 100%; min-width: 130px; padding: 0.35rem 0.65rem; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.82rem; outline: none;">
+                            </td>
+                        </tr>
+                        {% endwith %}
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 3rem; color: #94a3b8; font-weight: 600;">
+                                No students found for selected filter.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Morning Save Floating Bar -->
+        {% if enrollments %}
+        <div class="save-bar-footer">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span style="font-size: 1.3rem;">☀️</span>
+                <div>
+                    <div style="font-weight: 800; color: #1e293b;">Morning Attendance for {{ selected_date }}</div>
+                    <div style="font-size: 0.8rem; color: #64748b;">Ready to record for {{ enrollments|length }} student(s)</div>
+                </div>
+            </div>
+            <button type="submit" class="btn-save-morning">
+                <i class="fa-solid fa-floppy-disk"></i> Save Morning Attendance
+            </button>
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+<!-- =========================================================
+     TAB 2 PANEL: EVENING ATTENDANCE
+     ========================================================= -->
+<div id="eveningPanel" style="display: {% if active_session_tab == 'evening' %}block{% else %}none{% endif %};">
+    <form method="post" id="eveningForm">
+        {% csrf_token %}
+        <input type="hidden" name="session" value="evening">
+        <input type="hidden" name="date" value="{{ selected_date }}">
+
+        <!-- KPI Strip & Quick Actions for Evening -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+            <div class="kpi-stat-strip" style="margin-bottom: 0;">
+                <span class="kpi-chip">Total: <strong>{{ evening_stats.total }}</strong></span>
+                <span class="kpi-chip chip-present">Present (P): <strong id="eCountPresent">{{ evening_stats.present }}</strong></span>
+                <span class="kpi-chip chip-absent">Absent (A): <strong id="eCountAbsent">{{ evening_stats.absent }}</strong></span>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button type="button" class="quick-action-btn" onclick="bulkSetStatus('evening', 'present')" style="color: #15803d; border-color: #86efac;">
+                    <i class="fa-solid fa-circle-check"></i> Mark All Present (P)
+                </button>
+                <button type="button" class="quick-action-btn" onclick="bulkSetStatus('evening', 'absent')" style="color: #b91c1c; border-color: #fca5a5;">
+                    <i class="fa-solid fa-circle-xmark"></i> Mark All Absent (A)
+                </button>
+            </div>
+        </div>
+
+        <!-- Hidden input containers for submission -->
+        <div id="evening-hidden-inputs">
+            {% for enrollment in enrollments %}
+            {% with att=evening_attendance_dict|get_item:enrollment.id %}
+            <input type="hidden" name="attendance" id="e_hidden_{{ enrollment.id }}" value="{{ enrollment.id }}|{% if att %}{{ att.status }}{% else %}present{% endif %}">
+            {% endwith %}
+            {% endfor %}
+        </div>
+
+        <!-- Student Table for Evening -->
+        <div class="table-container">
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #1e293b; color: white;">
+                            <th style="padding: 0.85rem 1rem; text-align: left; font-size: 0.82rem; text-transform: uppercase; width: 45px;">#</th>
+                            <th style="padding: 0.85rem 1rem; text-align: left; font-size: 0.82rem; text-transform: uppercase; width: 120px;">Student ID</th>
+                            <th style="padding: 0.85rem 1rem; text-align: left; font-size: 0.82rem; text-transform: uppercase;">Student Name</th>
+                            <th style="padding: 0.85rem 1rem; text-align: left; font-size: 0.82rem; text-transform: uppercase; width: 160px;">Class & Stream</th>
+                            <th style="padding: 0.85rem 1rem; text-align: center; font-size: 0.82rem; text-transform: uppercase; width: 160px;">Status (P / A)</th>
+                            <th style="padding: 0.85rem 1rem; text-align: left; font-size: 0.82rem; text-transform: uppercase;">Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eveningTableBody">
+                        {% for enrollment in enrollments %}
+                        {% with att=evening_attendance_dict|get_item:enrollment.id %}
+                        <tr class="student-row" id="e_row_{{ enrollment.id }}" data-search="{{ enrollment.student.full_name|lower }} {{ enrollment.student.student_id|lower }}" style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 0.85rem 1rem; color: #94a3b8; font-weight: 700;">{{ forloop.counter }}</td>
+                            <td style="padding: 0.85rem 1rem; font-weight: 700; color: #475569;">{{ enrollment.student.student_id }}</td>
+                            <td style="padding: 0.85rem 1rem;">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <div style="width: 34px; height: 34px; border-radius: 50%; background: #e0e7ff; color: #4338ca; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; flex-shrink: 0;">
+                                        {{ enrollment.student.first_name|slice:":1" }}{{ enrollment.student.last_name|slice:":1" }}
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 800; color: #1e293b;">{{ enrollment.student.full_name }}</div>
+                                        {% if enrollment.student.phone %}
+                                        <div style="font-size: 0.75rem; color: #94a3b8;">📞 {{ enrollment.student.phone }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="padding: 0.85rem 1rem;">
+                                <span style="font-weight: 700; color: #334155;">{{ enrollment.grade.name }}</span>
+                                {% if enrollment.division %}
+                                <span style="background: #f1f5f9; color: #64748b; font-size: 0.75rem; padding: 0.15rem 0.45rem; border-radius: 6px; font-weight: 700; margin-left: 0.35rem;">{{ enrollment.division.name }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 0.85rem 1rem; text-align: center;">
+                                <div class="status-toggle-group">
+                                    <label class="status-toggle-option">
+                                        <input type="radio" name="e_radio_{{ enrollment.id }}" value="present" {% if att.status == 'present' or not att %}checked{% endif %} onchange="updateDailyStatus('evening', '{{ enrollment.id }}', 'present')">
+                                        <span class="status-toggle-label lbl-present" title="Present (P)">P</span>
+                                    </label>
+                                    <label class="status-toggle-option">
+                                        <input type="radio" name="e_radio_{{ enrollment.id }}" value="absent" {% if att.status == 'absent' %}checked{% endif %} onchange="updateDailyStatus('evening', '{{ enrollment.id }}', 'absent')">
+                                        <span class="status-toggle-label lbl-absent" title="Absent (A)">A</span>
+                                    </label>
+                                </div>
+                            </td>
+                            <td style="padding: 0.85rem 1rem;">
+                                <input type="text" name="remarks_{{ enrollment.id }}" value="{{ att.remarks|default:'' }}" placeholder="Optional remarks..." style="width: 100%; min-width: 130px; padding: 0.35rem 0.65rem; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.82rem; outline: none;">
+                            </td>
+                        </tr>
+                        {% endwith %}
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 3rem; color: #94a3b8; font-weight: 600;">
+                                No students found for selected filter.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Evening Save Floating Bar -->
+        {% if enrollments %}
+        <div class="save-bar-footer">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span style="font-size: 1.3rem;">🌙</span>
+                <div>
+                    <div style="font-weight: 800; color: #1e293b;">Evening Attendance for {{ selected_date }}</div>
+                    <div style="font-size: 0.8rem; color: #64748b;">Ready to record for {{ enrollments|length }} student(s)</div>
+                </div>
+            </div>
+            <button type="submit" class="btn-save-evening">
+                <i class="fa-solid fa-floppy-disk"></i> Save Evening Attendance
+            </button>
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+<script>
+    function switchSessionTab(session) {
+        const morningBtn = document.querySelector('.session-tab-btn:first-child');
+        const eveningBtn = document.querySelector('.session-tab-btn:last-child');
+        const morningPanel = document.getElementById('morningPanel');
+        const eveningPanel = document.getElementById('eveningPanel');
+        const sessionInput = document.getElementById('activeSessionInput');
+
+        if (session === 'morning') {
+            morningPanel.style.display = 'block';
+            eveningPanel.style.display = 'none';
+            morningBtn.classList.add('active-morning');
+            eveningBtn.classList.remove('active-evening');
+            if (sessionInput) sessionInput.value = 'morning';
+            const url = new URL(window.location);
+            url.searchParams.set('session', 'morning');
+            window.history.replaceState({}, '', url);
+        } else {
+            morningPanel.style.display = 'none';
+            eveningPanel.style.display = 'block';
+            morningBtn.classList.remove('active-morning');
+            eveningBtn.classList.add('active-evening');
+            if (sessionInput) sessionInput.value = 'evening';
+            const url = new URL(window.location);
+            url.searchParams.set('session', 'evening');
+            window.history.replaceState({}, '', url);
+        }
+    }
+
+    function updateDailyStatus(session, enrollmentId, status) {
+        const prefix = session === 'morning' ? 'm' : 'e';
+        const hiddenInput = document.getElementById(`${prefix}_hidden_${enrollmentId}`);
+        if (hiddenInput) {
+            hiddenInput.value = `${enrollmentId}|${status}`;
+        }
+        recalcStats(session);
+    }
+
+    function bulkSetStatus(session, targetStatus) {
+        const prefix = session === 'morning' ? 'm' : 'e';
+        const hiddenContainer = document.getElementById(`${session}-hidden-inputs`);
+        if (!hiddenContainer) return;
+
+        const hiddenInputs = hiddenContainer.querySelectorAll('input[type="hidden"]');
+        hiddenInputs.forEach(input => {
+            const enrId = input.id.replace(`${prefix}_hidden_`, '');
+            input.value = `${enrId}|${targetStatus}`;
+
+            const radio = document.querySelector(`input[name="${prefix}_radio_${enrId}"][value="${targetStatus}"]`);
+            if (radio) {
+                radio.checked = true;
+            }
+        });
+        recalcStats(session);
+    }
+
+    function recalcStats(session) {
+        const prefix = session === 'morning' ? 'm' : 'e';
+        const hiddenContainer = document.getElementById(`${session}-hidden-inputs`);
+        if (!hiddenContainer) return;
+
+        let present = 0, absent = 0;
+        const hiddenInputs = hiddenContainer.querySelectorAll('input[type="hidden"]');
+        hiddenInputs.forEach(input => {
+            const parts = input.value.split('|');
+            const status = parts[1];
+            if (status === 'present') present++;
+            else if (status === 'absent') absent++;
+        });
+
+        const pEl = document.getElementById(`${prefix}CountPresent`);
+        const aEl = document.getElementById(`${prefix}CountAbsent`);
+
+        if (pEl) pEl.innerText = present;
+        if (aEl) aEl.innerText = absent;
+    }
+
+    function filterStudentRows(query) {
+        const q = query.toLowerCase().trim();
+        const rows = document.querySelectorAll('.student-row');
+        rows.forEach(row => {
+            const text = row.getAttribute('data-search') || '';
+            if (!q || text.includes(q)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

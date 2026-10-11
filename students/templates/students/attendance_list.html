@@ -283,6 +283,12 @@
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
     <h1 style="color: #2c3e50; margin: 0;">📊 Attendance Records</h1>
     <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <a href="{% url 'students:daily_attendance_mark' %}" class="btn btn-primary" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border: none; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.35); font-weight: 700;">
+            <span style="margin-right: 0.4rem;">☀️</span> Daily Attendance
+        </a>
+        <a href="{% url 'students:daily_attendance_records' %}" class="btn btn-primary" style="background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%); border: none; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.35); font-weight: 700;">
+            <span style="margin-right: 0.4rem;">📋</span> Daily Records
+        </a>
         <a href="{% url 'students:mark_attendance' %}" class="btn btn-primary" style="background: #27ae60; border: none; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(39, 174, 96, 0.3);">
             <span style="margin-right: 0.5rem;">✅</span> Mark Attendance
         </a>

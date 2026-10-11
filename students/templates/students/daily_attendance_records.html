@@ -1,0 +1,433 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Daily Attendance Records (Morning & Evening) - Student Attendance System{% endblock %}
+{% block page_heading %}Daily Attendance Records{% endblock %}
+
+{% block extra_css %}
+<style>
+    .records-header-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        border: 1px solid var(--border, #e2e8f0);
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--border, #e2e8f0);
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        align-items: flex-end;
+    }
+
+    .form-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .form-field label {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .form-field input,
+    .form-field select {
+        padding: 0.55rem 0.75rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #1e293b;
+        background: #f8fafc;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .form-field input:focus,
+    .form-field select:focus {
+        border-color: #6366f1;
+        background: white;
+    }
+
+    .kpi-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .kpi-card {
+        background: white;
+        border-radius: 14px;
+        padding: 1.25rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        border: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .kpi-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+    }
+
+    .table-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.35rem 0.85rem;
+        border-radius: 20px;
+        font-size: 0.82rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+    }
+
+    .badge-present { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .badge-absent { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+    .badge-unmarked { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
+    .day-pill {
+        display: inline-block;
+        padding: 0.35rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 800;
+    }
+
+    .day-pill.success { background: #dcfce7; color: #15803d; }
+    .day-pill.danger { background: #fee2e2; color: #b91c1c; }
+    .day-pill.warning { background: #fef3c7; color: #b45309; }
+    .day-pill.info { background: #e0f2fe; color: #0369a1; }
+    .day-pill.secondary { background: #f1f5f9; color: #64748b; }
+
+    @media print {
+        .filter-card, .btn, .daily-header-card .btn, nav, .sidebar {
+            display: none !important;
+        }
+        .records-header-card {
+            box-shadow: none;
+            border: none;
+            padding: 0;
+            margin-bottom: 1rem;
+        }
+        .table-card {
+            box-shadow: none;
+            border: 1px solid #ccc;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header Card with Buttons -->
+<div class="records-header-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+                <span style="font-size: 1.5rem;">📋</span>
+                <h1 style="color: #1e293b; margin: 0; font-size: 1.75rem; font-weight: 800;">
+                    Daily Attendance Records
+                </h1>
+            </div>
+            <p style="margin: 0; color: #64748b; font-size: 0.9rem; font-weight: 500;">
+                Audit history of Morning and Evening attendances for all classes and students (Present & Absent)
+            </p>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <!-- BUTTON IN THIS PAGE to go to Daily Attendance marking page -->
+            <a href="{% url 'students:daily_attendance_mark' %}?date={{ current_filters.date_from }}" class="btn" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; border-radius: 10px; padding: 0.65rem 1.35rem; font-weight: 800; font-size: 0.92rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);">
+                <i class="fa-solid fa-pencil"></i> Mark Daily Attendance
+            </a>
+
+            <!-- Print Records -->
+            <button type="button" onclick="window.print()" class="btn" style="background: white; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.65rem 1rem; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="fa-solid fa-print"></i> Print
+            </button>
+
+            <!-- Back to general attendance records -->
+            <a href="{% url 'students:attendance_list' %}" class="btn" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.65rem 1rem; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="fa-solid fa-arrow-left"></i> Period Attendance
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-cards-grid">
+    <!-- Total Records -->
+    <div class="kpi-card">
+        <div class="kpi-icon" style="background: #ede9fe; color: #6366f1;">
+            <i class="fa-solid fa-calendar-check"></i>
+        </div>
+        <div>
+            <div style="font-size: 0.78rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Total Day Records</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b;">{{ daily_rows|length }}</div>
+            <div style="font-size: 0.75rem; color: #64748b;">{{ total_records }} session entries</div>
+        </div>
+    </div>
+
+    <!-- Morning Rate -->
+    <div class="kpi-card">
+        <div class="kpi-icon" style="background: #fef3c7; color: #b45309;">
+            <i class="fa-solid fa-sun"></i>
+        </div>
+        <div>
+            <div style="font-size: 0.78rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Morning Attendance</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #b45309;">{{ m_pct }}%</div>
+            <div style="font-size: 0.75rem; color: #64748b;">{{ m_present }} present / {{ m_total }} total</div>
+        </div>
+    </div>
+
+    <!-- Evening Rate -->
+    <div class="kpi-card">
+        <div class="kpi-icon" style="background: #e0e7ff; color: #4338ca;">
+            <i class="fa-solid fa-moon"></i>
+        </div>
+        <div>
+            <div style="font-size: 0.78rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Evening Attendance</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #4338ca;">{{ e_pct }}%</div>
+            <div style="font-size: 0.75rem; color: #64748b;">{{ e_present }} present / {{ e_total }} total</div>
+        </div>
+    </div>
+
+    <!-- Total Absents -->
+    <div class="kpi-card">
+        <div class="kpi-icon" style="background: #fee2e2; color: #b91c1c;">
+            <i class="fa-solid fa-user-xmark"></i>
+        </div>
+        <div>
+            <div style="font-size: 0.78rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Total Absences</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #b91c1c;">{{ total_absent }}</div>
+            <div style="font-size: 0.75rem; color: #64748b;">Across filtered sessions</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters Card -->
+<div class="filter-card">
+    <form method="get" id="recordsFilterForm">
+        <div class="filter-grid">
+            <!-- Date From -->
+            <div class="form-field">
+                <label>From Date:</label>
+                <input type="date" name="date_from" value="{{ current_filters.date_from }}">
+            </div>
+
+            <!-- Date To -->
+            <div class="form-field">
+                <label>To Date:</label>
+                <input type="date" name="date_to" value="{{ current_filters.date_to }}">
+            </div>
+
+            <!-- Class / Grade -->
+            <div class="form-field">
+                <label>Class:</label>
+                <select name="grade">
+                    <option value="">All Classes</option>
+                    {% for g in grades %}
+                    <option value="{{ g.id }}" {% if current_filters.grade == g.id %}selected{% endif %}>{{ g.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Division -->
+            <div class="form-field">
+                <label>Division / Stream:</label>
+                <select name="division">
+                    <option value="">All Streams</option>
+                    {% for d in divisions %}
+                    <option value="{{ d.id }}" {% if current_filters.division == d.id %}selected{% endif %}>{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Session Filter -->
+            <div class="form-field">
+                <label>Session:</label>
+                <select name="session">
+                    <option value="">Both (Morning & Evening)</option>
+                    <option value="morning" {% if current_filters.session == 'morning' %}selected{% endif %}>☀️ Morning Only</option>
+                    <option value="evening" {% if current_filters.session == 'evening' %}selected{% endif %}>🌙 Evening Only</option>
+                </select>
+            </div>
+
+            <!-- Status Filter (Present / Absent only) -->
+            <div class="form-field">
+                <label>Status:</label>
+                <select name="status">
+                    <option value="">All Statuses</option>
+                    <option value="present" {% if current_filters.status == 'present' %}selected{% endif %}>Present (P)</option>
+                    <option value="absent" {% if current_filters.status == 'absent' %}selected{% endif %}>Absent (A)</option>
+                </select>
+            </div>
+
+            <!-- Student Search -->
+            <div class="form-field">
+                <label>Search Student:</label>
+                <input type="text" name="search" value="{{ current_filters.search }}" placeholder="Name or ID...">
+            </div>
+
+            <!-- Filter Buttons -->
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" class="btn" style="background: #2563eb; color: white; border-radius: 8px; padding: 0.55rem 1rem; font-weight: 700; border: none; cursor: pointer; flex: 1;">
+                    <i class="fa-solid fa-filter"></i> Apply
+                </button>
+                <a href="{% url 'students:daily_attendance_records' %}" class="btn" style="background: #94a3b8; color: white; border-radius: 8px; padding: 0.55rem 0.85rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                    Reset
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Daily Attendance Combined Table -->
+<div class="table-card">
+    <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <h3 style="margin: 0; color: #1e293b; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🗓️</span> Records List ({{ daily_rows|length }} Student-Days)
+        </h3>
+        <span style="font-size: 0.82rem; color: #64748b; font-weight: 600;">
+            Showing Morning and Evening status per student (P / A)
+        </span>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #1e293b; color: white;">
+                    <th style="padding: 0.85rem 1rem; text-align: left; font-size: 0.82rem; text-transform: uppercase; width: 110px;">Date</th>
+                    <th style="padding: 0.85rem 1rem; text-align: left; font-size: 0.82rem; text-transform: uppercase; width: 120px;">Student ID</th>
+                    <th style="padding: 0.85rem 1rem; text-align: left; font-size: 0.82rem; text-transform: uppercase;">Student Name</th>
+                    <th style="padding: 0.85rem 1rem; text-align: left; font-size: 0.82rem; text-transform: uppercase; width: 160px;">Class & Stream</th>
+                    <th style="padding: 0.85rem 1rem; text-align: center; font-size: 0.82rem; text-transform: uppercase; width: 160px;">☀️ Morning Status</th>
+                    <th style="padding: 0.85rem 1rem; text-align: center; font-size: 0.82rem; text-transform: uppercase; width: 160px;">🌙 Evening Status</th>
+                    <th style="padding: 0.85rem 1rem; text-align: center; font-size: 0.82rem; text-transform: uppercase; width: 150px;">Day Summary</th>
+                    <th style="padding: 0.85rem 1rem; text-align: left; font-size: 0.82rem; text-transform: uppercase;">Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in daily_rows %}
+                <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" onmouseover="this.style.background='#f8faff';" onmouseout="this.style.background='white';">
+                    <!-- Date -->
+                    <td style="padding: 0.85rem 1rem; font-weight: 700; color: #1e293b; white-space: nowrap;">
+                        {{ row.date|date:"d M Y" }}
+                    </td>
+
+                    <!-- Student ID -->
+                    <td style="padding: 0.85rem 1rem; font-weight: 700; color: #475569;">
+                        {{ row.student.student_id }}
+                    </td>
+
+                    <!-- Student Name -->
+                    <td style="padding: 0.85rem 1rem;">
+                        <a href="{% url 'students:student_profile' row.student.id %}" style="font-weight: 800; color: #1e293b; text-decoration: none;">
+                            {{ row.student.full_name }}
+                        </a>
+                    </td>
+
+                    <!-- Class -->
+                    <td style="padding: 0.85rem 1rem;">
+                        <span style="font-weight: 700; color: #334155;">{{ row.enrollment.grade.name }}</span>
+                        {% if row.enrollment.division %}
+                        <span style="background: #f1f5f9; color: #64748b; font-size: 0.72rem; padding: 0.15rem 0.4rem; border-radius: 6px; font-weight: 700; margin-left: 0.25rem;">{{ row.enrollment.division.name }}</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Morning Session Status -->
+                    <td style="padding: 0.85rem 1rem; text-align: center;">
+                        {% if row.morning %}
+                            {% if row.morning.status == 'present' %}
+                            <span class="status-badge badge-present"><i class="fa-solid fa-check"></i> Present (P)</span>
+                            {% elif row.morning.status == 'absent' %}
+                            <span class="status-badge badge-absent"><i class="fa-solid fa-xmark"></i> Absent (A)</span>
+                            {% endif %}
+                            {% if row.morning.marked_by %}
+                            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 0.25rem;">by {{ row.morning.marked_by }}</div>
+                            {% endif %}
+                        {% else %}
+                            <span class="status-badge badge-unmarked"><i class="fa-solid fa-minus"></i> Not Marked</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Evening Session Status -->
+                    <td style="padding: 0.85rem 1rem; text-align: center;">
+                        {% if row.evening %}
+                            {% if row.evening.status == 'present' %}
+                            <span class="status-badge badge-present"><i class="fa-solid fa-check"></i> Present (P)</span>
+                            {% elif row.evening.status == 'absent' %}
+                            <span class="status-badge badge-absent"><i class="fa-solid fa-xmark"></i> Absent (A)</span>
+                            {% endif %}
+                            {% if row.evening.marked_by %}
+                            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 0.25rem;">by {{ row.evening.marked_by }}</div>
+                            {% endif %}
+                        {% else %}
+                            <span class="status-badge badge-unmarked"><i class="fa-solid fa-minus"></i> Not Marked</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Overall Day Summary -->
+                    <td style="padding: 0.85rem 1rem; text-align: center;">
+                        <span class="day-pill {{ row.day_class }}">{{ row.day_label }}</span>
+                    </td>
+
+                    <!-- Remarks -->
+                    <td style="padding: 0.85rem 1rem; font-size: 0.82rem; color: #64748b; max-width: 200px;">
+                        {% if row.morning.remarks %}
+                        <div><strong>☀️:</strong> {{ row.morning.remarks }}</div>
+                        {% endif %}
+                        {% if row.evening.remarks %}
+                        <div><strong>🌙:</strong> {{ row.evening.remarks }}</div>
+                        {% endif %}
+                        {% if not row.morning.remarks and not row.evening.remarks %}
+                        <span style="color: #cbd5e1;">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 3.5rem 1rem; color: #94a3b8;">
+                        <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📋</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #475569; margin-bottom: 0.5rem;">No daily attendance records found</div>
+                        <p style="margin: 0 0 1.25rem 0; font-size: 0.875rem;">Try adjusting the date filters or mark daily attendance now.</p>
+                        <a href="{% url 'students:daily_attendance_mark' %}" class="btn" style="background: #0284c7; color: white; border-radius: 8px; padding: 0.6rem 1.25rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
+                            <i class="fa-solid fa-pencil"></i> Mark Daily Attendance
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -8930,6 +8930,377 @@ def user_guide(request):
     return render(request, 'students/user_guide.html', context)
 
 
+# ==============================================================================
+# DAILY ATTENDANCE (MORNING & EVENING SESSIONS)
+# ==============================================================================
+
+@role_required(['admin', 'teacher'])
+def daily_attendance_mark(request):
+    """
+    Daily Attendance Marking View:
+    Two attendances in a day:
+    Tab 1: Morning Attendance
+    Tab 2: Evening Attendance
+    """
+    today_str = date.today().isoformat()
+    selected_date_str = request.GET.get('date', today_str)
+    try:
+        selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        selected_date = date.today()
+        selected_date_str = today_str
+
+    active_session_tab = request.GET.get('session', 'morning')
+    if active_session_tab not in ['morning', 'evening']:
+        active_session_tab = 'morning'
+
+    grade_id = request.GET.get('grade')
+    division_id = request.GET.get('division')
+    search_query = request.GET.get('q', '').strip()
+
+    active_year = AcademicYear.objects.filter(is_active=True).first()
+    if not active_year:
+        messages.error(request, 'Please configure an active academic year to mark attendance.')
+        return redirect('students:attendance_list')
+
+    # Handle POST submission
+    if request.method == 'POST':
+        post_session = request.POST.get('session', active_session_tab)
+        if post_session not in ['morning', 'evening']:
+            post_session = 'morning'
+
+        post_date_str = request.POST.get('date', selected_date_str)
+        try:
+            post_date = datetime.strptime(post_date_str, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            post_date = selected_date
+
+        marked_by = request.user.get_full_name() or request.user.username or 'Staff'
+
+        # Check submitted attendance data
+        attendance_items = request.POST.getlist('attendance')
+        records_saved = 0
+
+        if attendance_items:
+            for item in attendance_items:
+                if '|' in item:
+                    parts = item.split('|', 1)
+                    enr_id = parts[0]
+                    st_val = parts[1]
+                    try:
+                        enrollment = Enrollment.objects.select_related('student').get(id=enr_id)
+                        remarks_val = request.POST.get(f'remarks_{enr_id}', '').strip()
+                        Attendance.objects.update_or_create(
+                            student=enrollment.student,
+                            enrollment=enrollment,
+                            date=post_date,
+                            attendance_type='daily',
+                            session=post_session,
+                            defaults={
+                                'status': st_val,
+                                'remarks': remarks_val,
+                                'marked_by': marked_by,
+                            }
+                        )
+                        records_saved += 1
+                    except Enrollment.DoesNotExist:
+                        continue
+        else:
+            enrollment_ids = request.POST.getlist('enrollment_ids')
+            for enr_id in enrollment_ids:
+                st_val = request.POST.get(f'status_{enr_id}', 'present')
+                remarks_val = request.POST.get(f'remarks_{enr_id}', '').strip()
+                try:
+                    enrollment = Enrollment.objects.select_related('student').get(id=enr_id)
+                    Attendance.objects.update_or_create(
+                        student=enrollment.student,
+                        enrollment=enrollment,
+                        date=post_date,
+                        attendance_type='daily',
+                        session=post_session,
+                        defaults={
+                            'status': st_val,
+                            'remarks': remarks_val,
+                            'marked_by': marked_by,
+                        }
+                    )
+                    records_saved += 1
+                except Enrollment.DoesNotExist:
+                    continue
+
+        session_label = "Morning Attendance" if post_session == 'morning' else "Evening Attendance"
+        messages.success(request, f"✅ {session_label} successfully saved for {records_saved} student(s) on {post_date.strftime('%b %d, %Y')}!")
+
+        redirect_params = [f"date={post_date_str}", f"session={post_session}"]
+        if grade_id:
+            redirect_params.append(f"grade={grade_id}")
+        if division_id:
+            redirect_params.append(f"division={division_id}")
+        return redirect(f"{reverse('students:daily_attendance_mark')}?{'&'.join(redirect_params)}")
+
+    # GET: Prepare Enrollments & Existing Attendance
+    enrollments_qs = Enrollment.objects.filter(
+        academic_year=active_year,
+        student__is_active=True
+    ).select_related('student', 'grade', 'division', 'section')
+
+    if grade_id and grade_id.isdigit():
+        enrollments_qs = enrollments_qs.filter(grade_id=grade_id)
+    if division_id and division_id.isdigit():
+        enrollments_qs = enrollments_qs.filter(division_id=division_id)
+    if search_query:
+        enrollments_qs = enrollments_qs.filter(
+            Q(student__first_name__icontains=search_query) |
+            Q(student__last_name__icontains=search_query) |
+            Q(student__student_id__icontains=search_query)
+        )
+
+    enrollments = list(enrollments_qs.order_by('grade__order', 'grade__name', 'division__name', 'student__student_id', 'student__first_name'))
+
+    # Existing daily attendances for the selected date
+    daily_attendances = Attendance.objects.filter(
+        date=selected_date,
+        attendance_type='daily'
+    ).select_related('student', 'enrollment')
+
+    morning_attendance_dict = {}
+    evening_attendance_dict = {}
+    for att in daily_attendances:
+        if att.session == 'morning':
+            morning_attendance_dict[att.enrollment_id] = att
+        elif att.session == 'evening':
+            evening_attendance_dict[att.enrollment_id] = att
+
+    # Statistics calculation
+    total_count = len(enrollments)
+
+    m_marked = sum(1 for e in enrollments if e.id in morning_attendance_dict)
+    m_present = sum(1 for e in enrollments if e.id in morning_attendance_dict and morning_attendance_dict[e.id].status == 'present')
+    m_absent = sum(1 for e in enrollments if e.id in morning_attendance_dict and morning_attendance_dict[e.id].status == 'absent')
+
+    e_marked = sum(1 for e in enrollments if e.id in evening_attendance_dict)
+    e_present = sum(1 for e in enrollments if e.id in evening_attendance_dict and evening_attendance_dict[e.id].status == 'present')
+    e_absent = sum(1 for e in enrollments if e.id in evening_attendance_dict and evening_attendance_dict[e.id].status == 'absent')
+
+    morning_stats = {
+        'total': total_count,
+        'marked': m_marked,
+        'present': m_present,
+        'absent': m_absent,
+        'is_complete': m_marked == total_count and total_count > 0,
+    }
+
+    evening_stats = {
+        'total': total_count,
+        'marked': e_marked,
+        'present': e_present,
+        'absent': e_absent,
+        'is_complete': e_marked == total_count and total_count > 0,
+    }
+
+    grades = Grade.objects.filter(
+        enrollments__academic_year=active_year,
+        enrollments__student__is_active=True
+    ).distinct().order_by('order', 'name')
+
+    divisions = Division.objects.filter(
+        enrollment__academic_year=active_year,
+        enrollment__student__is_active=True
+    ).distinct().order_by('name')
+
+    context = {
+        'selected_date': selected_date_str,
+        'selected_date_obj': selected_date,
+        'active_session_tab': active_session_tab,
+        'enrollments': enrollments,
+        'morning_attendance_dict': morning_attendance_dict,
+        'evening_attendance_dict': evening_attendance_dict,
+        'morning_stats': morning_stats,
+        'evening_stats': evening_stats,
+        'grades': grades,
+        'divisions': divisions,
+        'selected_grade': int(grade_id) if grade_id and grade_id.isdigit() else None,
+        'selected_division': int(division_id) if division_id and division_id.isdigit() else None,
+        'search_query': search_query,
+    }
+    return render(request, 'students/daily_attendance_mark.html', context)
+
+
+@role_required(['admin', 'teacher'])
+def daily_attendance_records(request):
+    """
+    Daily Attendance Records View:
+    Displays historical records of Morning & Evening daily attendances with:
+    - Date filtering (from_date, to_date, month picker)
+    - Class / Grade & Division filtering
+    - Session filtering (all, morning, evening)
+    - Status filtering (all, present, absent, late, excused)
+    - Combined student view showing both Morning and Evening attendance on each day
+    - Quick button to jump to Daily Attendance marking page
+    """
+    today = date.today()
+    date_from_str = request.GET.get('date_from', today.isoformat())
+    date_to_str = request.GET.get('date_to', today.isoformat())
+    grade_id = request.GET.get('grade')
+    division_id = request.GET.get('division')
+    session_filter = request.GET.get('session', '')
+    status_filter = request.GET.get('status', '')
+    student_search = request.GET.get('search', '').strip()
+    month_filter = request.GET.get('month_filter', '').strip()
+
+    if month_filter:
+        try:
+            m_year, m_month = map(int, month_filter.split('-'))
+            import calendar
+            _, last_day = calendar.monthrange(m_year, m_month)
+            date_from_str = f"{m_year:04d}-{m_month:02d}-01"
+            date_to_str = f"{m_year:04d}-{m_month:02d}-{last_day:02d}"
+        except Exception:
+            pass
+
+    active_year = AcademicYear.objects.filter(is_active=True).first()
+
+    records_qs = Attendance.objects.filter(
+        attendance_type='daily'
+    ).select_related(
+        'student',
+        'enrollment',
+        'enrollment__grade',
+        'enrollment__division',
+        'enrollment__section'
+    )
+
+    if active_year:
+        records_qs = records_qs.filter(enrollment__academic_year=active_year)
+
+    if date_from_str:
+        records_qs = records_qs.filter(date__gte=date_from_str)
+    if date_to_str:
+        records_qs = records_qs.filter(date__lte=date_to_str)
+    if grade_id and grade_id.isdigit():
+        records_qs = records_qs.filter(enrollment__grade_id=grade_id)
+    if division_id and division_id.isdigit():
+        records_qs = records_qs.filter(enrollment__division_id=division_id)
+    if session_filter in ['morning', 'evening']:
+        records_qs = records_qs.filter(session=session_filter)
+    if status_filter:
+        records_qs = records_qs.filter(status=status_filter)
+    if student_search:
+        records_qs = records_qs.filter(
+            Q(student__first_name__icontains=student_search) |
+            Q(student__last_name__icontains=student_search) |
+            Q(student__student_id__icontains=student_search)
+        )
+
+    records = list(records_qs.order_by(
+        '-date',
+        'enrollment__grade__order',
+        'enrollment__grade__name',
+        'enrollment__division__name',
+        'student__student_id'
+    ))
+
+    total_records = len(records)
+    m_records = [r for r in records if r.session == 'morning']
+    e_records = [r for r in records if r.session == 'evening']
+
+    m_total = len(m_records)
+    m_present = sum(1 for r in m_records if r.status == 'present')
+    m_absent = sum(1 for r in m_records if r.status == 'absent')
+    m_pct = round((m_present / m_total * 100), 1) if m_total > 0 else 0
+
+    e_total = len(e_records)
+    e_present = sum(1 for r in e_records if r.status == 'present')
+    e_absent = sum(1 for r in e_records if r.status == 'absent')
+    e_pct = round((e_present / e_total * 100), 1) if e_total > 0 else 0
+
+    total_absent = sum(1 for r in records if r.status == 'absent')
+
+    # Build grouped day rows: Key = (date, enrollment_id)
+    from collections import OrderedDict
+    grouped_days = OrderedDict()
+    for rec in records:
+        key = (rec.date, rec.enrollment_id)
+        if key not in grouped_days:
+            grouped_days[key] = {
+                'date': rec.date,
+                'enrollment': rec.enrollment,
+                'student': rec.student,
+                'morning': None,
+                'evening': None,
+            }
+        if rec.session == 'morning':
+            grouped_days[key]['morning'] = rec
+        elif rec.session == 'evening':
+            grouped_days[key]['evening'] = rec
+
+    daily_rows = []
+    for (d, enr_id), row in grouped_days.items():
+        m_rec = row['morning']
+        e_rec = row['evening']
+
+        m_status = m_rec.status if m_rec else 'not_marked'
+        e_status = e_rec.status if e_rec else 'not_marked'
+
+        if m_status == 'present' and e_status == 'present':
+            day_status = 'full_present'
+            day_label = 'Full Day Present'
+            day_class = 'success'
+        elif m_status == 'absent' and e_status == 'absent':
+            day_status = 'full_absent'
+            day_label = 'Full Day Absent'
+            day_class = 'danger'
+        elif (m_status == 'present' and e_status == 'absent') or (m_status == 'absent' and e_status == 'present'):
+            day_status = 'half_day'
+            day_label = 'Half Day'
+            day_class = 'warning'
+        elif m_status == 'present' or e_status == 'present':
+            day_status = 'partial'
+            day_label = 'Partial Present'
+            day_class = 'info'
+        else:
+            day_status = 'other'
+            day_label = 'Recorded'
+            day_class = 'secondary'
+
+        row['day_status'] = day_status
+        row['day_label'] = day_label
+        row['day_class'] = day_class
+        daily_rows.append(row)
+
+    grades = Grade.objects.all().order_by('order', 'name')
+    divisions = Division.objects.all().order_by('name')
+
+    context = {
+        'daily_rows': daily_rows,
+        'records': records,
+        'total_records': total_records,
+        'm_total': m_total,
+        'm_present': m_present,
+        'm_absent': m_absent,
+        'm_pct': m_pct,
+        'e_total': e_total,
+        'e_present': e_present,
+        'e_absent': e_absent,
+        'e_pct': e_pct,
+        'total_absent': total_absent,
+        'grades': grades,
+        'divisions': divisions,
+        'current_filters': {
+            'date_from': date_from_str,
+            'date_to': date_to_str,
+            'month_filter': month_filter,
+            'grade': int(grade_id) if grade_id and grade_id.isdigit() else '',
+            'division': int(division_id) if division_id and division_id.isdigit() else '',
+            'session': session_filter,
+            'status': status_filter,
+            'search': student_search,
+        }
+    }
+    return render(request, 'students/daily_attendance_records.html', context)
+
+
+
 
 
 

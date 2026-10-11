@@ -92,8 +92,8 @@ class EnrollmentAdmin(admin.ModelAdmin):
 
 @admin.register(Attendance)
 class AttendanceAdmin(admin.ModelAdmin):
-    list_display = ['student', 'enrollment', 'date', 'attendance_type', 'status', 'period', 'activity', 'marked_by']
-    list_filter = ['attendance_type', 'status', 'date', 'period', 'activity']
+    list_display = ['student', 'enrollment', 'date', 'attendance_type', 'session', 'status', 'period', 'activity', 'marked_by']
+    list_filter = ['attendance_type', 'session', 'status', 'date', 'period', 'activity']
     search_fields = ['student__student_id', 'student__first_name', 'student__last_name', 'marked_by']
     date_hierarchy = 'date'
     readonly_fields = ['created_at', 'updated_at']
@@ -103,7 +103,7 @@ class AttendanceAdmin(admin.ModelAdmin):
             'fields': ('student', 'enrollment', 'date')
         }),
         ('Attendance Details', {
-            'fields': ('attendance_type', 'status', 'period', 'activity')
+            'fields': ('attendance_type', 'session', 'status', 'period', 'activity')
         }),
         ('Additional Information', {
             'fields': ('remarks', 'marked_by')

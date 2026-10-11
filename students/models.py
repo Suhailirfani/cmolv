@@ -223,6 +223,11 @@ class Attendance(models.Model):
         ('activity', 'Activity Attendance'),
     ]
 
+    SESSION_CHOICES = [
+        ('morning', 'Morning Attendance'),
+        ('evening', 'Evening Attendance'),
+    ]
+
     STATUS_CHOICES = [
         ('present', 'Present'),
         ('absent', 'Absent'),
@@ -234,6 +239,7 @@ class Attendance(models.Model):
     enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE, related_name='attendances')
     date = models.DateField(default=timezone.now)
     attendance_type = models.CharField(max_length=20, choices=ATTENDANCE_TYPE_CHOICES)
+    session = models.CharField(max_length=20, choices=SESSION_CHOICES, blank=True, null=True, db_index=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='present')
 
     # For period attendance
@@ -258,6 +264,8 @@ class Attendance(models.Model):
             models.Index(fields=['date', 'attendance_type']),
             models.Index(fields=['student', 'date', 'attendance_type']),
             models.Index(fields=['enrollment', 'date', 'attendance_type']),
+            models.Index(fields=['student', 'date', 'attendance_type', 'session']),
+            models.Index(fields=['enrollment', 'date', 'attendance_type', 'session']),
         ]
 
     def __str__(self):
@@ -266,6 +274,8 @@ class Attendance(models.Model):
             return f"{self.student} - {type_display} - {self.period} - {self.date}"
         elif self.activity:
             return f"{self.student} - {type_display} - {self.activity} - {self.date}"
+        elif self.session:
+            return f"{self.student} - {type_display} ({self.get_session_display()}) - {self.date}"
         return f"{self.student} - {type_display} - {self.date}"
 
     def clean(self):

@@ -1801,10 +1801,31 @@
                 <i class="fa-solid fa-user-graduate"></i>
                 <span>Alumni Registry</span>
             </a>
-            <a href="{% url 'students:attendance_list' %}" class="nav-item">
-                <i class="fa-solid fa-calendar-check"></i>
-                <span>Attendance</span>
-            </a>
+            <div class="nav-group">
+                <a href="#" class="nav-item nav-dropdown-btn" onclick="event.preventDefault(); const content = this.nextElementSibling; const icon = this.querySelector('.arrow'); const isClosed = content.style.display === 'none' || content.style.display === ''; content.style.display = isClosed ? 'block' : 'none'; icon.style.transform = isClosed ? 'rotate(180deg)' : 'none';">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    <span>Attendance</span>
+                    <i class="fa-solid fa-chevron-down arrow" style="margin-left: auto; font-size: 0.8rem; transition: transform 0.3s;"></i>
+                </a>
+                <div class="nav-group-content" style="display: none; padding-left: 1.5rem; margin-top: 0.25rem;">
+                    <a href="{% url 'students:daily_attendance_mark' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-calendar-day" style="font-size: 0.9rem; color: #0284c7;"></i>
+                        <span>Daily Attendance</span>
+                    </a>
+                    <a href="{% url 'students:daily_attendance_records' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-clipboard-list" style="font-size: 0.9rem; color: #4f46e5;"></i>
+                        <span>Daily Records</span>
+                    </a>
+                    <a href="{% url 'students:attendance_list' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-chart-pie" style="font-size: 0.9rem; color: #27ae60;"></i>
+                        <span>Attendance Records</span>
+                    </a>
+                    <a href="{% url 'students:mark_attendance' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-check-double" style="font-size: 0.9rem; color: #e67e22;"></i>
+                        <span>Mark Period Att.</span>
+                    </a>
+                </div>
+            </div>
             <a href="{% url 'students:examination_dashboard' %}" class="nav-item">
                 <i class="fa-solid fa-graduation-cap"></i>
                 <span>Examination</span>
