@@ -19,6 +19,11 @@
                     <i class="fa-solid fa-circle-check"></i> 🟢 Mark IN / Arrived Now
                 </button>
             </form>
+            {% if active_movement %}
+                <a href="{% url 'students:hostel_movement_update' active_movement.pk %}" class="btn" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: 700; padding: 0.6rem 1.1rem; border-radius: 8px; text-decoration: none;">
+                    <i class="fa-solid fa-pen-to-square"></i> Edit Outing Details
+                </a>
+            {% endif %}
         {% else %}
             <form method="post" onsubmit="return confirm('Mark {{ student.full_name }} as OUT (Leaving Hostel Now)?');" style="margin: 0;">
                 {% csrf_token %}
@@ -27,8 +32,8 @@
                     <i class="fa-solid fa-person-walking-arrow-right"></i> 🔴 Mark OUT Now
                 </button>
             </form>
+            <a href="{% url 'students:hostel_movement_create' %}?student={{ student.pk }}" class="btn" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-weight: 600;">+ Custom Log</a>
         {% endif %}
-        <a href="{% url 'students:hostel_movement_create' %}?student={{ student.pk }}" class="btn" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-weight: 600;">+ Custom Log</a>
         <a href="{% url 'students:hostel_student_list' %}" class="btn" style="background-color: #64748b; color: white;">← Back to List</a>
     </div>
 </div>

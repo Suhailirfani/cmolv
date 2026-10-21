@@ -2146,44 +2146,58 @@ def hostel_movement_list(request):
 
     # Handle quick return / check-in action (Mark IN)
     if request.method == 'POST' and 'quick_return_id' in request.POST:
+        from django.db import transaction
         movement_id = request.POST.get('quick_return_id')
-        movement = get_object_or_404(HostelMovement, id=movement_id)
-        movement.is_returned = True
-        movement.arrival_date = today
-        movement.arrival_time = now_time
-        movement.sign = request.user.get_full_name() or request.user.username or "Warden"
-        remarks_extra = request.POST.get('quick_remarks', '').strip()
-        if remarks_extra:
-            movement.remarks = f"{movement.remarks}\n{remarks_extra}".strip()
-        movement.save()
+        with transaction.atomic():
+            movement = HostelMovement.objects.select_for_update().filter(id=movement_id).first()
+            if not movement:
+                messages.error(request, "Movement record not found.")
+                return redirect('students:hostel_movement_list')
+            if movement.is_returned:
+                messages.warning(request, f"⚠️ {movement.student.full_name} is already marked as returned.")
+                return redirect('students:hostel_movement_list')
+
+            movement.is_returned = True
+            movement.arrival_date = today
+            movement.arrival_time = now_time
+            movement.sign = request.user.get_full_name() or request.user.username or "Warden"
+            remarks_extra = request.POST.get('quick_remarks', '').strip()
+            if remarks_extra:
+                movement.remarks = f"{movement.remarks}\n{remarks_extra}".strip()
+            movement.save()
 
         messages.success(request, f"🟢 {movement.student.full_name} ({movement.student.student_id}) marked IN (Returned) at {now_time.strftime('%I:%M %p')}.")
         return redirect('students:hostel_movement_list')
 
     # Handle quick out action (Mark OUT - records current date and time)
     if request.method == 'POST' and 'quick_out_student_id' in request.POST:
+        from django.db import transaction
         student_id = request.POST.get('quick_out_student_id')
-        student = get_object_or_404(Student, id=student_id, student_type='hostel')
-        
-        # Check if student is already marked OUT
-        existing_away = HostelMovement.objects.filter(student=student, is_returned=False).first()
-        if existing_away:
-            messages.warning(request, f"⚠️ {student.full_name} is already marked OUT (since {existing_away.departure_date} {existing_away.departure_time}).")
-        else:
-            escort = request.POST.get('escorting_person', '').strip() or getattr(student, 'guardian_name', '') or "Self / Guardian"
-            reason = request.POST.get('reason', '').strip() or "Outing / Leave"
-            expected_return = request.POST.get('expected_return_date') or None
-            
-            movement = HostelMovement.objects.create(
-                student=student,
-                departure_date=today,
-                departure_time=now_time,
-                escorting_person=escort,
-                reason=reason,
-                expected_return_date=expected_return,
-                is_returned=False
-            )
-            messages.success(request, f"🔴 {student.full_name} ({student.student_id}) marked OUT at {now_time.strftime('%I:%M %p')}.")
+        with transaction.atomic():
+            student = Student.objects.select_for_update().filter(id=student_id, student_type='hostel').first()
+            if not student:
+                messages.error(request, "Student not found.")
+                return redirect('students:hostel_movement_list')
+
+            # Check if student is already marked OUT
+            existing_away = HostelMovement.objects.filter(student=student, is_returned=False).first()
+            if existing_away:
+                messages.warning(request, f"⚠️ {student.full_name} is already marked OUT (since {existing_away.departure_date} {existing_away.departure_time}).")
+            else:
+                escort = request.POST.get('escorting_person', '').strip() or getattr(student, 'guardian_name', '') or "Self / Guardian"
+                reason = request.POST.get('reason', '').strip() or "Outing / Leave"
+                expected_return = request.POST.get('expected_return_date') or None
+                
+                movement = HostelMovement.objects.create(
+                    student=student,
+                    departure_date=today,
+                    departure_time=now_time,
+                    escorting_person=escort,
+                    reason=reason,
+                    expected_return_date=expected_return,
+                    is_returned=False
+                )
+                messages.success(request, f"🔴 {student.full_name} ({student.student_id}) marked OUT at {now_time.strftime('%I:%M %p')}.")
         return redirect('students:hostel_movement_list')
 
     # Total active hostel students
@@ -2274,27 +2288,66 @@ def hostel_movement_list(request):
 
 @role_required(['admin', 'teacher', 'ntstaff'])
 def hostel_movement_create(request):
-    """Create hostel movement record"""
+    """Create hostel movement record - blocks creating duplicate outgoing movement if student is already OUT"""
+    from django.db import transaction
+    from django.core.exceptions import ValidationError
+
     if request.method == 'POST':
+        # Handle quick return action if triggered from this page
+        if 'quick_return_id' in request.POST:
+            movement_id = request.POST.get('quick_return_id')
+            now_local = timezone.localtime()
+            with transaction.atomic():
+                movement = HostelMovement.objects.select_for_update().filter(id=movement_id).first()
+                if not movement:
+                    messages.error(request, "Movement record not found.")
+                    return redirect('students:hostel_movement_create')
+                if movement.is_returned:
+                    messages.warning(request, f"⚠️ {movement.student.full_name} is already marked as returned.")
+                    return redirect('students:hostel_movement_create')
+
+                movement.is_returned = True
+                movement.arrival_date = now_local.date()
+                movement.arrival_time = now_local.time()
+                movement.sign = request.user.get_full_name() or request.user.username or "Warden"
+                movement.save()
+
+            messages.success(request, f"🟢 {movement.student.full_name} ({movement.student.student_id}) marked IN (Returned) at {now_local.strftime('%I:%M %p')}.")
+            return redirect('students:hostel_movement_create')
+
         student_id = request.POST.get('student')
-        departure_date = request.POST.get('departure_date')
-        departure_time = request.POST.get('departure_time')
-        escorting_person = request.POST.get('escorting_person', '').strip()
-        reason = request.POST.get('reason', '').strip()
-        expected_return_date = request.POST.get('expected_return_date') or None
+        with transaction.atomic():
+            student = Student.objects.select_for_update().filter(id=student_id, student_type='hostel').first()
+            if not student:
+                messages.error(request, "Student not found.")
+                return redirect('students:hostel_movement_create')
 
-        student = get_object_or_404(Student, id=student_id, student_type='hostel')
+            # Check if student is already OUT of hostel (active unreturned movement)
+            existing_away = HostelMovement.objects.filter(student=student, is_returned=False).first()
+            if existing_away:
+                messages.warning(
+                    request,
+                    f"⚠️ {student.full_name} ({student.student_id}) is already OUT of hostel (since {existing_away.departure_date.strftime('%d %b %Y')} {existing_away.departure_time.strftime('%I:%M %p')}). "
+                    f"Cannot create another outgoing movement until they return. You can edit the current movement record below."
+                )
+                return redirect('students:hostel_movement_update', pk=existing_away.pk)
 
-        movement = HostelMovement.objects.create(
-            student=student,
-            departure_date=departure_date,
-            departure_time=departure_time,
-            escorting_person=escorting_person,
-            reason=reason,
-            expected_return_date=expected_return_date,
-        )
+            departure_date = request.POST.get('departure_date')
+            departure_time = request.POST.get('departure_time')
+            escorting_person = request.POST.get('escorting_person', '').strip()
+            reason = request.POST.get('reason', '').strip()
+            expected_return_date = request.POST.get('expected_return_date') or None
 
-        messages.success(request, f'Movement record created for {student.full_name}')
+            movement = HostelMovement.objects.create(
+                student=student,
+                departure_date=departure_date,
+                departure_time=departure_time,
+                escorting_person=escorting_person,
+                reason=reason,
+                expected_return_date=expected_return_date,
+            )
+
+        messages.success(request, f'🟢 Outgoing movement record created for {student.full_name}')
         return redirect('students:hostel_movement_list')
 
     active_year = AcademicYear.objects.filter(is_active=True).first()
@@ -2302,35 +2355,214 @@ def hostel_movement_create(request):
         academic_year=active_year,
         student__student_type='hostel', 
         student__is_active=True
-    ).select_related('student')
-    context = {'enrollments': enrollments}
+    ).select_related('student', 'grade', 'section').order_by('student__first_name', 'student__last_name')
+
+    # Get active away movements map (student_id -> HostelMovement)
+    away_movements = list(
+        HostelMovement.objects.filter(is_returned=False, student__is_active=True).select_related('student')
+    )
+    today = timezone.localtime().date()
+    for m in away_movements:
+        m.days_away = (today - m.departure_date).days
+    away_movement_map = {m.student_id: m for m in away_movements}
+
+    for e in enrollments:
+        m = away_movement_map.get(e.student.id)
+        e.student.is_away = m is not None
+        e.student.active_movement = m
+
+    selected_student_id = request.GET.get('student')
+    selected_student = None
+    selected_away_movement = None
+    if selected_student_id:
+        try:
+            selected_student = Student.objects.filter(id=selected_student_id, student_type='hostel').first()
+            if selected_student:
+                selected_away_movement = away_movement_map.get(selected_student.id)
+        except (ValueError, TypeError):
+            pass
+
+    context = {
+        'enrollments': enrollments,
+        'selected_student': selected_student,
+        'selected_away_movement': selected_away_movement,
+    }
     return render(request, 'students/hostel_movement_create.html', context)
 
 
 @role_required(['admin', 'teacher', 'ntstaff'])
-def hostel_movement_update(request, pk):
-    """Update hostel movement (mark as returned)"""
-    movement = get_object_or_404(HostelMovement, pk=pk)
+def hostel_movement_return(request):
+    """Record hostel return (In-pass) - blocks recording return if student is already IN hostel"""
+    from django.db import transaction
+    from django.core.exceptions import ValidationError
 
     if request.method == 'POST':
-        arrival_date = request.POST.get('arrival_date')
-        arrival_time = request.POST.get('arrival_time')
-        sign = request.POST.get('sign')
-        remarks = request.POST.get('remarks')
-        is_returned = request.POST.get('is_returned') == 'on'
+        student_id = request.POST.get('student')
+        movement_id = request.POST.get('movement_id')
+        now_local = timezone.localtime()
+        today = now_local.date()
+        now_time = now_local.time()
 
-        movement.arrival_date = arrival_date if arrival_date else None
-        movement.arrival_time = arrival_time if arrival_time else None
-        movement.sign = sign
-        movement.remarks = remarks
-        movement.is_returned = is_returned
-        movement.save()
+        with transaction.atomic():
+            student = get_object_or_404(Student, id=student_id, student_type='hostel')
+            # Find active unreturned movement
+            movement = None
+            if movement_id:
+                movement = HostelMovement.objects.select_for_update().filter(id=movement_id, student=student).first()
+            if not movement:
+                movement = HostelMovement.objects.select_for_update().filter(student=student, is_returned=False).first()
 
-        messages.success(request, f'Movement record updated for {movement.student.full_name}')
+            if not movement or movement.is_returned:
+                messages.warning(
+                    request,
+                    f"⚠️ {student.full_name} ({student.student_id}) is already IN hostel (no active outgoing movement record found). Cannot record return for a student who is already present."
+                )
+                return redirect('students:hostel_movement_return')
+
+            arrival_date = request.POST.get('arrival_date') or today
+            arrival_time = request.POST.get('arrival_time') or now_time
+            sign = request.POST.get('sign', '').strip() or request.user.get_full_name() or request.user.username or "Warden"
+            remarks = request.POST.get('remarks', '').strip()
+
+            movement.is_returned = True
+            movement.arrival_date = arrival_date
+            movement.arrival_time = arrival_time
+            movement.sign = sign
+            if remarks:
+                movement.remarks = f"{movement.remarks}\n{remarks}".strip() if movement.remarks else remarks
+
+            movement.full_clean()
+            movement.save()
+
+        messages.success(request, f"🟢 {student.full_name} ({student.student_id}) successfully marked IN (Returned) at {now_local.strftime('%I:%M %p')}.")
         return redirect('students:hostel_movement_list')
 
-    context = {'movement': movement}
+    active_year = AcademicYear.objects.filter(is_active=True).first()
+    enrollments = Enrollment.objects.filter(
+        academic_year=active_year,
+        student__student_type='hostel', 
+        student__is_active=True
+    ).select_related('student', 'grade', 'section').order_by('student__first_name', 'student__last_name')
+
+    away_movements = list(
+        HostelMovement.objects.filter(is_returned=False, student__is_active=True).select_related('student')
+    )
+    today = timezone.localtime().date()
+    for m in away_movements:
+        m.days_away = (today - m.departure_date).days
+    away_movement_map = {m.student_id: m for m in away_movements}
+
+    for e in enrollments:
+        m = away_movement_map.get(e.student.id)
+        e.student.is_away = m is not None
+        e.student.active_movement = m
+
+    selected_student_id = request.GET.get('student')
+    selected_movement_id = request.GET.get('movement')
+    selected_student = None
+    selected_movement = None
+
+    if selected_movement_id:
+        selected_movement = HostelMovement.objects.filter(id=selected_movement_id).select_related('student').first()
+        if selected_movement:
+            selected_student = selected_movement.student
+
+    if not selected_student and selected_student_id:
+        selected_student = Student.objects.filter(id=selected_student_id, student_type='hostel').first()
+        if selected_student:
+            selected_movement = away_movement_map.get(selected_student.id)
+
+    context = {
+        'enrollments': enrollments,
+        'away_movements': away_movements,
+        'selected_student': selected_student,
+        'selected_movement': selected_movement,
+        'today': today,
+    }
+    return render(request, 'students/hostel_movement_return.html', context)
+
+
+@role_required(['admin', 'teacher', 'ntstaff'])
+def hostel_movement_update(request, pk):
+    """Edit hostel movement record (departure details, return status, and arrival details)"""
+    from django.core.exceptions import ValidationError
+    movement = get_object_or_404(HostelMovement.objects.select_related('student'), pk=pk)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'delete':
+            student_name = movement.student.full_name
+            movement.delete()
+            messages.success(request, f'🗑️ Movement record for {student_name} deleted successfully.')
+            return redirect('students:hostel_movement_list')
+
+        departure_date = request.POST.get('departure_date')
+        departure_time = request.POST.get('departure_time')
+        escorting_person = request.POST.get('escorting_person', '').strip()
+        reason = request.POST.get('reason', '').strip()
+        expected_return_date = request.POST.get('expected_return_date') or None
+
+        if departure_date:
+            movement.departure_date = departure_date
+        if departure_time:
+            movement.departure_time = departure_time
+        movement.escorting_person = escorting_person
+        movement.reason = reason
+        movement.expected_return_date = expected_return_date
+
+        is_returned = request.POST.get('is_returned') in ('on', '1', 'true', True)
+        arrival_date = request.POST.get('arrival_date') or None
+        arrival_time = request.POST.get('arrival_time') or None
+        sign = request.POST.get('sign', '').strip()
+        remarks = request.POST.get('remarks', '').strip()
+
+        # If marked returned but arrival date/time not specified, default to now
+        if is_returned and not arrival_date:
+            now_local = timezone.localtime()
+            arrival_date = now_local.date()
+            if not arrival_time:
+                arrival_time = now_local.time()
+
+        movement.is_returned = is_returned
+        movement.arrival_date = arrival_date if is_returned else None
+        movement.arrival_time = arrival_time if is_returned else None
+        movement.sign = sign
+        movement.remarks = remarks
+
+        try:
+            movement.full_clean()
+            movement.save()
+            messages.success(request, f'✅ Movement record for {movement.student.full_name} updated successfully.')
+            return redirect('students:hostel_movement_list')
+        except ValidationError as e:
+            for field, err_list in e.message_dict.items():
+                for err in err_list:
+                    messages.error(request, f"{field.capitalize()}: {err}")
+
+    today = timezone.localtime().date()
+    days_away = (today - movement.departure_date).days if not movement.is_returned else (
+        (movement.arrival_date - movement.departure_date).days if movement.arrival_date else 0
+    )
+
+    context = {
+        'movement': movement,
+        'student': movement.student,
+        'days_away': days_away,
+    }
     return render(request, 'students/hostel_movement_update.html', context)
+
+
+@role_required(['admin', 'teacher', 'ntstaff'])
+def hostel_movement_delete(request, pk):
+    """Delete hostel movement record"""
+    movement = get_object_or_404(HostelMovement, pk=pk)
+    student_name = movement.student.full_name
+    if request.method == 'POST':
+        movement.delete()
+        messages.success(request, f'🗑️ Movement record for {student_name} deleted successfully.')
+        return redirect('students:hostel_movement_list')
+    messages.warning(request, 'Invalid delete request.')
+    return redirect('students:hostel_movement_update', pk=pk)
 
 
 @role_required(['admin', 'teacher'])
@@ -5950,33 +6182,39 @@ def hostel_student_detail_view(request, pk):
 
     # 1-Click IN/OUT on detail page
     if request.method == 'POST':
+        from django.db import transaction
         if 'quick_out' in request.POST:
-            existing_away = HostelMovement.objects.filter(student=student, is_returned=False).first()
-            if existing_away:
-                messages.warning(request, f"⚠️ {student.full_name} is already marked OUT.")
-            else:
-                escort = request.POST.get('escorting_person', '').strip() or getattr(student, 'guardian_name', '') or "Self / Guardian"
-                reason = request.POST.get('reason', '').strip() or "Outing / Leave"
-                HostelMovement.objects.create(
-                    student=student,
-                    departure_date=today,
-                    departure_time=now_time,
-                    escorting_person=escort,
-                    reason=reason,
-                    is_returned=False
-                )
-                messages.success(request, f"🔴 {student.full_name} marked OUT at {now_time.strftime('%I:%M %p')}.")
+            with transaction.atomic():
+                st_locked = Student.objects.select_for_update().filter(id=student.id).first()
+                existing_away = HostelMovement.objects.filter(student=st_locked, is_returned=False).first()
+                if existing_away:
+                    messages.warning(request, f"⚠️ {student.full_name} is already marked OUT.")
+                else:
+                    escort = request.POST.get('escorting_person', '').strip() or getattr(student, 'guardian_name', '') or "Self / Guardian"
+                    reason = request.POST.get('reason', '').strip() or "Outing / Leave"
+                    HostelMovement.objects.create(
+                        student=st_locked,
+                        departure_date=today,
+                        departure_time=now_time,
+                        escorting_person=escort,
+                        reason=reason,
+                        is_returned=False
+                    )
+                    messages.success(request, f"🔴 {student.full_name} marked OUT at {now_time.strftime('%I:%M %p')}.")
             return redirect('students:hostel_student_detail', pk=pk)
 
         elif 'quick_return' in request.POST:
-            movement = HostelMovement.objects.filter(student=student, is_returned=False).first()
-            if movement:
-                movement.is_returned = True
-                movement.arrival_date = today
-                movement.arrival_time = now_time
-                movement.sign = request.user.get_full_name() or request.user.username or "Warden"
-                movement.save()
-                messages.success(request, f"🟢 {student.full_name} marked IN (Returned) at {now_time.strftime('%I:%M %p')}.")
+            with transaction.atomic():
+                movement = HostelMovement.objects.select_for_update().filter(student=student, is_returned=False).first()
+                if movement:
+                    movement.is_returned = True
+                    movement.arrival_date = today
+                    movement.arrival_time = now_time
+                    movement.sign = request.user.get_full_name() or request.user.username or "Warden"
+                    movement.save()
+                    messages.success(request, f"🟢 {student.full_name} marked IN (Returned) at {now_time.strftime('%I:%M %p')}.")
+                else:
+                    messages.warning(request, f"⚠️ {student.full_name} is already marked IN (no active outgoing record).")
             return redirect('students:hostel_student_detail', pk=pk)
     movements = HostelMovement.objects.filter(student=student).order_by('-departure_date', '-departure_time')
     
@@ -6019,6 +6257,7 @@ def hostel_student_detail_view(request, pk):
             pass
             
     is_currently_away = movements.filter(is_returned=False).exists()
+    active_movement = movements.filter(is_returned=False).first() if is_currently_away else None
     
     context = {
         'student': student,
@@ -6026,6 +6265,7 @@ def hostel_student_detail_view(request, pk):
         'total_away_days': total_away_days,
         'total_present_days': total_present_days,
         'is_currently_away': is_currently_away,
+        'active_movement': active_movement,
         'check_date_str': check_date_str,
         'check_status': check_status
     }

@@ -1,71 +1,366 @@
 {% extends 'students/base.html' %}
 
-{% block title %}Update Hostel Movement - Student Attendance System{% endblock %}
+{% block title %}Edit Hostel Movement - {{ movement.student.full_name }} - Student Attendance System{% endblock %}
 
-{% block content %}
-<h1>Update Hostel Movement</h1>
+{% block extra_css %}
+<style>
+    .movement-edit-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding-bottom: 2.5rem;
+    }
 
-<div class="card">
-    <form method="post">
-        {% csrf_token %}
-        <div class="form-group">
-            <label>Student</label>
-            <input type="text" value="{{ movement.student.full_name }} ({{ movement.student.student_id }})" disabled>
-        </div>
-        
-        <h2>Departure Information</h2>
-        <div class="form-row">
-            <div class="form-group">
-                <label>Departure Date</label>
-                <input type="text" value="{{ movement.departure_date }}" disabled>
-            </div>
-            <div class="form-group">
-                <label>Departure Time</label>
-                <input type="text" value="{{ movement.departure_time }}" disabled>
-            </div>
-        </div>
-        <div class="form-group">
-            <label>Escorting Person</label>
-            <input type="text" value="{{ movement.escorting_person }}" disabled>
-        </div>
-        <div class="form-group">
-            <label>Reason</label>
-            <textarea disabled>{{ movement.reason }}</textarea>
-        </div>
-        <div class="form-group">
-            <label>Expected Return Date</label>
-            <input type="text" value="{{ movement.expected_return_date|default:'-' }}" disabled>
-        </div>
-        
-        <h2>Arrival Information</h2>
-        <div class="form-row">
-            <div class="form-group">
-                <label>Arrival Date</label>
-                <input type="date" name="arrival_date" value="{% if movement.arrival_date %}{{ movement.arrival_date|date:'Y-m-d' }}{% else %}{% now 'Y-m-d' %}{% endif %}">
-            </div>
-            <div class="form-group">
-                <label>Arrival Time</label>
-                <input type="time" name="arrival_time" value="{% if movement.arrival_time %}{{ movement.arrival_time|time:'H:i' }}{% else %}{% now 'H:i' %}{% endif %}">
-            </div>
-        </div>
-        <div class="form-group">
-            <label>Student Signature/Name</label>
-            <input type="text" name="sign" value="{{ movement.sign }}" placeholder="Student signature or name">
-        </div>
-        <div class="form-group">
-            <label>
-                <input type="checkbox" name="is_returned" {% if movement.is_returned %}checked{% endif %}>
-                Mark as Returned
-            </label>
-        </div>
-        <div class="form-group">
-            <label>Remarks</label>
-            <textarea name="remarks" rows="3">{{ movement.remarks }}</textarea>
-        </div>
-        
-        <button type="submit" class="btn btn-success">Update Movement</button>
-        <a href="{% url 'students:hostel_movement_list' %}" class="btn btn-danger">Cancel</a>
-    </form>
-</div>
+    .edit-header-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .edit-header-bar h1 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* Student Profile Banner */
+    .student-overview-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 1.25rem 1.4rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    .student-meta-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .student-avatar-circle {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: #eff6ff;
+        color: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        font-weight: 800;
+        border: 2px solid #bfdbfe;
+    }
+
+    .status-badge-out {
+        background: #fef2f2;
+        color: #dc2626;
+        border: 1.5px solid #fecaca;
+        padding: 0.35rem 0.85rem;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: 0.82rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .status-badge-in {
+        background: #f0fdf4;
+        color: #16a34a;
+        border: 1.5px solid #bbf7d0;
+        padding: 0.35rem 0.85rem;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: 0.82rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    /* Form Container */
+    .edit-form-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        padding: 1.75rem;
+        box-shadow: 0 4px 15px -2px rgba(15, 23, 42, 0.05);
+    }
+
+    .form-section-title {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin: 1.5rem 0 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-section-title:first-child {
+        margin-top: 0;
+    }
+
+    .status-toggle-box {
+        background: #f8fafc;
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        margin: 1.25rem 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        transition: all 0.2s ease;
+    }
+
+    .status-toggle-box.is-returned {
+        background: #f0fdf4;
+        border-color: #86efac;
+    }
+
+    .toggle-checkbox-label {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .toggle-checkbox-label input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        accent-color: #16a34a;
+        cursor: pointer;
+    }
+
+    .arrival-fields-box {
+        transition: all 0.3s ease;
+    }
+</style>
 {% endblock %}
 
+{% block content %}
+<div class="movement-edit-container">
+
+    <div class="edit-header-bar">
+        <div>
+            <h1><i class="fa-solid fa-pen-to-square" style="color: #2563eb;"></i> Edit Hostel Movement</h1>
+            <p style="margin: 0.2rem 0 0 0; color: #64748b; font-size: 0.85rem;">Modify departure details, update return arrival status, or edit remarks</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="{% url 'students:hostel_movement_list' %}" class="btn" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-weight: 600;">
+                <i class="fa-solid fa-arrow-left"></i> Movements List
+            </a>
+            <a href="{% url 'students:hostel_student_detail' movement.student.pk %}" class="btn" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-weight: 600;">
+                <i class="fa-solid fa-user"></i> Student Profile
+            </a>
+        </div>
+    </div>
+
+    <!-- Student Summary Banner -->
+    <div class="student-overview-card">
+        <div class="student-meta-left">
+            <div class="student-avatar-circle">
+                <i class="fa-solid fa-user-graduate"></i>
+            </div>
+            <div>
+                <h2 style="margin: 0 0 0.2rem 0; font-size: 1.15rem; font-weight: 800; color: #0f172a;">
+                    {{ movement.student.full_name }}
+                </h2>
+                <div style="font-size: 0.82rem; color: #64748b; font-weight: 600;">
+                    ID: <strong style="color: #1e293b;">{{ movement.student.student_id }}</strong> 
+                    • Class: <strong style="color: #1e293b;">{{ movement.student.grade|default:"Hostel" }}</strong>
+                    {% if movement.student.guardian_name %} • Guardian: {{ movement.student.guardian_name }}{% endif %}
+                </div>
+            </div>
+        </div>
+        <div>
+            {% if movement.is_returned %}
+                <span class="status-badge-in">
+                    <i class="fa-solid fa-circle-check"></i> 🟢 RETURNED (In Hostel)
+                </span>
+            {% else %}
+                <span class="status-badge-out">
+                    <i class="fa-solid fa-person-walking-luggage"></i> 🔴 CURRENTLY OUT ({{ days_away }}d away)
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Edit Form Card -->
+    <div class="edit-form-card">
+        <form method="post" id="editMovementForm">
+            {% csrf_token %}
+
+            <!-- SECTION 1: DEPARTURE DETAILS (FULLY EDITABLE) -->
+            <div class="form-section-title">
+                <i class="fa-solid fa-calendar-minus" style="color: #dc2626;"></i> Outgoing Departure Details
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label style="font-weight: 700;">Departure Date *</label>
+                    <input type="date" name="departure_date" id="departureDate" 
+                           value="{{ movement.departure_date|date:'Y-m-d' }}" required>
+                </div>
+                <div class="form-group">
+                    <label style="font-weight: 700;">Departure Time *</label>
+                    <input type="time" name="departure_time" id="departureTime" 
+                           value="{{ movement.departure_time|time:'H:i' }}" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label style="font-weight: 700;">Escorting Person</label>
+                <input type="text" name="escorting_person" value="{{ movement.escorting_person }}" 
+                       placeholder="Name of parent, guardian, or self">
+            </div>
+
+            <div class="form-group">
+                <label style="font-weight: 700;">Reason for Leaving</label>
+                <textarea name="reason" rows="2" placeholder="Reason for departure (e.g. Home visit, medical, etc.)">{{ movement.reason }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label style="font-weight: 700;">Expected Return Date</label>
+                <input type="date" name="expected_return_date" 
+                       value="{% if movement.expected_return_date %}{{ movement.expected_return_date|date:'Y-m-d' }}{% endif %}">
+            </div>
+
+            <!-- SECTION 2: ARRIVAL / RETURN STATUS -->
+            <div class="form-section-title" style="margin-top: 2rem;">
+                <i class="fa-solid fa-house-circle-check" style="color: #16a34a;"></i> Return / Arrival Information
+            </div>
+
+            <div class="status-toggle-box {% if movement.is_returned %}is-returned{% endif %}" id="statusToggleBox">
+                <label class="toggle-checkbox-label">
+                    <input type="checkbox" name="is_returned" id="isReturnedCheckbox" 
+                           {% if movement.is_returned %}checked{% endif %} onchange="handleReturnToggle(this)">
+                    <span>Mark as Returned (Student has arrived back at hostel)</span>
+                </label>
+                <span id="returnToggleNotice" style="font-size: 0.8rem; font-weight: 700; color: {% if movement.is_returned %}#16a34a{% else %}#dc2626{% endif %};">
+                    {% if movement.is_returned %}🟢 Checked IN{% else %}🔴 Still Outside{% endif %}
+                </span>
+            </div>
+
+            <div id="arrivalFieldsSection" class="arrival-fields-box">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label style="font-weight: 700;">Arrival Date</label>
+                        <input type="date" name="arrival_date" id="arrivalDate" 
+                               value="{% if movement.arrival_date %}{{ movement.arrival_date|date:'Y-m-d' }}{% endif %}">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight: 700;">Arrival Time</label>
+                        <input type="time" name="arrival_time" id="arrivalTime" 
+                               value="{% if movement.arrival_time %}{{ movement.arrival_time|time:'H:i' }}{% endif %}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="font-weight: 700;">Student Signature / Received Staff Name</label>
+                    <input type="text" name="sign" value="{{ movement.sign }}" placeholder="e.g. Warden name or student signature">
+                </div>
+
+                <div class="form-group">
+                    <label style="font-weight: 700;">Remarks / Notes</label>
+                    <textarea name="remarks" rows="2" placeholder="Any remarks upon return or concerning the outing...">{{ movement.remarks }}</textarea>
+                </div>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div style="display: flex; gap: 0.75rem; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid #e2e8f0;">
+                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                    <button type="submit" class="btn btn-success" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: white; font-weight: 700; padding: 0.75rem 1.5rem; border-radius: 9px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25);">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                    </button>
+                    <a href="{% url 'students:hostel_movement_list' %}" class="btn" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-weight: 600; padding: 0.75rem 1.25rem; border-radius: 9px; text-decoration: none;">
+                        Cancel
+                    </a>
+                </div>
+
+                <button type="submit" name="action" value="delete" class="btn" 
+                        style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; font-weight: 700; padding: 0.75rem 1.25rem; border-radius: 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;"
+                        onclick="return confirm('⚠️ Are you sure you want to permanently delete this movement record for {{ movement.student.full_name }}?');">
+                    <i class="fa-solid fa-trash"></i> Delete Record
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<script>
+    let isUpdateSubmitting = false;
+    document.getElementById('editMovementForm').addEventListener('submit', function(e) {
+        if (isUpdateSubmitting) {
+            e.preventDefault();
+            return false;
+        }
+        isUpdateSubmitting = true;
+        const submitBtn = e.submitter || this.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.style.opacity = '0.75';
+            submitBtn.style.cursor = 'not-allowed';
+            submitBtn.style.pointerEvents = 'none';
+            if (submitBtn.value === 'delete') {
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...';
+            } else {
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving Changes...';
+            }
+            setTimeout(() => { submitBtn.disabled = true; }, 10);
+        }
+    });
+
+    function handleReturnToggle(checkbox) {
+        const toggleBox = document.getElementById('statusToggleBox');
+        const notice = document.getElementById('returnToggleNotice');
+        const arrivalDate = document.getElementById('arrivalDate');
+        const arrivalTime = document.getElementById('arrivalTime');
+
+        if (checkbox.checked) {
+            toggleBox.classList.add('is-returned');
+            notice.innerHTML = '🟢 Checked IN';
+            notice.style.color = '#16a34a';
+
+            // Auto-fill today and current time if empty
+            if (!arrivalDate.value) {
+                const now = new Date();
+                const yyyy = now.getFullYear();
+                const mm = String(now.getMonth() + 1).padStart(2, '0');
+                const dd = String(now.getDate()).padStart(2, '0');
+                arrivalDate.value = `${yyyy}-${mm}-${dd}`;
+            }
+            if (!arrivalTime.value) {
+                const now = new Date();
+                const hh = String(now.getHours()).padStart(2, '0');
+                const min = String(now.getMinutes()).padStart(2, '0');
+                arrivalTime.value = `${hh}:${min}`;
+            }
+        } else {
+            toggleBox.classList.remove('is-returned');
+            notice.innerHTML = '🔴 Still Outside';
+            notice.style.color = '#dc2626';
+        }
+    }
+</script>
+{% endblock %}

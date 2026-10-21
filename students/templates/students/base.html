@@ -1913,8 +1913,12 @@
                         <span>Live Movements</span>
                     </a>
                     <a href="{% url 'students:hostel_movement_create' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
-                        <i class="fa-solid fa-pen-to-square" style="font-size: 0.9rem;"></i>
-                        <span>Detailed Outing Form</span>
+                        <i class="fa-solid fa-person-walking-arrow-right" style="font-size: 0.9rem;"></i>
+                        <span>Outgoing Form (Out-Pass)</span>
+                    </a>
+                    <a href="{% url 'students:hostel_movement_return' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-house-circle-check" style="font-size: 0.9rem;"></i>
+                        <span>Return Form (In-Pass)</span>
                     </a>
                     <a href="{% url 'students:hostel_student_list' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
                         <i class="fa-solid fa-address-book" style="font-size: 0.9rem;"></i>
@@ -2214,6 +2218,48 @@
                 alert("📲 How to Install this App from Chrome:\n\n1. Open Chrome menu (⋮ top-right)\n2. Tap 'Install app' or 'Add to Home screen'\n3. The app will download and install on your device!");
             }
         }
+
+        // Global Double-Submission Prevention & Button Loading Feedback
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            if (form.getAttribute('data-submitting') === 'true') {
+                e.preventDefault();
+                return false;
+            }
+            form.setAttribute('data-submitting', 'true');
+
+            const submitBtn = e.submitter || form.querySelector('button[type="submit"], input[type="submit"]');
+            if (submitBtn) {
+                setTimeout(() => {
+                    submitBtn.disabled = true;
+                    submitBtn.style.opacity = '0.75';
+                    submitBtn.style.cursor = 'not-allowed';
+                    submitBtn.style.pointerEvents = 'none';
+                    if (!submitBtn.getAttribute('data-original-html') && submitBtn.innerHTML) {
+                        submitBtn.setAttribute('data-original-html', submitBtn.innerHTML);
+                    }
+                    if (submitBtn.tagName === 'BUTTON') {
+                        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Please wait...';
+                    }
+                }, 10);
+            }
+        }, true);
+
+        // Reset state on back-forward cache navigation
+        window.addEventListener('pageshow', function() {
+            document.querySelectorAll('form[data-submitting="true"]').forEach(f => {
+                f.removeAttribute('data-submitting');
+                const btn = f.querySelector('button[type="submit"], input[type="submit"]');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.style.opacity = '';
+                    btn.style.cursor = '';
+                    btn.style.pointerEvents = '';
+                    const orig = btn.getAttribute('data-original-html');
+                    if (orig) btn.innerHTML = orig;
+                }
+            });
+        });
     </script>
 </body>
 </html>

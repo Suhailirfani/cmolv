@@ -1,0 +1,578 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Record Hostel Return (Check-in) - Student Attendance System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .movement-return-container {
+        max-width: 760px;
+        margin: 0 auto;
+        padding-bottom: 2rem;
+    }
+
+    .form-header-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .form-header-bar h1 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .return-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        padding: 1.75rem;
+        box-shadow: 0 4px 15px -2px rgba(15, 23, 42, 0.05);
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin: 1.5rem 0 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .student-search-wrap {
+        position: relative;
+    }
+
+    .student-search-input {
+        width: 100%;
+        border: 2px solid #cbd5e1;
+        padding: 0.85rem 2.8rem 0.85rem 1rem;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        color: #0f172a;
+        font-weight: 600;
+        box-sizing: border-box;
+        transition: all 0.2s ease;
+    }
+
+    .student-search-input:focus {
+        border-color: #16a34a;
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.12);
+    }
+
+    .clear-search-btn {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #f1f5f9;
+        border: none;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        color: #64748b;
+        font-size: 0.85rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+    }
+
+    .clear-search-btn:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+
+    /* ALREADY IN HOSTEL ALERT BANNER */
+    .already-in-alert {
+        display: none;
+        background: #f0fdf4;
+        border: 2px solid #86efac;
+        border-radius: 14px;
+        padding: 1.4rem;
+        margin: 1.25rem 0;
+        box-shadow: 0 10px 25px -5px rgba(22, 163, 74, 0.12);
+        animation: fadeIn 0.25s ease-out;
+    }
+
+    .already-in-alert.active {
+        display: block;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .alert-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .alert-heading-in {
+        margin: 0;
+        color: #166534;
+        font-size: 1.15rem;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .alert-status-pill-in {
+        background: #16a34a;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.3px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    /* ACTIVE OUTING INFO BOX */
+    .outing-info-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid #dc2626;
+        border-radius: 10px;
+        padding: 1rem 1.15rem;
+        margin: 1.25rem 0;
+        font-size: 0.85rem;
+    }
+
+    .outing-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.65rem;
+        margin-top: 0.5rem;
+    }
+
+    .outing-info-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .outing-info-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .outing-info-value {
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: #1e293b;
+    }
+
+    .student-badge-preview {
+        display: none;
+        margin-top: 0.5rem;
+        padding: 0.5rem 0.85rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        color: #475569;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .student-badge-preview.visible {
+        display: flex;
+    }
+
+    /* Submitting button state */
+    button.is-submitting {
+        opacity: 0.75 !important;
+        cursor: not-allowed !important;
+        pointer-events: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="movement-return-container">
+
+    <div class="form-header-bar">
+        <div>
+            <h1><i class="fa-solid fa-house-circle-check" style="color: #16a34a;"></i> Record Hostel Return (In-Pass)</h1>
+            <p style="margin: 0.2rem 0 0 0; color: #64748b; font-size: 0.85rem;">Record student check-in / arrival back to the hostel</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="{% url 'students:hostel_movement_create' %}" class="btn" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-weight: 600;">
+                <i class="fa-solid fa-person-walking-luggage"></i> Outgoing Form
+            </a>
+            <a href="{% url 'students:hostel_movement_list' %}" class="btn" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-weight: 600;">
+                <i class="fa-solid fa-arrow-left"></i> Movements List
+            </a>
+        </div>
+    </div>
+
+    <div class="return-card">
+        <form method="post" id="hostelReturnForm" onsubmit="return handleFormSubmit(this);">
+            {% csrf_token %}
+            
+            <!-- Student Selection -->
+            <div class="form-group" style="margin-bottom: 0.75rem;">
+                <label style="font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.45rem;">
+                    <i class="fa-solid fa-user-graduate" style="color: #16a34a;"></i> Select Student Returning to Hostel *
+                </label>
+                
+                <div class="student-search-wrap">
+                    <input type="text" list="studentList" id="studentNameInput" 
+                           class="student-search-input"
+                           placeholder="Type to search returning student..." 
+                           required autocomplete="off"
+                           value="{% if selected_student %}{{ selected_student.full_name }} ({{ selected_student.student_id }}){% endif %}">
+                    <button type="button" id="clearStudentBtn" class="clear-search-btn" title="Clear selection">&times;</button>
+                </div>
+
+                <div id="studentBadgePreview" class="student-badge-preview {% if selected_student %}visible{% endif %}">
+                    <i class="fa-solid fa-id-badge" style="color: #16a34a;"></i>
+                    <span id="studentBadgeDetails">
+                        {% if selected_student %}
+                            <strong>{{ selected_student.full_name }}</strong> • ID: {{ selected_student.student_id }} • Class: {{ selected_student.grade|default:'Hostel' }}
+                        {% endif %}
+                    </span>
+                </div>
+
+                <datalist id="studentList">
+                    {% for enrollment in enrollments %}
+                    <option data-id="{{ enrollment.student.id }}" 
+                            data-name="{{ enrollment.student.full_name }}"
+                            data-student-id="{{ enrollment.student.student_id }}"
+                            data-grade="{{ enrollment.grade.name|default:'Hostel' }}{% if enrollment.section %} - {{ enrollment.section.name }}{% endif %}"
+                            data-is-away="{% if enrollment.student.is_away %}1{% else %}0{% endif %}"
+                            {% if enrollment.student.is_away %}
+                            data-movement-id="{{ enrollment.student.active_movement.id }}"
+                            data-departure-date="{{ enrollment.student.active_movement.departure_date|date:'d M Y' }}"
+                            data-departure-time="{{ enrollment.student.active_movement.departure_time|time:'h:i A' }}"
+                            data-days-away="{{ enrollment.student.active_movement.days_away }}"
+                            data-escort="{{ enrollment.student.active_movement.escorting_person|default:'Self / Guardian' }}"
+                            data-reason="{{ enrollment.student.active_movement.reason|default:'-' }}"
+                            data-expected-return="{{ enrollment.student.active_movement.expected_return_date|date:'d M Y'|default:'Not specified' }}"
+                            data-edit-url="{% url 'students:hostel_movement_update' enrollment.student.active_movement.pk %}"
+                            {% endif %}
+                            value="{{ enrollment.student.full_name }} ({{ enrollment.student.student_id }}) {% if enrollment.student.is_away %}[🔴 OUT - {{ enrollment.student.active_movement.days_away }}d away]{% else %}[🟢 IN]{% endif %}">
+                    </option>
+                    {% endfor %}
+                </datalist>
+                
+                <input type="hidden" name="student" id="studentIdInput" value="{% if selected_student %}{{ selected_student.id }}{% endif %}">
+                <input type="hidden" name="movement_id" id="movementIdInput" value="{% if selected_movement %}{{ selected_movement.id }}{% endif %}">
+            </div>
+
+            <!-- PROMINENT WARNING BANNER: IF STUDENT IS ALREADY IN THE HOSTEL (PREVENTS DUPLICATE) -->
+            <div id="alreadyInBanner" class="already-in-alert {% if selected_student and not selected_movement %}active{% endif %}">
+                <div class="alert-header-row">
+                    <h3 class="alert-heading-in">
+                        <i class="fa-solid fa-circle-check" style="font-size: 1.35rem; color: #16a34a;"></i>
+                        Student is Already IN the Hostel!
+                    </h3>
+                    <span class="alert-status-pill-in">
+                        🟢 PRESENT IN HOSTEL
+                    </span>
+                </div>
+
+                <p style="margin: 0 0 1rem 0; color: #166534; font-size: 0.95rem; line-height: 1.5;">
+                    <strong><span id="bannerInStudentName">{% if selected_student %}{{ selected_student.full_name }}{% endif %}</span></strong> 
+                    (<span id="bannerInStudentId">{% if selected_student %}{{ selected_student.student_id }}{% endif %}</span>) 
+                    is currently present inside the hostel and has <strong>no active outgoing movement</strong>. 
+                    <br><strong>⚠️ You cannot record a return for a student who has not left or has already returned.</strong>
+                </p>
+
+                <div style="display: flex; gap: 0.65rem; flex-wrap: wrap; align-items: center;">
+                    <!-- OPTION TO CREATE OUTGOING MOVEMENT INSTEAD -->
+                    <a id="bannerRecordOutBtn" 
+                       href="{% if selected_student %}{% url 'students:hostel_movement_create' %}?student={{ selected_student.id }}{% else %}#{% endif %}" 
+                       class="btn" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; font-weight: 700; padding: 0.65rem 1.25rem; border-radius: 9px; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);">
+                        <i class="fa-solid fa-person-walking-arrow-right"></i> Record Outgoing Movement Instead
+                    </a>
+
+                    <!-- CHOOSE ANOTHER STUDENT BUTTON -->
+                    <button type="button" class="btn" style="background: white; border: 1px solid #cbd5e1; color: #475569; font-weight: 600; padding: 0.65rem 1rem; border-radius: 9px; cursor: pointer;" onclick="clearStudentSelection()">
+                        ← Choose Another Student
+                    </button>
+                </div>
+            </div>
+
+            <!-- ACTIVE OUTING DETAILS & RETURN FORM FIELDS (ONLY SHOWN WHEN STUDENT IS CURRENTLY OUT) -->
+            <div id="returnFieldsSection" style="{% if not selected_movement %}display: none;{% endif %}">
+                
+                <!-- Outing Details Summary Box -->
+                <div class="outing-info-box">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                        <strong style="color: #991b1b; font-size: 0.92rem; display: flex; align-items: center; gap: 0.35rem;">
+                            <i class="fa-solid fa-circle-exclamation"></i> Outing / Departure Information
+                        </strong>
+                        <a id="outingEditLink" href="{% if selected_movement %}{% url 'students:hostel_movement_update' selected_movement.pk %}{% else %}#{% endif %}" 
+                           style="color: #2563eb; font-weight: 700; font-size: 0.8rem; text-decoration: none;">
+                            <i class="fa-solid fa-pen-to-square"></i> Edit Outing Details
+                        </a>
+                    </div>
+                    <div class="outing-info-grid">
+                        <div class="outing-info-item">
+                            <span class="outing-info-label">Left Hostel:</span>
+                            <span class="outing-info-value" id="outingLeftOn">
+                                {% if selected_movement %}{{ selected_movement.departure_date|date:'d M Y' }} ({{ selected_movement.departure_time|time:'h:i A' }}){% endif %}
+                            </span>
+                        </div>
+                        <div class="outing-info-item">
+                            <span class="outing-info-label">Days Away:</span>
+                            <span class="outing-info-value" style="color: #dc2626;" id="outingDaysAway">
+                                {% if selected_movement %}{{ selected_movement.days_away }} Day(s){% endif %}
+                            </span>
+                        </div>
+                        <div class="outing-info-item">
+                            <span class="outing-info-label">Escorted By:</span>
+                            <span class="outing-info-value" id="outingEscort">
+                                {% if selected_movement %}{{ selected_movement.escorting_person|default:'Self / Guardian' }}{% endif %}
+                            </span>
+                        </div>
+                        <div class="outing-info-item">
+                            <span class="outing-info-label">Expected Return:</span>
+                            <span class="outing-info-value" id="outingExpectedReturn">
+                                {% if selected_movement %}{{ selected_movement.expected_return_date|date:'d M Y'|default:'Not specified' }}{% endif %}
+                            </span>
+                        </div>
+                        <div class="outing-info-item" style="grid-column: 1 / -1;">
+                            <span class="outing-info-label">Reason for Departure:</span>
+                            <span class="outing-info-value" id="outingReason" style="font-weight: 500;">
+                                {% if selected_movement %}{{ selected_movement.reason|default:'-' }}{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-title">
+                    <i class="fa-solid fa-clock" style="color: #16a34a;"></i> Arrival / Check-in Details
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label style="font-weight: 700;">Arrival Date *</label>
+                        <input type="date" name="arrival_date" id="arrivalDateInput" value="{% now 'Y-m-d' %}" required>
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight: 700;">Arrival Time *</label>
+                        <input type="time" name="arrival_time" id="arrivalTimeInput" value="{% now 'H:i' %}" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="font-weight: 700;">Received Staff / Signature</label>
+                    <input type="text" name="sign" id="signInput" 
+                           value="{{ request.user.get_full_name|default:request.user.username }}" 
+                           placeholder="Warden or receiver staff name">
+                </div>
+
+                <div class="form-group">
+                    <label style="font-weight: 700;">Remarks upon Return (Optional)</label>
+                    <textarea name="remarks" id="remarksInput" rows="2" placeholder="Any remarks upon student's return to hostel..."></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 0.75rem; align-items: center; margin-top: 1.75rem; padding-top: 1rem; border-top: 1px solid #f1f5f9;">
+                    <button type="submit" id="submitReturnBtn" class="btn btn-success" 
+                            style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); font-weight: 700; padding: 0.75rem 1.75rem; border-radius: 9px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);">
+                        <i class="fa-solid fa-circle-check"></i> Record Return (Mark IN)
+                    </button>
+                    <a href="{% url 'students:hostel_movement_list' %}" class="btn" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; font-weight: 600; padding: 0.75rem 1.25rem; border-radius: 9px; text-decoration: none;">
+                        Cancel
+                    </a>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+
+<script>
+    let isSubmittingForm = false;
+
+    // Double-click prevention on form submit
+    function handleFormSubmit(form) {
+        if (isSubmittingForm) {
+            return false;
+        }
+
+        const hiddenId = document.getElementById('studentIdInput');
+        const movementId = document.getElementById('movementIdInput');
+        const returnSection = document.getElementById('returnFieldsSection');
+
+        if (!hiddenId.value) {
+            alert("Please select a student from the dropdown list.");
+            return false;
+        }
+
+        if (returnSection.style.display === 'none') {
+            alert("⚠️ Cannot submit return: This student is already IN the hostel (no open outgoing movement).");
+            return false;
+        }
+
+        // Lock form and submit button immediately
+        isSubmittingForm = true;
+        const btn = document.getElementById('submitReturnBtn');
+        if (btn) {
+            btn.classList.add('is-submitting');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Recording Return... Please wait...';
+            // Disable after brief delay so form values submit properly
+            setTimeout(() => { btn.disabled = true; }, 10);
+        }
+
+        return true;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const input = document.getElementById('studentNameInput');
+        const hiddenId = document.getElementById('studentIdInput');
+        const movementIdInput = document.getElementById('movementIdInput');
+        const datalist = document.getElementById('studentList');
+        const clearBtn = document.getElementById('clearStudentBtn');
+        const badge = document.getElementById('studentBadgePreview');
+        const badgeDetails = document.getElementById('studentBadgeDetails');
+        
+        const inBanner = document.getElementById('alreadyInBanner');
+        const returnFields = document.getElementById('returnFieldsSection');
+
+        const bannerInStudentName = document.getElementById('bannerInStudentName');
+        const bannerInStudentId = document.getElementById('bannerInStudentId');
+        const bannerRecordOutBtn = document.getElementById('bannerRecordOutBtn');
+
+        const outingLeftOn = document.getElementById('outingLeftOn');
+        const outingDaysAway = document.getElementById('outingDaysAway');
+        const outingEscort = document.getElementById('outingEscort');
+        const outingReason = document.getElementById('outingReason');
+        const outingExpectedReturn = document.getElementById('outingExpectedReturn');
+        const outingEditLink = document.getElementById('outingEditLink');
+
+        function checkStudentStatus() {
+            const rawVal = input.value.trim();
+            // Look for match
+            let matchedOption = null;
+
+            for (let i = 0; i < datalist.options.length; i++) {
+                const optVal = datalist.options[i].value;
+                const optName = datalist.options[i].getAttribute('data-name');
+                const optStId = datalist.options[i].getAttribute('data-student-id');
+                const combined = `${optName} (${optStId})`;
+
+                if (optVal === rawVal || combined === rawVal || rawVal.startsWith(combined)) {
+                    matchedOption = datalist.options[i];
+                    break;
+                }
+            }
+
+            if (matchedOption) {
+                const studentId = matchedOption.getAttribute('data-id');
+                const isAway = matchedOption.getAttribute('data-is-away') === '1';
+                const sName = matchedOption.getAttribute('data-name');
+                const stId = matchedOption.getAttribute('data-student-id');
+                const grade = matchedOption.getAttribute('data-grade');
+
+                hiddenId.value = studentId;
+                input.setCustomValidity("");
+
+                badgeDetails.innerHTML = `<strong>${sName}</strong> • ID: ${stId} • Class: ${grade}`;
+                badge.classList.add('visible');
+
+                if (isAway) {
+                    // STUDENT IS OUT OF HOSTEL -> ALLOW RETURN
+                    const movId = matchedOption.getAttribute('data-movement-id');
+                    const depDate = matchedOption.getAttribute('data-departure-date');
+                    const depTime = matchedOption.getAttribute('data-departure-time');
+                    const daysAway = matchedOption.getAttribute('data-days-away');
+                    const escort = matchedOption.getAttribute('data-escort');
+                    const reason = matchedOption.getAttribute('data-reason');
+                    const expectedReturn = matchedOption.getAttribute('data-expected-return');
+                    const editUrl = matchedOption.getAttribute('data-edit-url');
+
+                    movementIdInput.value = movId;
+                    outingLeftOn.innerText = `${depDate} (${depTime})`;
+                    outingDaysAway.innerText = `${daysAway} Day(s)`;
+                    outingEscort.innerText = escort;
+                    outingReason.innerText = reason;
+                    outingExpectedReturn.innerText = expectedReturn;
+                    outingEditLink.href = editUrl;
+
+                    inBanner.classList.remove('active');
+                    returnFields.style.display = 'block';
+                } else {
+                    // STUDENT IS ALREADY IN HOSTEL -> BLOCK RETURN, SHOW WARNING
+                    movementIdInput.value = "";
+                    bannerInStudentName.innerText = sName;
+                    bannerInStudentId.innerText = stId;
+                    bannerRecordOutBtn.href = `{% url 'students:hostel_movement_create' %}?student=${studentId}`;
+
+                    inBanner.classList.add('active');
+                    returnFields.style.display = 'none';
+
+                    input.setCustomValidity("This student is already IN hostel. Cannot record return.");
+                }
+            } else {
+                hiddenId.value = "";
+                movementIdInput.value = "";
+                badge.classList.remove('visible');
+                inBanner.classList.remove('active');
+                returnFields.style.display = 'none';
+
+                if (rawVal !== "") {
+                    input.setCustomValidity("Please strictly select a student from the dropdown list.");
+                } else {
+                    input.setCustomValidity("Please select a student.");
+                }
+            }
+        }
+
+        input.addEventListener('input', checkStudentStatus);
+        input.addEventListener('change', checkStudentStatus);
+
+        clearBtn.addEventListener('click', function() {
+            clearStudentSelection();
+        });
+
+        // Initialize on load
+        if (input.value.trim() !== "") {
+            checkStudentStatus();
+        }
+    });
+
+    function clearStudentSelection() {
+        const input = document.getElementById('studentNameInput');
+        const hiddenId = document.getElementById('studentIdInput');
+        const movementIdInput = document.getElementById('movementIdInput');
+        const badge = document.getElementById('studentBadgePreview');
+        const inBanner = document.getElementById('alreadyInBanner');
+        const returnFields = document.getElementById('returnFieldsSection');
+
+        input.value = "";
+        hiddenId.value = "";
+        movementIdInput.value = "";
+        badge.classList.remove('visible');
+        inBanner.classList.remove('active');
+        returnFields.style.display = 'none';
+        input.focus();
+    }
+</script>
+{% endblock %}

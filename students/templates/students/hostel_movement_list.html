@@ -463,7 +463,10 @@
         </div>
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
             <a href="{% url 'students:hostel_movement_create' %}" class="btn" style="background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.25); padding: 0.45rem 0.85rem; border-radius: 8px; font-weight: 700; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem;">
-                <i class="fa-solid fa-pen-to-square"></i> Detailed Form
+                <i class="fa-solid fa-person-walking-arrow-right"></i> Outgoing Form
+            </a>
+            <a href="{% url 'students:hostel_movement_return' %}" class="btn" style="background: #16a34a; color: white; border: 1px solid #22c55e; padding: 0.45rem 0.85rem; border-radius: 8px; font-weight: 700; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <i class="fa-solid fa-house-circle-check"></i> Return Form
             </a>
             <a href="{% url 'students:hostel_student_list' %}" class="btn" style="background: rgba(255, 255, 255, 0.15); color: white; border: 1px solid rgba(255,255,255,0.25); padding: 0.45rem 0.85rem; border-radius: 8px; font-weight: 600; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem;">
                 <i class="fa-solid fa-address-book"></i> Directory
