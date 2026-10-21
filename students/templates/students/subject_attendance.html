@@ -1,0 +1,709 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Subject Attendance - Student Attendance System{% endblock %}
+{% block page_heading %}Subject Attendance{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Subject Attendance Dashboard Styles */
+    .subj-header-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--border, #e2e8f0);
+        margin-bottom: 1.5rem;
+    }
+
+    .subj-filter-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--border, #e2e8f0);
+        margin-bottom: 1.5rem;
+    }
+
+    .subj-filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        align-items: flex-end;
+    }
+
+    .form-group-custom {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .form-group-custom label {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .form-group-custom select,
+    .form-group-custom input {
+        padding: 0.55rem 0.75rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 9px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #1e293b;
+        background: #f8fafc;
+        outline: none;
+        transition: all 0.2s;
+    }
+
+    .form-group-custom select:focus,
+    .form-group-custom input:focus {
+        border-color: #6366f1;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    /* KPI Cards */
+    .subj-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .subj-kpi-card {
+        background: white;
+        border-radius: 14px;
+        padding: 1.25rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        border: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .subj-kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+    }
+
+    .subj-kpi-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+    }
+
+    /* Subject Overview Cards Grid */
+    .subject-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .subject-overview-card {
+        background: white;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+        padding: 1.35rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .subject-overview-card:hover {
+        transform: translateY(-3px);
+        border-color: #818cf8;
+        box-shadow: 0 10px 22px rgba(99, 102, 241, 0.12);
+    }
+
+    /* Table Card */
+    .subj-table-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    /* Status Badges */
+    .status-badge-custom {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.3rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+    }
+
+    .badge-eligible { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .badge-warning { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .badge-shortage { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+
+    /* Progress bar */
+    .progress-bar-bg {
+        width: 100%;
+        height: 7px;
+        background: #f1f5f9;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-top: 0.35rem;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        border-radius: 6px;
+        transition: width 0.3s ease;
+    }
+
+    .progress-fill-success { background: linear-gradient(90deg, #10b981 0%, #059669 100%); }
+    .progress-fill-warning { background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%); }
+    .progress-fill-danger { background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); }
+
+    /* Print styles */
+    @media print {
+        .no-print, .subj-filter-card, .btn, nav, .sidebar {
+            display: none !important;
+        }
+        .subj-header-card {
+            border: none;
+            box-shadow: none;
+            padding: 0 0 1rem 0;
+            margin-bottom: 1rem;
+        }
+        .subj-table-card {
+            box-shadow: none;
+            border: 1px solid #000;
+        }
+        body {
+            background: white !important;
+            font-size: 9pt;
+        }
+        .print-signature-section {
+            display: flex !important;
+            justify-content: space-between;
+            margin-top: 3rem;
+            padding-top: 1rem;
+        }
+    }
+
+    .print-signature-section {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Top Header Card -->
+<div class="subj-header-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+                <span style="font-size: 1.6rem;">📚</span>
+                <h1 style="color: #1e293b; margin: 0; font-size: 1.75rem; font-weight: 800;">
+                    Subject Attendance Dashboard
+                </h1>
+            </div>
+            <p style="margin: 0; color: #64748b; font-size: 0.9rem; font-weight: 500;">
+                Track and calculate student attendance records per subject across teaching periods.
+            </p>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <!-- Print Report -->
+            <button type="button" onclick="window.print()" class="btn" style="background: white; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.6rem 1.1rem; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="fa-solid fa-print"></i> Print Register
+            </button>
+
+            <!-- Mark Period Attendance Link -->
+            {% if selected_grade %}
+            <a href="{% url 'students:mark_attendance_class' selected_grade.id selected_division.id|default:0 %}" class="btn" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: white; border-radius: 10px; padding: 0.6rem 1.25rem; font-weight: 800; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.45rem; box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25);">
+                <i class="fa-solid fa-pencil"></i> Mark Period Attendance
+            </a>
+            {% endif %}
+
+            <!-- Back to Attendance Home -->
+            <a href="{% url 'students:attendance_list' %}" class="btn" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.6rem 1rem; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="fa-solid fa-arrow-left"></i> Attendance Records
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Selector Card -->
+<div class="subj-filter-card no-print">
+    <form method="get" id="subjectAttendanceFilterForm">
+        <div class="subj-filter-grid">
+            <!-- Grade / Class -->
+            <div class="form-group-custom">
+                <label for="gradeSelect">Class / Grade:</label>
+                <select id="gradeSelect" name="grade" onchange="this.form.submit()">
+                    {% for g in grades %}
+                    <option value="{{ g.id }}" {% if selected_grade.id == g.id %}selected{% endif %}>{{ g.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Division / Stream -->
+            <div class="form-group-custom">
+                <label for="divisionSelect">Stream / Division:</label>
+                <select id="divisionSelect" name="division" onchange="this.form.submit()">
+                    <option value="0">All Streams (Combined)</option>
+                    {% for d in divisions %}
+                    <option value="{{ d.id }}" {% if selected_division.id == d.id %}selected{% endif %}>{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Subject -->
+            <div class="form-group-custom">
+                <label for="subjectSelect">Subject:</label>
+                <select id="subjectSelect" name="subject" onchange="this.form.submit()">
+                    <option value="">-- All Subjects Overview --</option>
+                    {% for s in available_subjects %}
+                    <option value="{{ s.id }}" {% if selected_subject.id == s.id %}selected{% endif %}>
+                        {{ s.name }}{% if s.division %} ({{ s.division.name }}){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Month Filter -->
+            <div class="form-group-custom">
+                <label for="monthFilter">Month (Optional):</label>
+                <input type="month" id="monthFilter" name="month_filter" value="{{ current_filters.month_filter }}" onchange="this.form.submit()">
+            </div>
+
+            <!-- Search Student -->
+            {% if selected_subject %}
+            <div class="form-group-custom">
+                <label for="searchInput">Search Student:</label>
+                <input type="text" id="searchInput" name="search" value="{{ current_filters.search }}" placeholder="Name or Student ID...">
+            </div>
+
+            <!-- Shortage Only Toggle -->
+            <div class="form-group-custom" style="justify-content: flex-end;">
+                <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem; font-weight: 700; color: #dc2626; padding-bottom: 0.5rem;">
+                    <input type="checkbox" name="shortage_only" value="1" {% if current_filters.shortage_only %}checked{% endif %} onchange="this.form.submit()" style="width: 1.1rem; height: 1.1rem; accent-color: #dc2626;">
+                    <span>Shortage Only (&lt;75%)</span>
+                </label>
+            </div>
+            {% endif %}
+
+            <!-- Filter Buttons -->
+            <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+                <button type="submit" class="btn" style="background: #4f46e5; color: white; border-radius: 9px; padding: 0.6rem 1rem; font-weight: 700; border: none; cursor: pointer; flex: 1;">
+                    <i class="fa-solid fa-filter"></i> Apply
+                </button>
+                <a href="{% url 'students:subject_attendance' %}?grade={{ selected_grade.id }}" class="btn" style="background: #94a3b8; color: white; border-radius: 9px; padding: 0.6rem 0.85rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;" title="Reset filters">
+                    Reset
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- =======================================================================
+     VIEW 1: NO SUBJECT SELECTED -> SUBJECT OVERVIEW CARDS
+     ======================================================================= -->
+{% if not selected_subject %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+    <div>
+        <h3 style="margin: 0; color: #1e293b; font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+            <span>📖</span> Subjects Taught in {{ selected_grade.name }}{% if selected_division %} - {{ selected_division.name }}{% endif %}
+        </h3>
+        <p style="margin: 0.2rem 0 0 0; color: #64748b; font-size: 0.85rem;">
+            Click on any subject below to inspect its detailed student attendance list, session history, and defaulters.
+        </p>
+    </div>
+    <span class="badge bg-secondary" style="font-size: 0.82rem; padding: 0.4rem 0.75rem; border-radius: 8px;">
+        {{ available_subjects|length }} Subjects Available
+    </span>
+</div>
+
+<div class="subject-cards-grid">
+    {% for sc in subject_overview_cards %}
+    <a href="?grade={{ selected_grade.id }}&division={{ selected_division.id|default:0 }}&subject={{ sc.subject.id }}{% if current_filters.month_filter %}&month_filter={{ current_filters.month_filter }}{% endif %}" class="subject-overview-card">
+        <div>
+            <!-- Header: Subject Type Pill & Code -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                <span style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 6px; background: {% if sc.subject.subject_type == 'hadiya' %}#ede9fe; color: #6366f1;{% else %}#e0f2fe; color: #0284c7;{% endif %}">
+                    {{ sc.subject.get_subject_type_display }}
+                </span>
+                {% if sc.subject.code %}
+                <span style="font-size: 0.75rem; font-weight: 700; color: #94a3b8;">
+                    {{ sc.subject.code }}
+                </span>
+                {% endif %}
+            </div>
+
+            <!-- Subject Name -->
+            <h4 style="margin: 0 0 0.35rem 0; font-size: 1.2rem; font-weight: 800; color: #1e293b; line-height: 1.3;">
+                {{ sc.subject.name }}
+            </h4>
+
+            {% if sc.subject.division %}
+            <div style="font-size: 0.75rem; color: #64748b; font-weight: 600; margin-bottom: 0.5rem;">
+                <i class="fa-solid fa-tag" style="color: #6366f1;"></i> Stream: <strong>{{ sc.subject.division.name }}</strong>
+            </div>
+            {% endif %}
+
+            <!-- Assigned Teacher -->
+            <div style="font-size: 0.82rem; color: #475569; display: flex; align-items: center; gap: 0.4rem; margin-bottom: 1rem;">
+                <i class="fa-solid fa-chalkboard-user" style="color: #64748b;"></i>
+                <span>Teacher: <strong>{{ sc.teacher_name }}</strong></span>
+            </div>
+        </div>
+
+        <div>
+            <!-- Stats Row -->
+            <div style="background: #f8fafc; border-radius: 10px; padding: 0.75rem; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Periods Held</div>
+                    <div style="font-size: 1.25rem; font-weight: 800; color: #1e293b;">{{ sc.conducted_count }}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Avg Attendance</div>
+                    <div style="font-size: 1.25rem; font-weight: 800; color: {% if sc.avg_attendance >= 75 %}#16a34a{% elif sc.avg_attendance >= 60 %}#d97706{% else %}#dc2626{% endif %};">
+                        {{ sc.avg_attendance }}%
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill {% if sc.avg_attendance >= 75 %}progress-fill-success{% elif sc.avg_attendance >= 60 %}progress-fill-warning{% else %}progress-fill-danger{% endif %}" style="width: {{ sc.avg_attendance }}%;"></div>
+            </div>
+
+            <!-- Action Link -->
+            <div style="margin-top: 0.85rem; font-size: 0.82rem; font-weight: 800; color: #4f46e5; display: flex; align-items: center; justify-content: space-between;">
+                <span>View Attendance Report</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </div>
+        </div>
+    </a>
+    {% empty %}
+    <div style="grid-column: 1 / -1; background: white; padding: 3rem; border-radius: 16px; border: 1px dashed #cbd5e1; text-align: center; color: #64748b;">
+        <i class="fa-solid fa-book-open" style="font-size: 2.5rem; color: #cbd5e1; margin-bottom: 0.75rem;"></i>
+        <h3 style="color: #334155; font-weight: 700;">No Subjects Found</h3>
+        <p style="margin: 0;">No subjects are registered for this class. You can add subjects in the Subject management section.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- =======================================================================
+     VIEW 2: SPECIFIC SUBJECT SELECTED -> FULL DASHBOARD & REPORTS
+     ======================================================================= -->
+{% else %}
+
+<!-- Subject Detail Banner -->
+<div style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white; border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <div style="font-size: 0.8rem; font-weight: 700; color: #a5b4fc; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.4rem;">
+            <span>Class: {{ selected_grade.name }}{% if selected_division %} ({{ selected_division.name }}){% endif %}</span>
+            {% if specified_month_name %}<span>· Month: {{ specified_month_name }}</span>{% endif %}
+        </div>
+        <h2 style="margin: 0.25rem 0 0.25rem 0; font-size: 1.85rem; font-weight: 800; color: white; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+            <span>📖 {{ selected_subject.name }}</span>
+            {% if selected_subject.code %}
+            <span style="font-size: 0.85rem; background: rgba(255,255,255,0.15); padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 700;">{{ selected_subject.code }}</span>
+            {% endif %}
+        </h2>
+        <div style="font-size: 0.85rem; color: #c7d2fe; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fa-solid fa-chalkboard-user"></i> Assigned Teacher: <strong>{{ assigned_teacher_name }}</strong>
+            {% if selected_subject.division %}
+            · Stream: <strong>{{ selected_subject.division.name }}</strong>
+            {% endif %}
+        </div>
+    </div>
+
+    <div>
+        <a href="?grade={{ selected_grade.id }}&division={{ selected_division.id|default:0 }}" class="btn" style="background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); color: white; padding: 0.5rem 1rem; border-radius: 9px; font-size: 0.85rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
+            ← Switch to All Subjects
+        </a>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="subj-kpi-grid">
+    <!-- Total Periods Held -->
+    <div class="subj-kpi-card">
+        <div class="subj-kpi-icon" style="background: #ede9fe; color: #6366f1;">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+        </div>
+        <div>
+            <div style="font-size: 0.78rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Periods Held</div>
+            <div style="font-size: 1.6rem; font-weight: 800; color: #1e293b;">{{ total_periods_held }}</div>
+            <div style="font-size: 0.72rem; color: #64748b;">Teaching periods conducted</div>
+        </div>
+    </div>
+
+    <!-- Class Average -->
+    <div class="subj-kpi-card">
+        <div class="subj-kpi-icon" style="background: #e0f2fe; color: #0284c7;">
+            <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div>
+            <div style="font-size: 0.78rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Class Average</div>
+            <div style="font-size: 1.6rem; font-weight: 800; color: {% if class_avg_pct >= 75 %}#16a34a{% elif class_avg_pct >= 60 %}#d97706{% else %}#dc2626{% endif %};">
+                {{ class_avg_pct }}%
+            </div>
+            <div style="font-size: 0.72rem; color: #64748b;">Across enrolled students</div>
+        </div>
+    </div>
+
+    <!-- Eligible Students -->
+    <div class="subj-kpi-card">
+        <div class="subj-kpi-icon" style="background: #dcfce7; color: #16a34a;">
+            <i class="fa-solid fa-user-check"></i>
+        </div>
+        <div>
+            <div style="font-size: 0.78rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Eligible (≥75%)</div>
+            <div style="font-size: 1.6rem; font-weight: 800; color: #16a34a;">{{ eligible_count }}</div>
+            <div style="font-size: 0.72rem; color: #64748b;">Full attendance requirement met</div>
+        </div>
+    </div>
+
+    <!-- Defaulters / Shortage -->
+    <div class="subj-kpi-card">
+        <div class="subj-kpi-icon" style="background: #fee2e2; color: #dc2626;">
+            <i class="fa-solid fa-user-xmark"></i>
+        </div>
+        <div>
+            <div style="font-size: 0.78rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Shortage (&lt;75%)</div>
+            <div style="font-size: 1.6rem; font-weight: 800; color: #dc2626;">{{ shortage_count }}</div>
+            <div style="font-size: 0.72rem; color: #64748b;">Requires attendance condonation</div>
+        </div>
+    </div>
+</div>
+
+<!-- Student-wise Subject Attendance Table -->
+<div class="subj-table-card">
+    <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+            <h3 style="margin: 0; color: #1e293b; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                <span>👥</span> Student Attendance Breakdown ({{ student_subject_stats|length }} Students)
+            </h3>
+            <span style="font-size: 0.8rem; color: #64748b; font-weight: 500;">
+                Calculation based on periods conducted for {{ selected_subject.name }}
+            </span>
+        </div>
+
+        {% if current_filters.shortage_only %}
+        <span class="badge bg-danger" style="font-size: 0.8rem; padding: 0.35rem 0.65rem; border-radius: 6px;">
+            ⚠️ Showing Shortage Defaulters Only
+        </span>
+        {% endif %}
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="background: #1e293b; color: white;">
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; width: 60px; text-align: center;">Sl</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; width: 120px;">Student ID</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase;">Student Name</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; width: 140px;">Stream</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; text-align: center; width: 100px;">Periods Held</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; text-align: center; width: 100px;">Attended</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; text-align: center; width: 90px;">Absent</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; width: 170px;">Attendance %</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; text-align: center; width: 150px;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for st in student_subject_stats %}
+                <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" onmouseover="this.style.background='#f8faff';" onmouseout="this.style.background='white';">
+                    <!-- Serial -->
+                    <td style="padding: 0.85rem 1rem; text-align: center; color: #64748b; font-weight: 700;">
+                        {{ forloop.counter }}
+                    </td>
+
+                    <!-- Student ID -->
+                    <td style="padding: 0.85rem 1rem; font-weight: 700; color: #475569;">
+                        {{ st.student.student_id }}
+                    </td>
+
+                    <!-- Student Name -->
+                    <td style="padding: 0.85rem 1rem;">
+                        <a href="{% url 'students:attendance_student_detail' st.student.id %}" style="font-weight: 800; color: #1e293b; text-decoration: none;">
+                            {{ st.student.full_name }}
+                        </a>
+                    </td>
+
+                    <!-- Division / Stream -->
+                    <td style="padding: 0.85rem 1rem;">
+                        {% if st.enrollment.division %}
+                        <span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 700;">
+                            {{ st.enrollment.division.name }}
+                        </span>
+                        {% else %}
+                        <span style="color: #94a3b8; font-size: 0.8rem;">-</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Periods Held -->
+                    <td style="padding: 0.85rem 1rem; text-align: center; font-weight: 700; color: #334155;">
+                        {{ st.total_periods_held }}
+                    </td>
+
+                    <!-- Attended -->
+                    <td style="padding: 0.85rem 1rem; text-align: center; font-weight: 800; color: #16a34a;">
+                        {{ st.attended_count }}
+                        {% if st.late_count or st.excused_count %}
+                        <div style="font-size: 0.7rem; color: #64748b; font-weight: 600;">(P:{{ st.present_count }} L:{{ st.late_count }})</div>
+                        {% endif %}
+                    </td>
+
+                    <!-- Absent -->
+                    <td style="padding: 0.85rem 1rem; text-align: center; font-weight: 800; color: {% if st.absent_count > 0 %}#dc2626{% else %}#94a3b8{% endif %};">
+                        {{ st.absent_count }}
+                    </td>
+
+                    <!-- Attendance % & Progress bar -->
+                    <td style="padding: 0.85rem 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
+                            <span style="font-weight: 800; font-size: 0.95rem; color: {% if st.percentage >= 75 %}#15803d{% elif st.percentage >= 65 %}#b45309{% else %}#b91c1c{% endif %};">
+                                {{ st.percentage }}%
+                            </span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill {% if st.percentage >= 75 %}progress-fill-success{% elif st.percentage >= 65 %}progress-fill-warning{% else %}progress-fill-danger{% endif %}" style="width: {{ st.percentage }}%;"></div>
+                        </div>
+                    </td>
+
+                    <!-- Status Badge -->
+                    <td style="padding: 0.85rem 1rem; text-align: center;">
+                        {% if st.percentage >= 75 %}
+                        <span class="status-badge-custom badge-eligible">
+                            <i class="fa-solid fa-check"></i> Eligible
+                        </span>
+                        {% elif st.percentage >= 65 %}
+                        <span class="status-badge-custom badge-warning">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Warning
+                        </span>
+                        {% else %}
+                        <span class="status-badge-custom badge-shortage">
+                            <i class="fa-solid fa-xmark"></i> Shortage
+                        </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 3rem; color: #94a3b8;">
+                        <i class="fa-solid fa-user-slash" style="font-size: 2rem; margin-bottom: 0.5rem; display: block;"></i>
+                        <p style="margin: 0; font-weight: 700; color: #64748b;">No student records found matching the criteria.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Conducted Sessions Log for this Subject -->
+<div class="subj-table-card no-print">
+    <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+            <h3 style="margin: 0; color: #1e293b; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🗓️</span> Conducted Period Sessions History ({{ session_history|length }} Sessions)
+            </h3>
+            <span style="font-size: 0.8rem; color: #64748b; font-weight: 500;">
+                All teaching periods where attendance was taken for {{ selected_subject.name }}
+            </span>
+        </div>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="background: #334155; color: white;">
+                    <th style="padding: 0.8rem 1rem; font-size: 0.82rem; text-transform: uppercase; width: 60px; text-align: center;">Sl</th>
+                    <th style="padding: 0.8rem 1rem; font-size: 0.82rem; text-transform: uppercase; width: 130px;">Date</th>
+                    <th style="padding: 0.8rem 1rem; font-size: 0.82rem; text-transform: uppercase;">Period Slot</th>
+                    <th style="padding: 0.8rem 1rem; font-size: 0.82rem; text-transform: uppercase;">Marked By</th>
+                    <th style="padding: 0.8rem 1rem; font-size: 0.82rem; text-transform: uppercase; text-align: center; width: 110px;">Present</th>
+                    <th style="padding: 0.8rem 1rem; font-size: 0.82rem; text-transform: uppercase; text-align: center; width: 110px;">Absent</th>
+                    <th style="padding: 0.8rem 1rem; font-size: 0.82rem; text-transform: uppercase; text-align: center; width: 130px;">Session %</th>
+                    <th style="padding: 0.8rem 1rem; font-size: 0.82rem; text-transform: uppercase; text-align: center; width: 100px;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in session_history %}
+                <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" onmouseover="this.style.background='#f8faff';" onmouseout="this.style.background='white';">
+                    <td style="padding: 0.8rem 1rem; text-align: center; color: #64748b; font-weight: 700;">
+                        {{ forloop.counter }}
+                    </td>
+                    <td style="padding: 0.8rem 1rem; font-weight: 700; color: #1e293b;">
+                        {{ s.date|date:"d M Y (D)" }}
+                    </td>
+                    <td style="padding: 0.8rem 1rem; font-weight: 700; color: #475569;">
+                        {{ s.period.name|default:"Period Session" }}
+                    </td>
+                    <td style="padding: 0.8rem 1rem; color: #64748b; font-size: 0.85rem;">
+                        {{ s.marked_by|default:"Teacher" }}
+                    </td>
+                    <td style="padding: 0.8rem 1rem; text-align: center; font-weight: 800; color: #16a34a;">
+                        {{ s.present }}
+                    </td>
+                    <td style="padding: 0.8rem 1rem; text-align: center; font-weight: 800; color: {% if s.absent > 0 %}#dc2626{% else %}#94a3b8{% endif %};">
+                        {{ s.absent }}
+                    </td>
+                    <td style="padding: 0.8rem 1rem; text-align: center;">
+                        <span style="font-weight: 800; color: {% if s.percentage >= 75 %}#16a34a{% elif s.percentage >= 60 %}#d97706{% else %}#dc2626{% endif %};">
+                            {{ s.percentage }}%
+                        </span>
+                    </td>
+                    <td style="padding: 0.8rem 1rem; text-align: center;">
+                        <a href="{% url 'students:mark_attendance_class' selected_grade.id selected_division.id|default:0 %}?date={{ s.date|date:'Y-m-d' }}&period={{ s.period.id }}" class="btn btn-sm" style="background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; border-radius: 6px; padding: 0.25rem 0.55rem; font-size: 0.78rem; font-weight: 700; text-decoration: none;" title="Edit attendance for this session">
+                            Edit →
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 2rem; color: #94a3b8;">
+                        No period sessions have been conducted for this subject yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Print Footer Signatures (Print view only) -->
+<div class="print-signature-section">
+    <div>
+        <strong>Subject Teacher Signature</strong><br>
+        <span>Name: {{ assigned_teacher_name }}</span>
+    </div>
+    <div>
+        <strong>Class Teacher Signature</strong><br>
+        <span>Class: {{ selected_grade.name }}</span>
+    </div>
+    <div>
+        <strong>Principal / Headmaster</strong><br>
+        <span>Madeenathu CM Olavanna</span>
+    </div>
+</div>
+
+{% endif %}
+
+{% endblock %}

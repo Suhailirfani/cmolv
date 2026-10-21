@@ -244,6 +244,7 @@ class Attendance(models.Model):
 
     # For period attendance
     period = models.ForeignKey(Period, on_delete=models.SET_NULL, null=True, blank=True)
+    subject = models.ForeignKey('Subject', on_delete=models.SET_NULL, null=True, blank=True, related_name='attendances')
 
     # For activity attendance
     activity = models.ForeignKey(Activity, on_delete=models.SET_NULL, null=True, blank=True)
@@ -266,12 +267,16 @@ class Attendance(models.Model):
             models.Index(fields=['enrollment', 'date', 'attendance_type']),
             models.Index(fields=['student', 'date', 'attendance_type', 'session']),
             models.Index(fields=['enrollment', 'date', 'attendance_type', 'session']),
+            models.Index(fields=['subject', 'date']),
+            models.Index(fields=['student', 'subject']),
+            models.Index(fields=['enrollment', 'subject']),
         ]
 
     def __str__(self):
         type_display = self.get_attendance_type_display()
         if self.period:
-            return f"{self.student} - {type_display} - {self.period} - {self.date}"
+            subj_str = f" ({self.subject.name})" if self.subject else ""
+            return f"{self.student} - {type_display} - {self.period}{subj_str} - {self.date}"
         elif self.activity:
             return f"{self.student} - {type_display} - {self.activity} - {self.date}"
         elif self.session:

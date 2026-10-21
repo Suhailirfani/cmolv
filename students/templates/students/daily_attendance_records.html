@@ -165,9 +165,14 @@
         </div>
 
         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-            <!-- BUTTON IN THIS PAGE to go to Morning & Evening marking page -->
-            <a href="{% url 'students:daily_attendance_mark' %}?date={{ current_filters.date_from }}" class="btn" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; border-radius: 10px; padding: 0.65rem 1.35rem; font-weight: 800; font-size: 0.92rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);">
+            <!-- BUTTON to go to Morning & Evening marking page -->
+            <a href="{% url 'students:daily_attendance_mark' %}?date={{ current_filters.date_from }}" class="btn" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; border-radius: 10px; padding: 0.65rem 1.25rem; font-weight: 800; font-size: 0.92rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);">
                 <i class="fa-solid fa-pencil"></i> Mark Morning & Evening
+            </a>
+
+            <!-- Subject Attendance Page Link -->
+            <a href="{% url 'students:subject_attendance' %}{% if current_filters.grade %}?grade={{ current_filters.grade }}{% endif %}" class="btn" style="background: #4f46e5; color: white; border-radius: 10px; padding: 0.65rem 1.1rem; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);">
+                <i class="fa-solid fa-book-bookmark"></i> Subject Attendance
             </a>
 
             <!-- Print Records -->
@@ -311,11 +316,21 @@
     </form>
 </div>
 
-<!-- Daily Attendance Combined Table -->
-<div class="table-card">
+<!-- View Mode Switcher -->
+<div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;" class="no-print">
+    <button type="button" id="tabBtnSessions" onclick="switchRecordView('sessions')" class="btn" style="background: #1e293b; color: white; border-radius: 9px; padding: 0.55rem 1.1rem; font-weight: 700; font-size: 0.88rem; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+        <i class="fa-solid fa-list-check"></i> Daily Sessions Log ({{ daily_rows|length }})
+    </button>
+    <button type="button" id="tabBtnSummary" onclick="switchRecordView('summary')" class="btn" style="background: white; color: #475569; border: 1.5px solid #cbd5e1; border-radius: 9px; padding: 0.55rem 1.1rem; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+        <i class="fa-solid fa-chart-pie"></i> Student Monthly Summary ({{ student_summaries|length }})
+    </button>
+</div>
+
+<!-- View 1: Daily Attendance Combined Sessions Table -->
+<div class="table-card" id="viewSessions">
     <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
         <h3 style="margin: 0; color: #1e293b; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
-            <span>🗓️</span> Records List ({{ daily_rows|length }} Student-Days)
+            <span>🗓️</span> Daily Sessions Log ({{ daily_rows|length }} Student-Days)
         </h3>
         <span style="font-size: 0.82rem; color: #64748b; font-weight: 600;">
             Showing Morning and Evening status per student (P / A)
@@ -430,4 +445,132 @@
         </table>
     </div>
 </div>
+
+<!-- View 2: Student Monthly Attendance Summary Table -->
+<div class="table-card" id="viewSummary" style="display: none;">
+    <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+            <h3 style="margin: 0; color: #1e293b; font-size: 1.15rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                <span>📊</span> Student Attendance Summary ({{ student_summaries|length }} Students)
+            </h3>
+            <span style="font-size: 0.8rem; color: #64748b; font-weight: 600;">
+                Calculated by Morning & Evening attendance: Both sessions = 1.0 day · One session = 0.5 day (Half attendance) · Neither = 0.0 day
+            </span>
+        </div>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="background: #1e293b; color: white;">
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; width: 60px; text-align: center;">Sl</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; width: 120px;">Student ID</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase;">Student Name</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; width: 150px;">Class & Stream</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; text-align: center; width: 120px;">Conducted</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; text-align: center; width: 120px;">Full Days (1.0)</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; text-align: center; width: 110px;">Half Days (0.5)</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; text-align: center; width: 130px;">Attended Days</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; text-align: center; width: 110px;">Absent Days</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; text-align: center; width: 140px;">Attendance %</th>
+                    <th style="padding: 0.85rem 1rem; font-size: 0.82rem; text-transform: uppercase; text-align: center; width: 110px;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for st in student_summaries %}
+                <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" onmouseover="this.style.background='#f8faff';" onmouseout="this.style.background='white';">
+                    <td style="padding: 0.85rem 1rem; text-align: center; color: #64748b; font-weight: 700;">
+                        {{ forloop.counter }}
+                    </td>
+                    <td style="padding: 0.85rem 1rem; font-weight: 700; color: #475569;">
+                        {{ st.student.student_id }}
+                    </td>
+                    <td style="padding: 0.85rem 1rem;">
+                        <a href="{% url 'students:student_profile' st.student.id %}" style="font-weight: 800; color: #1e293b; text-decoration: none;">
+                            {{ st.student.full_name }}
+                        </a>
+                    </td>
+                    <td style="padding: 0.85rem 1rem;">
+                        <span style="font-weight: 700; color: #334155;">{{ st.enrollment.grade.name }}</span>
+                        {% if st.enrollment.division %}
+                        <span style="background: #f1f5f9; color: #64748b; font-size: 0.72rem; padding: 0.15rem 0.4rem; border-radius: 6px; font-weight: 700;">{{ st.enrollment.division.name }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.85rem 1rem; text-align: center; font-weight: 700; color: #334155;">
+                        {{ st.total_conducted_days }}
+                    </td>
+                    <td style="padding: 0.85rem 1rem; text-align: center; font-weight: 800; color: #16a34a;">
+                        {{ st.full_present_days }}
+                    </td>
+                    <td style="padding: 0.85rem 1rem; text-align: center; font-weight: 800; color: #d97706;">
+                        {{ st.half_days }}
+                    </td>
+                    <td style="padding: 0.85rem 1rem; text-align: center; font-weight: 800; color: #0284c7; background: #f0f9ff;">
+                        {{ st.attended_days }}
+                    </td>
+                    <td style="padding: 0.85rem 1rem; text-align: center; font-weight: 800; color: {% if st.absent_days > 0 %}#dc2626{% else %}#94a3b8{% endif %};">
+                        {{ st.absent_days }}
+                    </td>
+                    <td style="padding: 0.85rem 1rem; text-align: center;">
+                        <span style="font-weight: 800; padding: 0.25rem 0.65rem; border-radius: 12px; font-size: 0.85rem;
+                            {% if st.percentage >= 75 %}background: #dcfce7; color: #15803d;
+                            {% elif st.percentage >= 60 %}background: #fef3c7; color: #b45309;
+                            {% else %}background: #fee2e2; color: #b91c1c;{% endif %}">
+                            {{ st.percentage }}%
+                        </span>
+                    </td>
+                    <td style="padding: 0.85rem 1rem; text-align: center;">
+                        <a href="{% url 'students:attendance_student_detail' st.student.id %}?date_from={{ current_filters.date_from }}&date_to={{ current_filters.date_to }}" class="btn btn-sm" style="background: #4f46e5; color: white; border-radius: 6px; padding: 0.3rem 0.6rem; font-size: 0.78rem; font-weight: 700; text-decoration: none;">
+                            History →
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="11" style="text-align: center; padding: 2.5rem; color: #94a3b8;">
+                        No student summary data available for the selected filters.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function switchRecordView(mode) {
+    const vSessions = document.getElementById('viewSessions');
+    const vSummary = document.getElementById('viewSummary');
+    const btnSessions = document.getElementById('tabBtnSessions');
+    const btnSummary = document.getElementById('tabBtnSummary');
+
+    if (mode === 'summary') {
+        vSessions.style.display = 'none';
+        vSummary.style.display = 'block';
+        btnSummary.style.background = '#1e293b';
+        btnSummary.style.color = 'white';
+        btnSummary.style.border = 'none';
+        btnSessions.style.background = 'white';
+        btnSessions.style.color = '#475569';
+        btnSessions.style.border = '1.5px solid #cbd5e1';
+    } else {
+        vSummary.style.display = 'none';
+        vSessions.style.display = 'block';
+        btnSessions.style.background = '#1e293b';
+        btnSessions.style.color = 'white';
+        btnSessions.style.border = 'none';
+        btnSummary.style.background = 'white';
+        btnSummary.style.color = '#475569';
+        btnSummary.style.border = '1.5px solid #cbd5e1';
+    }
+}
+
+// Auto open Summary tab if month_filter is active
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('month_filter')) {
+        switchRecordView('summary');
+    }
+});
+</script>
 {% endblock %}

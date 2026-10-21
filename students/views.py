@@ -44,6 +44,126 @@ def get_holidays_in_range(start_date, end_date, grade=None):
 get_holiday_dates = get_holidays_in_range
 
 
+def calculate_daily_attendance_summary(attendances):
+    """
+    Calculates student attendance summary based on Morning and Evening daily attendance:
+    - If student attended both Morning and Evening: 1.0 day present (fully attend in that day)
+    - If attended one of them (Morning OR Evening): 0.5 day present (half attendance), 0.5 day absent
+    - If attended neither (both absent): 0.0 day present, 1.0 day absent
+    - If legacy daily attendance (session is None):
+      - present/late/excused: 1.0 day present
+      - absent: 0.0 day present, 1.0 day absent
+    Returns dict:
+      'total_days': int,          # total distinct conducted days
+      'full_present_count': int,  # full day present count
+      'half_day_count': int,      # half day count (0.5 each)
+      'attended_days': float,     # full_present + 0.5 * half_days
+      'full_absent_count': int,   # full day absent count
+      'absent_days': float,       # full_absent + 0.5 * half_days
+      'percentage': float,        # round((attended_days / total_days) * 100, 1)
+      'by_date': dict,            # date -> {'morning': status, 'evening': status, 'status': day_status, 'value': float}
+    """
+    days_map = {}
+    for att in attendances:
+        d = att.date
+        if d not in days_map:
+            days_map[d] = {'morning': None, 'evening': None, 'unspecified': None}
+        
+        sess = (att.session or '').lower()
+        if sess == 'morning':
+            days_map[d]['morning'] = att.status
+        elif sess == 'evening':
+            days_map[d]['evening'] = att.status
+        else:
+            days_map[d]['unspecified'] = att.status
+
+    total_days = len(days_map)
+    full_present_count = 0
+    half_day_count = 0
+    full_absent_count = 0
+    by_date = {}
+
+    present_statuses = {'present', 'late', 'excused'}
+
+    for d, sessions in days_map.items():
+        m_st = sessions['morning']
+        e_st = sessions['evening']
+        u_st = sessions['unspecified']
+
+        # If morning and/or evening are marked
+        if m_st is not None or e_st is not None:
+            m_pres = m_st in present_statuses if m_st else False
+            e_pres = e_st in present_statuses if e_st else False
+            
+            if m_st is not None and e_st is not None:
+                if m_pres and e_pres:
+                    val = 1.0
+                    day_status = 'full_present'
+                    full_present_count += 1
+                elif (m_pres and not e_pres) or (not m_pres and e_pres):
+                    val = 0.5
+                    day_status = 'half_day'
+                    half_day_count += 1
+                else:
+                    val = 0.0
+                    day_status = 'full_absent'
+                    full_absent_count += 1
+            elif m_st is not None:
+                if m_pres:
+                    val = 0.5
+                    day_status = 'half_day'
+                    half_day_count += 1
+                else:
+                    val = 0.0
+                    day_status = 'full_absent'
+                    full_absent_count += 1
+            else:
+                if e_pres:
+                    val = 0.5
+                    day_status = 'half_day'
+                    half_day_count += 1
+                else:
+                    val = 0.0
+                    day_status = 'full_absent'
+                    full_absent_count += 1
+        elif u_st is not None:
+            # Legacy attendance record without session specified
+            if u_st in present_statuses:
+                val = 1.0
+                day_status = 'full_present'
+                full_present_count += 1
+            else:
+                val = 0.0
+                day_status = 'full_absent'
+                full_absent_count += 1
+        else:
+            val = 0.0
+            day_status = 'not_marked'
+
+        by_date[d] = {
+            'morning': m_st,
+            'evening': e_st,
+            'status': day_status,
+            'value': val
+        }
+
+    attended_days = full_present_count + (0.5 * half_day_count)
+    absent_days = full_absent_count + (0.5 * half_day_count)
+    percentage = round((attended_days / total_days) * 100, 1) if total_days > 0 else 0.0
+
+    return {
+        'total_days': total_days,
+        'full_present_count': full_present_count,
+        'half_day_count': half_day_count,
+        'full_absent_count': full_absent_count,
+        'attended_days': attended_days,
+        'absent_days': absent_days,
+        'percentage': percentage,
+        'by_date': by_date,
+    }
+
+
+
 def landing_page(request):
     """Public landing page"""
     from .models import LandingPageStats, NewsTickerItem
@@ -1446,6 +1566,12 @@ def mark_attendance_class(request, grade_id, division_id=0):
             except Enrollment.DoesNotExist:
                 pass
 
+        # Determine subject for period attendance
+        chosen_subject_id = request.POST.get('subject_id', '').strip()
+        manual_subject = None
+        if chosen_subject_id and chosen_subject_id.isdigit():
+            manual_subject = Subject.objects.filter(id=int(chosen_subject_id)).first()
+
         for data in attendance_data:
             enrollment_id, status = data.split('|')
             enrollment = get_object_or_404(Enrollment, id=enrollment_id)
@@ -1458,9 +1584,29 @@ def mark_attendance_class(request, grade_id, division_id=0):
                 'attendance_type': attendance_type,
             }
 
+            defaults = {
+                'status': status,
+                'marked_by': marked_by,
+            }
+
             if attendance_type == 'period':
                 if period_id:
                     filter_kwargs['period_id'] = period_id
+                    # Determine subject: manual override OR timetable slot for student's stream
+                    if manual_subject:
+                        defaults['subject'] = manual_subject
+                    else:
+                        # Auto from timetable matching this student's division
+                        matching_slots_for_p = slots_by_period_timing.get(int(period_id), []) if str(period_id).isdigit() else []
+                        student_slot = None
+                        if enrollment.division_id:
+                            student_slot = next((s for s in matching_slots_for_p if s.division_id == enrollment.division_id), None)
+                        if not student_slot:
+                            student_slot = next((s for s in matching_slots_for_p if not s.division_id), None)
+                        if not student_slot and matching_slots_for_p:
+                            student_slot = matching_slots_for_p[0]
+                        if student_slot:
+                            defaults['subject'] = student_slot.subject
                 else:
                     continue
             elif attendance_type == 'activity':
@@ -1473,10 +1619,7 @@ def mark_attendance_class(request, grade_id, division_id=0):
                 filter_kwargs['activity__isnull'] = True
 
             Attendance.objects.update_or_create(
-                defaults={
-                    'status': status,
-                    'marked_by': marked_by,
-                },
+                defaults=defaults,
                 **filter_kwargs
             )
             success_count += 1
@@ -1500,6 +1643,33 @@ def mark_attendance_class(request, grade_id, division_id=0):
     selected_period_obj = Period.objects.filter(id=period_id).first() if period_id else None
     selected_activity_obj = Activity.objects.filter(id=activity_id).first() if activity_id else None
     active_cancellation = cancellations_map.get(int(period_id)) if (period_id and str(period_id).isdigit()) else None
+
+    # Fetch all active subjects for this grade for the selector dropdown
+    grade_subjects = list(Subject.objects.filter(grade=grade_obj, is_active=True).order_by('name'))
+    
+    # Pre-select subject if already marked today for this period
+    selected_subject_id = None
+    if attendance_type == 'period' and period_id:
+        existing_att_subj = Attendance.objects.filter(
+            date=selected_date,
+            attendance_type='period',
+            period_id=period_id,
+            enrollment__in=all_enrollments,
+            subject__isnull=False
+        ).values_list('subject_id', flat=True).first()
+        
+        selected_subject_id = existing_att_subj
+        if not selected_subject_id and str(period_id).isdigit():
+            matching_for_selected = slots_by_period_timing.get(int(period_id), [])
+            if matching_for_selected:
+                if division_id and division_id > 0:
+                    s_slot = next((s for s in matching_for_selected if s.division_id == division_id), None)
+                    if not s_slot:
+                        s_slot = next((s for s in matching_for_selected if not s.division_id), None)
+                    if s_slot:
+                        selected_subject_id = s_slot.subject_id
+                else:
+                    selected_subject_id = matching_for_selected[0].subject_id
 
     context = {
         'class_name': class_name,
@@ -1525,6 +1695,8 @@ def mark_attendance_class(request, grade_id, division_id=0):
         'selected_activity_obj': selected_activity_obj,
         'active_cancellation': active_cancellation,
         'cancellation_reasons': ClassPeriodCancellation.REASON_CHOICES,
+        'grade_subjects': grade_subjects,
+        'selected_subject_id': selected_subject_id,
     }
     return render(request, 'students/mark_attendance_class.html', context)
 
@@ -5423,30 +5595,21 @@ def attendance_class_detail(request, grade_id, division_id):
             attendances = attendances.filter(date__lte=date_to)
             
         stats_attendances = attendances.exclude(date__in=h_dates, status='absent')
+        summary = calculate_daily_attendance_summary(stats_attendances)
         
-        total_days = stats_attendances.count()
-        present_count = stats_attendances.filter(status='present').count()
-        late_count = stats_attendances.filter(status='late').count()
-        excused_count = stats_attendances.filter(status='excused').count()
-        absent_count = stats_attendances.filter(status='absent').count()
-        
-        attended_count = present_count + late_count + excused_count
-        
-        percentage = 0
-        if total_days > 0:
-            percentage = round((attended_count / total_days) * 100, 2)
-            
         today_status = today_status_map.get(enrollment.id, 'not_marked')
             
         student_stats.append({
             'student': enrollment.student,
             'enrollment': enrollment,
-            'total_days': total_days,
-            'present_count': present_count,
-            'late_count': late_count,
-            'excused_count': excused_count,
-            'absent_count': absent_count,
-            'percentage': percentage,
+            'total_days': summary['total_days'],
+            'present_count': summary['attended_days'],
+            'full_present_count': summary['full_present_count'],
+            'half_day_count': summary['half_day_count'],
+            'absent_count': summary['absent_days'],
+            'late_count': 0,
+            'excused_count': 0,
+            'percentage': summary['percentage'],
             'today_status': today_status
         })
 
@@ -5557,25 +5720,18 @@ def cumulative_attendance_pdf(request, grade_id, division_id):
             attendances = attendances.filter(date__lte=date_to)
 
         stats_attendances = attendances.exclude(date__in=h_dates, status='absent')
-        total_days = stats_attendances.count()
-        present_count = stats_attendances.filter(status='present').count()
-        late_count = stats_attendances.filter(status='late').count()
-        excused_count = stats_attendances.filter(status='excused').count()
-        absent_count = stats_attendances.filter(status='absent').count()
-
-        attended_count = present_count + late_count + excused_count
-        percentage = 0
-        if total_days > 0:
-            percentage = round((attended_count / total_days) * 100, 2)
+        summary = calculate_daily_attendance_summary(stats_attendances)
 
         student_stats.append({
             'student_id': enrollment.student.student_id,
             'full_name': enrollment.student.full_name,
-            'total_days': total_days,
-            'present_count': present_count,
-            'absent_count': absent_count,
-            'late_excused': f"{late_count} / {excused_count}",
-            'percentage': f"{percentage}%"
+            'total_days': summary['total_days'],
+            'present_count': summary['attended_days'],
+            'absent_count': summary['absent_days'],
+            'full_present_count': summary['full_present_count'],
+            'half_day_count': summary['half_day_count'],
+            'late_excused': f"{summary['half_day_count']} Half",
+            'percentage': f"{summary['percentage']}%"
         })
 
     # Build PDF Response
@@ -5858,25 +6014,18 @@ def all_classes_cumulative_pdf(request):
                 attendances = attendances.filter(date__lte=date_to)
 
             stats_attendances = attendances.exclude(date__in=h_dates, status='absent')
-            total_days = stats_attendances.count()
-            present_count = stats_attendances.filter(status='present').count()
-            late_count = stats_attendances.filter(status='late').count()
-            excused_count = stats_attendances.filter(status='excused').count()
-            absent_count = stats_attendances.filter(status='absent').count()
-
-            attended_count = present_count + late_count + excused_count
-            percentage = 0
-            if total_days > 0:
-                percentage = round((attended_count / total_days) * 100, 2)
+            summary = calculate_daily_attendance_summary(stats_attendances)
 
             student_stats.append({
                 'student_id': enrollment.student.student_id,
                 'full_name': enrollment.student.full_name,
-                'total_days': total_days,
-                'present_count': present_count,
-                'absent_count': absent_count,
-                'late_excused': f"{late_count} / {excused_count}",
-                'percentage': f"{percentage}%"
+                'total_days': summary['total_days'],
+                'present_count': summary['attended_days'],
+                'absent_count': summary['absent_days'],
+                'full_present_count': summary['full_present_count'],
+                'half_day_count': summary['half_day_count'],
+                'late_excused': f"{summary['half_day_count']} Half",
+                'percentage': f"{summary['percentage']}%"
             })
 
         if class_count > 0:
@@ -6043,16 +6192,58 @@ def attendance_student_detail(request, student_id):
     h_dates = get_holiday_dates(min(dates), max(dates)) if dates else set()
     stats_attendances = attendances.exclude(date__in=h_dates, status='absent')
 
-    total_days = stats_attendances.count()
-    present_count = stats_attendances.filter(status='present').count()
-    late_count = stats_attendances.filter(status='late').count()
-    excused_count = stats_attendances.filter(status='excused').count()
-    absent_count = stats_attendances.filter(status='absent').count()
-    
-    attended_count = present_count + late_count + excused_count
-    percentage = 0
-    if total_days > 0:
-        percentage = round((attended_count / total_days) * 100, 2)
+    summary = calculate_daily_attendance_summary(stats_attendances)
+    total_days = summary['total_days']
+    present_count = summary['attended_days']
+    full_present_count = summary['full_present_count']
+    half_day_count = summary['half_day_count']
+    absent_count = summary['absent_days']
+    percentage = summary['percentage']
+
+    # Subject-wise attendance breakdown for this student
+    subject_attendance_breakdown = []
+    if enrollment and enrollment.grade:
+        st_subjects = Subject.objects.filter(grade=enrollment.grade, is_active=True)
+        if enrollment.division:
+            st_subjects = st_subjects.filter(Q(division=enrollment.division) | Q(division__isnull=True))
+        st_subjects = st_subjects.distinct().order_by('name')
+
+        for s in st_subjects:
+            s_atts = Attendance.objects.filter(student=student, subject=s, attendance_type='period')
+            if session_start:
+                s_atts = s_atts.filter(date__gte=session_start)
+            if selected_year and selected_year.end_date:
+                s_atts = s_atts.filter(date__lte=selected_year.end_date)
+            if date_from:
+                s_atts = s_atts.filter(date__gte=date_from)
+            if date_to:
+                s_atts = s_atts.filter(date__lte=date_to)
+
+            all_s_held = Attendance.objects.filter(attendance_type='period', subject=s, enrollment__grade=enrollment.grade)
+            if enrollment.division:
+                all_s_held = all_s_held.filter(enrollment__division=enrollment.division)
+            if session_start:
+                all_s_held = all_s_held.filter(date__gte=session_start)
+            if selected_year and selected_year.end_date:
+                all_s_held = all_s_held.filter(date__lte=selected_year.end_date)
+            if date_from:
+                all_s_held = all_s_held.filter(date__gte=date_from)
+            if date_to:
+                all_s_held = all_s_held.filter(date__lte=date_to)
+
+            s_held_count = all_s_held.values('date', 'period_id').distinct().count()
+            s_attended = s_atts.filter(status__in=['present', 'late', 'excused']).count()
+            s_absent = s_atts.filter(status='absent').count()
+            s_pct = round((s_attended / s_held_count * 100), 1) if s_held_count > 0 else 0.0
+
+            subject_attendance_breakdown.append({
+                'subject': s,
+                'periods_held': s_held_count,
+                'attended': s_attended,
+                'absent': s_absent,
+                'percentage': s_pct,
+                'is_shortage': s_pct < 75.0 and s_held_count > 0,
+            })
 
     context = {
         'student': student,
@@ -6062,12 +6253,15 @@ def attendance_student_detail(request, student_id):
         'attendances': attendances,
         'total_days': total_days,
         'present_count': present_count,
-        'late_count': late_count,
-        'excused_count': excused_count,
+        'full_present_count': full_present_count,
+        'half_day_count': half_day_count,
         'absent_count': absent_count,
+        'late_count': 0,
+        'excused_count': 0,
         'percentage': percentage,
         'check_result': check_result,
         'session_start': session_start,
+        'subject_attendance_breakdown': subject_attendance_breakdown,
         'current_filters': {
             'date_from': date_from,
             'date_to': date_to,
@@ -9508,11 +9702,64 @@ def daily_attendance_records(request):
         row['day_class'] = day_class
         daily_rows.append(row)
 
+    # Calculate Student-wise Monthly Attendance Summary (Full day = 1.0, Half day = 0.5)
+    student_summaries_map = OrderedDict()
+    for row in daily_rows:
+        student = row['student']
+        enr = row['enrollment']
+        if student.id not in student_summaries_map:
+            student_summaries_map[student.id] = {
+                'student': student,
+                'enrollment': enr,
+                'total_conducted_days': 0,
+                'full_present_days': 0,
+                'half_days': 0,
+                'full_absent_days': 0,
+                'attended_days': 0.0,
+                'absent_days': 0.0,
+                'percentage': 0.0,
+            }
+
+        st_sum = student_summaries_map[student.id]
+        st_sum['total_conducted_days'] += 1
+
+        day_st = row['day_status']
+        if day_st == 'full_present':
+            st_sum['full_present_days'] += 1
+            st_sum['attended_days'] += 1.0
+        elif day_st in ['half_day', 'partial']:
+            st_sum['half_days'] += 1
+            st_sum['attended_days'] += 0.5
+            st_sum['absent_days'] += 0.5
+        elif day_st == 'full_absent':
+            st_sum['full_absent_days'] += 1
+            st_sum['absent_days'] += 1.0
+        else:
+            m_p = (row['morning'] and row['morning'].status in ['present', 'late', 'excused'])
+            e_p = (row['evening'] and row['evening'].status in ['present', 'late', 'excused'])
+            if m_p and e_p:
+                st_sum['full_present_days'] += 1
+                st_sum['attended_days'] += 1.0
+            elif m_p or e_p:
+                st_sum['half_days'] += 1
+                st_sum['attended_days'] += 0.5
+                st_sum['absent_days'] += 0.5
+            else:
+                st_sum['full_absent_days'] += 1
+                st_sum['absent_days'] += 1.0
+
+    for st_id, st_sum in student_summaries_map.items():
+        if st_sum['total_conducted_days'] > 0:
+            st_sum['percentage'] = round((st_sum['attended_days'] / st_sum['total_conducted_days']) * 100, 1)
+
+    student_summaries = list(student_summaries_map.values())
+
     grades = Grade.objects.all().order_by('order', 'name')
     divisions = Division.objects.all().order_by('name')
 
     context = {
         'daily_rows': daily_rows,
+        'student_summaries': student_summaries,
         'records': records,
         'total_records': total_records,
         'm_total': m_total,
@@ -9538,6 +9785,311 @@ def daily_attendance_records(request):
         }
     }
     return render(request, 'students/daily_attendance_records.html', context)
+
+
+# ==============================================================================
+# SUBJECT ATTENDANCE MANAGEMENT & AUDIT
+# ==============================================================================
+
+@role_required(['admin', 'teacher'])
+def subject_attendance_view(request):
+    """
+    Dedicated Page for Subject Attendance:
+    - View and calculate student attendance for a specific subject based on period attendance.
+    - If subject is not chosen: presents an overview of all subjects taught in the selected class.
+    - If subject is chosen: displays comprehensive metrics (total periods held, class average %,
+      eligible students >= 75%, defaulters < 75%), student-by-student attendance breakdown (periods held,
+      present, late, excused, absent, percentage %, status, progress bar), and a conducted session log.
+    """
+    import calendar
+    from datetime import datetime
+
+    today = date.today()
+    active_year = AcademicYear.objects.filter(is_active=True).first()
+
+    grades = Grade.objects.all().order_by('order', 'name')
+    if not grades.exists():
+        messages.warning(request, "Please create at least one grade/class.")
+        return redirect('students:attendance_list')
+
+    # Selected Grade
+    grade_id_param = request.GET.get('grade')
+    selected_grade = None
+    if grade_id_param and grade_id_param.isdigit():
+        selected_grade = Grade.objects.filter(id=int(grade_id_param)).first()
+    if not selected_grade:
+        selected_grade = grades.first()
+
+    # Divisions for this grade
+    divisions = Division.objects.filter(grade=selected_grade).order_by('name')
+
+    # Selected Division
+    division_id_param = request.GET.get('division', '')
+    selected_division = None
+    if division_id_param and division_id_param.isdigit() and int(division_id_param) > 0:
+        selected_division = Division.objects.filter(id=int(division_id_param), grade=selected_grade).first()
+
+    # Available subjects for this grade (and division if specified)
+    subjects_qs = Subject.objects.filter(grade=selected_grade, is_active=True).order_by('name')
+    if selected_division:
+        subjects_qs = subjects_qs.filter(Q(division=selected_division) | Q(division__isnull=True))
+    available_subjects = list(subjects_qs.distinct())
+
+    # Selected Subject
+    subject_id_param = request.GET.get('subject', '').strip()
+    selected_subject = None
+    if subject_id_param and subject_id_param.isdigit():
+        selected_subject = Subject.objects.filter(id=int(subject_id_param)).first()
+
+    # Date and Month filtering
+    month_filter = request.GET.get('month_filter', '').strip()
+    date_from_str = request.GET.get('date_from', '').strip()
+    date_to_str = request.GET.get('date_to', '').strip()
+    specified_month_name = None
+
+    if month_filter:
+        try:
+            m_year, m_month = map(int, month_filter.split('-'))
+            _, last_day = calendar.monthrange(m_year, m_month)
+            date_from_str = f"{m_year:04d}-{m_month:02d}-01"
+            date_to_str = f"{m_year:04d}-{m_month:02d}-{last_day:02d}"
+            specified_month_name = datetime(m_year, m_month, 1).strftime('%B %Y')
+        except Exception:
+            pass
+
+    # Default to session start or year start if no date filter
+    if not date_from_str:
+        session_start = selected_grade.session_start_date or (active_year.start_date if active_year else None)
+        if session_start:
+            date_from_str = session_start.isoformat()
+
+    # Enrollments for this class
+    enrollments_qs = Enrollment.objects.filter(
+        student__is_active=True,
+        grade=selected_grade
+    ).select_related('student', 'division', 'section').order_by('student__student_id', 'student__first_name')
+    if active_year:
+        enrollments_qs = enrollments_qs.filter(academic_year=active_year)
+    if selected_division:
+        enrollments_qs = enrollments_qs.filter(division=selected_division)
+    enrollments = list(enrollments_qs)
+
+    student_search = request.GET.get('search', '').strip().lower()
+    shortage_only = request.GET.get('shortage_only', '').strip() == '1'
+
+    # -------------------------------------------------------------
+    # CASE 1: Subject NOT Selected -> Render Subject Overview Cards
+    # -------------------------------------------------------------
+    subject_overview_cards = []
+    if not selected_subject:
+        for subj in available_subjects:
+            att_qs = Attendance.objects.filter(
+                attendance_type='period',
+                subject=subj,
+                enrollment__grade=selected_grade
+            )
+            if active_year:
+                att_qs = att_qs.filter(enrollment__academic_year=active_year)
+            if selected_division:
+                att_qs = att_qs.filter(enrollment__division=selected_division)
+            if date_from_str:
+                att_qs = att_qs.filter(date__gte=date_from_str)
+            if date_to_str:
+                att_qs = att_qs.filter(date__lte=date_to_str)
+
+            conducted_count = att_qs.values('date', 'period_id').distinct().count()
+            total_records = att_qs.count()
+            present_records = att_qs.filter(status__in=['present', 'late', 'excused']).count()
+            avg_attendance = round((present_records / total_records * 100), 1) if total_records > 0 else 0.0
+
+            # Find assigned teacher
+            assigned_teacher_name = "-"
+            teacher_assign = TeacherSubjectAssignment.objects.filter(grade=selected_grade, subject=subj)
+            if selected_division:
+                teacher_assign = teacher_assign.filter(Q(division=selected_division) | Q(division__isnull=True))
+            t_obj = teacher_assign.select_related('teacher').first()
+            if t_obj and t_obj.teacher:
+                assigned_teacher_name = t_obj.teacher.get_full_name() or t_obj.teacher.username
+            else:
+                tt_slot = TimetableSlot.objects.filter(grade=selected_grade, subject=subj).select_related('teacher').first()
+                if tt_slot and tt_slot.teacher:
+                    assigned_teacher_name = tt_slot.teacher.get_full_name() or tt_slot.teacher.username
+
+            subject_overview_cards.append({
+                'subject': subj,
+                'conducted_count': conducted_count,
+                'total_records': total_records,
+                'present_records': present_records,
+                'avg_attendance': avg_attendance,
+                'teacher_name': assigned_teacher_name,
+            })
+
+    # -------------------------------------------------------------
+    # CASE 2: Subject Selected -> Full Student-wise Breakdown & Sessions
+    # -------------------------------------------------------------
+    student_subject_stats = []
+    session_history = []
+    total_periods_held = 0
+    class_avg_pct = 0.0
+    eligible_count = 0
+    shortage_count = 0
+    assigned_teacher_name = "-"
+
+    if selected_subject:
+        # Find assigned teacher
+        teacher_assign = TeacherSubjectAssignment.objects.filter(grade=selected_grade, subject=selected_subject)
+        if selected_division:
+            teacher_assign = teacher_assign.filter(Q(division=selected_division) | Q(division__isnull=True))
+        t_obj = teacher_assign.select_related('teacher').first()
+        if t_obj and t_obj.teacher:
+            assigned_teacher_name = t_obj.teacher.get_full_name() or t_obj.teacher.username
+        else:
+            tt_slot = TimetableSlot.objects.filter(grade=selected_grade, subject=selected_subject).select_related('teacher').first()
+            if tt_slot and tt_slot.teacher:
+                assigned_teacher_name = tt_slot.teacher.get_full_name() or tt_slot.teacher.username
+
+        # All period attendances for this subject
+        att_qs = Attendance.objects.filter(
+            attendance_type='period',
+            subject=selected_subject,
+            enrollment__grade=selected_grade
+        ).select_related('student', 'enrollment', 'period', 'enrollment__division')
+
+        if active_year:
+            att_qs = att_qs.filter(enrollment__academic_year=active_year)
+        if selected_division:
+            att_qs = att_qs.filter(enrollment__division=selected_division)
+        if date_from_str:
+            att_qs = att_qs.filter(date__gte=date_from_str)
+        if date_to_str:
+            att_qs = att_qs.filter(date__lte=date_to_str)
+
+        all_records = list(att_qs)
+
+        # Conducted sessions (grouped by date and period)
+        sessions_map = OrderedDict()
+        for r in sorted(all_records, key=lambda x: (x.date, x.period_id or 0), reverse=True):
+            s_key = (r.date, r.period_id)
+            if s_key not in sessions_map:
+                sessions_map[s_key] = {
+                    'date': r.date,
+                    'period': r.period,
+                    'marked_by': r.marked_by,
+                    'present': 0,
+                    'late': 0,
+                    'excused': 0,
+                    'absent': 0,
+                    'total': 0,
+                }
+            if r.status == 'present':
+                sessions_map[s_key]['present'] += 1
+            elif r.status == 'late':
+                sessions_map[s_key]['late'] += 1
+            elif r.status == 'excused':
+                sessions_map[s_key]['excused'] += 1
+            elif r.status == 'absent':
+                sessions_map[s_key]['absent'] += 1
+            sessions_map[s_key]['total'] += 1
+
+        for s_key, s_data in sessions_map.items():
+            tot = s_data['total']
+            pres = s_data['present'] + s_data['late'] + s_data['excused']
+            pct = round((pres / tot * 100), 1) if tot > 0 else 0.0
+            s_data['percentage'] = pct
+            session_history.append(s_data)
+
+        total_periods_held = len(session_history)
+
+        # Student records map: enrollment_id -> list of attendances
+        st_att_map = {}
+        for r in all_records:
+            st_att_map.setdefault(r.enrollment_id, []).append(r)
+
+        total_pct_sum = 0
+        for enr in enrollments:
+            stud = enr.student
+            if student_search:
+                if (student_search not in (stud.full_name or '').lower()) and (student_search not in (stud.student_id or '').lower()):
+                    continue
+
+            records = st_att_map.get(enr.id, [])
+            p_present = sum(1 for r in records if r.status == 'present')
+            p_late = sum(1 for r in records if r.status == 'late')
+            p_excused = sum(1 for r in records if r.status == 'excused')
+            p_absent = sum(1 for r in records if r.status == 'absent')
+            attended = p_present + p_late + p_excused
+
+            pct = round((attended / total_periods_held * 100), 1) if total_periods_held > 0 else 0.0
+            is_shortage = pct < 75.0 and total_periods_held > 0
+
+            if shortage_only and not is_shortage:
+                continue
+
+            if pct >= 75.0:
+                eligible_count += 1
+                status_pill = 'eligible'
+                status_label = 'Eligible (≥75%)'
+            elif pct >= 65.0:
+                status_pill = 'warning'
+                status_label = 'Borderline Warning'
+                shortage_count += 1
+            else:
+                status_pill = 'danger'
+                status_label = 'Attendance Shortage (<65%)'
+                shortage_count += 1
+
+            total_pct_sum += pct
+
+            student_subject_stats.append({
+                'student': stud,
+                'enrollment': enr,
+                'total_periods_held': total_periods_held,
+                'present_count': p_present,
+                'late_count': p_late,
+                'excused_count': p_excused,
+                'absent_count': p_absent,
+                'attended_count': attended,
+                'percentage': pct,
+                'status_pill': status_pill,
+                'status_label': status_label,
+                'is_shortage': is_shortage,
+                'records': records,
+            })
+
+        evaluated_students = len(student_subject_stats)
+        if evaluated_students > 0:
+            class_avg_pct = round(total_pct_sum / evaluated_students, 1)
+
+    context = {
+        'grades': grades,
+        'divisions': divisions,
+        'available_subjects': available_subjects,
+        'selected_grade': selected_grade,
+        'selected_division': selected_division,
+        'selected_subject': selected_subject,
+        'subject_overview_cards': subject_overview_cards,
+        'student_subject_stats': student_subject_stats,
+        'session_history': session_history,
+        'total_periods_held': total_periods_held,
+        'class_avg_pct': class_avg_pct,
+        'eligible_count': eligible_count,
+        'shortage_count': shortage_count,
+        'assigned_teacher_name': assigned_teacher_name,
+        'active_year': active_year,
+        'specified_month_name': specified_month_name,
+        'current_filters': {
+            'grade': selected_grade.id if selected_grade else '',
+            'division': selected_division.id if selected_division else 0,
+            'subject': selected_subject.id if selected_subject else '',
+            'date_from': date_from_str,
+            'date_to': date_to_str,
+            'month_filter': month_filter,
+            'search': request.GET.get('search', '').strip(),
+            'shortage_only': shortage_only,
+        }
+    }
+    return render(request, 'students/subject_attendance.html', context)
+
 
 
 

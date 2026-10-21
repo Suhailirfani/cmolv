@@ -1779,6 +1779,10 @@
                 <i class="fa-solid fa-id-card"></i>
                 <span>My Profile</span>
             </a>
+            <a href="{% url 'students:attendance_student_detail' request.user.profile.student_record.id %}" class="nav-item">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>My Attendance</span>
+            </a>
             {% endif %}
             <a href="{% url 'students:class_timetable_view' %}" class="nav-item">
                 <i class="fa-solid fa-calendar-days"></i>
@@ -1822,6 +1826,10 @@
                     <a href="{% url 'students:daily_attendance_records' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
                         <i class="fa-solid fa-clipboard-list" style="font-size: 0.9rem; color: #4f46e5;"></i>
                         <span>Morning and Evening Records</span>
+                    </a>
+                    <a href="{% url 'students:subject_attendance' %}" class="nav-item" style="padding: 0.6rem 1rem; font-size: 0.85rem;">
+                        <i class="fa-solid fa-book-bookmark" style="font-size: 0.9rem; color: #8b5cf6;"></i>
+                        <span>Subject Attendance</span>
                     </a>
                 </div>
             </div>

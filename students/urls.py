@@ -77,6 +77,7 @@ urlpatterns = [
     path('attendance/update-tracking/', views.attendance_update_tracking, name='attendance_update_tracking'),
     path('attendance/monthly/', views.monthly_attendance_select, name='monthly_attendance_select'),
     path('attendance/monthly/grid/<int:grade_id>/<int:division_id>/', views.monthly_attendance_grid, name='monthly_attendance_grid'),
+    path('attendance/subject/', views.subject_attendance_view, name='subject_attendance'),
     
     # Section Management
     path('sections/', views.section_list, name='section_list'),

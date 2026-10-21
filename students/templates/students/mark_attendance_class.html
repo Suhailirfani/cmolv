@@ -641,6 +641,25 @@
                     <i class="fa-solid fa-circle-info" style="color: #6366f1;"></i> Streams: <strong>{{ selected_period_details }}</strong>
                 </div>
                 {% endif %}
+
+                {% if grade_subjects %}
+                <div style="margin-top: 0.6rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                    <label for="subject_id" style="font-size: 0.8rem; font-weight: 700; color: #475569; display: flex; align-items: center; gap: 0.35rem;">
+                        <i class="fa-solid fa-book" style="color: #6366f1;"></i> Subject Recorded:
+                    </label>
+                    <select name="subject_id" id="subject_id" style="padding: 0.35rem 0.65rem; border-radius: 8px; border: 1.5px solid #cbd5e1; font-weight: 700; font-size: 0.85rem; background: white; color: #1e293b; max-width: 340px;">
+                        <option value="auto">⚡ Auto from Timetable ({% if selected_period_subject %}{{ selected_period_subject }}{% else %}Streams{% endif %})</option>
+                        {% for s in grade_subjects %}
+                        <option value="{{ s.id }}" {% if selected_subject_id == s.id %}selected{% endif %}>
+                            {{ s.name }}{% if s.division %} ({{ s.division.name }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <a href="{% url 'students:subject_attendance' %}?grade={{ grade_id }}{% if selected_subject_id %}&subject={{ selected_subject_id }}{% endif %}" target="_blank" style="font-size: 0.78rem; color: #4f46e5; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 0.25rem; background: #eef2ff; padding: 0.35rem 0.65rem; border-radius: 6px; border: 1px solid #c7d2fe;">
+                        <i class="fa-solid fa-chart-pie"></i> View Subject Report ↗
+                    </a>
+                </div>
+                {% endif %}
             </div>
 
             <!-- Quick-Fill Action Buttons (Applies to currently filtered stream) -->

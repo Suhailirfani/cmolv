@@ -122,21 +122,27 @@
 </div>
 
 <div class="stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-    <div class="stat-card" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); padding: 1.5rem; border-radius: 12px; color: white; text-align: center;">
-        <h3 style="font-size: 2rem; margin: 0;">{{ percentage }}%</h3>
-        <p style="margin: 0; opacity: 0.9;">Overall Attendance</p>
+    <div class="stat-card" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); padding: 1.5rem; border-radius: 12px; color: white; text-align: center; box-shadow: 0 4px 12px rgba(52, 152, 219, 0.25);">
+        <h3 style="font-size: 2.2rem; margin: 0; font-weight: 800;">{{ percentage }}%</h3>
+        <p style="margin: 0.25rem 0 0; opacity: 0.95; font-weight: 600; font-size: 0.95rem;">Overall Attendance</p>
+        <div style="font-size: 0.75rem; opacity: 0.85; margin-top: 0.25rem;">Daily Session Basis</div>
     </div>
-    <div class="stat-card" style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); padding: 1.5rem; border-radius: 12px; color: white; text-align: center;">
-        <h3 style="font-size: 2rem; margin: 0;">{{ present_count }}</h3>
-        <p style="margin: 0; opacity: 0.9;">Days Present</p>
+    <div class="stat-card" style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); padding: 1.5rem; border-radius: 12px; color: white; text-align: center; box-shadow: 0 4px 12px rgba(46, 204, 113, 0.25);">
+        <h3 style="font-size: 2.2rem; margin: 0; font-weight: 800;">{{ present_count }}</h3>
+        <p style="margin: 0.25rem 0 0; opacity: 0.95; font-weight: 600; font-size: 0.95rem;">Attended Days</p>
+        <div style="font-size: 0.75rem; opacity: 0.9; margin-top: 0.25rem; font-weight: 600;">
+            {{ full_present_count }} Full (M+E) &nbsp;·&nbsp; {{ half_day_count }} Half (0.5)
+        </div>
     </div>
-    <div class="stat-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); padding: 1.5rem; border-radius: 12px; color: white; text-align: center;">
-        <h3 style="font-size: 2rem; margin: 0;">{{ absent_count }}</h3>
-        <p style="margin: 0; opacity: 0.9;">Days Absent</p>
+    <div class="stat-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); padding: 1.5rem; border-radius: 12px; color: white; text-align: center; box-shadow: 0 4px 12px rgba(231, 76, 60, 0.25);">
+        <h3 style="font-size: 2.2rem; margin: 0; font-weight: 800;">{{ absent_count }}</h3>
+        <p style="margin: 0.25rem 0 0; opacity: 0.95; font-weight: 600; font-size: 0.95rem;">Days Absent</p>
+        <div style="font-size: 0.75rem; opacity: 0.85; margin-top: 0.25rem;">Full + Half Day Absences</div>
     </div>
-    <div class="stat-card" style="background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%); padding: 1.5rem; border-radius: 12px; color: white; text-align: center;">
-        <h3 style="font-size: 2rem; margin: 0;">{{ total_days }}</h3>
-        <p style="margin: 0; opacity: 0.9;">Total Days Recorded</p>
+    <div class="stat-card" style="background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%); padding: 1.5rem; border-radius: 12px; color: white; text-align: center; box-shadow: 0 4px 12px rgba(241, 196, 15, 0.25);">
+        <h3 style="font-size: 2.2rem; margin: 0; font-weight: 800;">{{ total_days }}</h3>
+        <p style="margin: 0.25rem 0 0; opacity: 0.95; font-weight: 600; font-size: 0.95rem;">Total Working Days</p>
+        <div style="font-size: 0.75rem; opacity: 0.85; margin-top: 0.25rem;">Excludes Declared Holidays</div>
     </div>
 </div>
 
@@ -187,6 +193,99 @@
     </div>
 </div>
 
+<!-- Subject-wise Attendance Breakdown -->
+<div class="card" style="background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 1.5rem; margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem; border-bottom: 2px solid #6366f1; padding-bottom: 0.75rem;">
+        <div>
+            <h2 style="margin: 0; color: #1e293b; font-size: 1.35rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                <span>📚</span> Subject-wise Attendance Breakdown
+            </h2>
+            <div style="font-size: 0.82rem; color: #64748b; margin-top: 0.2rem;">
+                Calculated from period attendance records for this student
+            </div>
+        </div>
+        {% if request.user.profile.role != 'student' and enrollment %}
+        <a href="{% url 'students:subject_attendance' %}?academic_year={{ selected_year.id }}&grade={{ enrollment.grade.id }}{% if enrollment.division %}&division={{ enrollment.division.id }}{% endif %}"
+           class="btn btn-sm"
+           style="background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; font-weight: 700; border-radius: 8px; padding: 0.45rem 0.9rem; text-decoration: none; font-size: 0.82rem;">
+            📊 Class Subject Report ➔
+        </a>
+        {% endif %}
+    </div>
+
+    {% if subject_attendance_breakdown %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.88rem;">
+            <thead>
+                <tr style="background: #f8fafc; color: #475569; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em;">
+                    <th style="padding: 0.8rem 1rem; text-align: left; border-bottom: 2px solid #e2e8f0; border-top-left-radius: 8px;">Subject</th>
+                    <th style="padding: 0.8rem 0.75rem; text-align: center; border-bottom: 2px solid #e2e8f0;">Periods Held</th>
+                    <th style="padding: 0.8rem 0.75rem; text-align: center; border-bottom: 2px solid #e2e8f0;">Attended</th>
+                    <th style="padding: 0.8rem 0.75rem; text-align: center; border-bottom: 2px solid #e2e8f0;">Absent</th>
+                    <th style="padding: 0.8rem 1rem; text-align: left; border-bottom: 2px solid #e2e8f0; min-width: 170px;">Percentage</th>
+                    <th style="padding: 0.8rem 1rem; text-align: center; border-bottom: 2px solid #e2e8f0;">Status</th>
+                    {% if request.user.profile.role != 'student' and enrollment %}
+                    <th style="padding: 0.8rem 1rem; text-align: right; border-bottom: 2px solid #e2e8f0; border-top-right-radius: 8px;">Action</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in subject_attendance_breakdown %}
+                <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                    <td style="padding: 0.9rem 1rem; font-weight: 700; color: #1e293b;">
+                        {{ sub.subject.name }}
+                        {% if sub.subject.code %}<span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">({{ sub.subject.code }})</span>{% endif %}
+                    </td>
+                    <td style="padding: 0.9rem 0.75rem; text-align: center; font-weight: 700; color: #334155;">
+                        {{ sub.periods_held }}
+                    </td>
+                    <td style="padding: 0.9rem 0.75rem; text-align: center; font-weight: 800; color: #10b981;">
+                        {{ sub.attended }}
+                    </td>
+                    <td style="padding: 0.9rem 0.75rem; text-align: center; font-weight: 700; color: #ef4444;">
+                        {{ sub.absent }}
+                    </td>
+                    <td style="padding: 0.9rem 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.6rem;">
+                            <div style="flex: 1; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                                <div style="height: 100%; border-radius: 4px; width: {{ sub.percentage }}%; background: {% if sub.percentage >= 85 %}#10b981{% elif sub.percentage >= 75 %}#3b82f6{% elif sub.percentage >= 65 %}#f59e0b{% else %}#ef4444{% endif %};"></div>
+                            </div>
+                            <span style="font-weight: 800; font-size: 0.85rem; color: {% if sub.percentage >= 75 %}#0f766e{% else %}#b91c1c{% endif %}; min-width: 48px; text-align: right;">
+                                {{ sub.percentage }}%
+                            </span>
+                        </div>
+                    </td>
+                    <td style="padding: 0.9rem 1rem; text-align: center;">
+                        {% if sub.periods_held == 0 %}
+                            <span style="display: inline-block; padding: 0.2rem 0.55rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; background: #f1f5f9; color: #64748b;">No Periods Held</span>
+                        {% elif sub.is_shortage %}
+                            <span style="display: inline-block; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.72rem; font-weight: 800; background: #fee2e2; color: #b91c1c;">⚠️ Shortage (&lt;75%)</span>
+                        {% else %}
+                            <span style="display: inline-block; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.72rem; font-weight: 800; background: #dcfce7; color: #15803d;">✅ Good</span>
+                        {% endif %}
+                    </td>
+                    {% if request.user.profile.role != 'student' and enrollment %}
+                    <td style="padding: 0.9rem 1rem; text-align: right;">
+                        <a href="{% url 'students:subject_attendance' %}?academic_year={{ selected_year.id }}&grade={{ enrollment.grade.id }}{% if enrollment.division %}&division={{ enrollment.division.id }}{% endif %}&subject={{ sub.subject.id }}"
+                           style="color: #4f46e5; font-size: 0.8rem; font-weight: 700; text-decoration: none;">
+                            View Details ➔
+                        </a>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 2rem 1rem; color: #94a3b8;">
+        <div style="font-size: 2rem; margin-bottom: 0.35rem;">📖</div>
+        <div style="font-weight: 600; font-size: 0.92rem; color: #64748b;">No subject attendance records found for this student.</div>
+        <div style="font-size: 0.8rem; margin-top: 0.2rem;">Subject attendance is recorded when marking period-wise attendance.</div>
+    </div>
+    {% endif %}
+</div>
+
 <div class="card" style="background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 1.5rem;">
     <h2 style="margin: 0 0 1.5rem 0; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 0.5rem;">📋 Detailed Attendance History</h2>
     
@@ -211,6 +310,12 @@
             <div class="hover-tooltip">
                 <p><strong>Date:</strong> {{ attendance.date|date:"M d, Y" }}</p>
                 <p><strong>Type:</strong> {{ attendance.get_attendance_type_display }}</p>
+                {% if attendance.subject %}
+                    <p><strong>Subject:</strong> {{ attendance.subject.name }}</p>
+                {% endif %}
+                {% if attendance.session %}
+                    <p><strong>Session:</strong> {{ attendance.get_session_display }}</p>
+                {% endif %}
                 {% if attendance.period %}
                     <p><strong>Period:</strong> {{ attendance.period.name }}</p>
                 {% elif attendance.activity %}
