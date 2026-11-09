@@ -8946,19 +8946,48 @@ def timetable_builder(request):
             slots_qs = slots_qs.filter(
                 Q(division=selected_division) | Q(division__isnull=True)
             )
-        existing_slots = slots_qs.select_related('subject', 'teacher', 'period_timing')
+        existing_slots = list(slots_qs.select_related('subject', 'teacher', 'period_timing'))
+
+        # Precompute joined divisions for combined slots
+        combined_group_ids = [s.combined_group_id for s in existing_slots if s.is_combined and s.combined_group_id]
+        group_partners_map = {}
+        if combined_group_ids:
+            all_partner_slots = TimetableSlot.objects.filter(
+                combined_group_id__in=combined_group_ids
+            ).values('combined_group_id', 'division_id')
+            for ps in all_partner_slots:
+                gid = ps['combined_group_id']
+                did = ps['division_id']
+                if did:
+                    group_partners_map.setdefault(gid, set()).add(str(did))
 
         for slot in existing_slots:
+            if slot.is_combined and slot.combined_group_id:
+                partner_div_ids = group_partners_map.get(slot.combined_group_id, set()).copy()
+                if slot.division_id:
+                    partner_div_ids.discard(str(slot.division_id))
+                slot.joined_division_ids = list(partner_div_ids)
+            else:
+                slot.joined_division_ids = []
+
             key = f"{slot.day_of_week}_{slot.period_timing_id}"
             slots_map[key] = slot
             slots_map[str(key)] = slot
 
-    all_divisions = Division.objects.all()
+    # Sibling divisions (same grade, excluding selected_division)
+    sibling_divisions = []
+    if selected_grade:
+        sibling_divisions = selected_grade.divisions.all()
+        if selected_division:
+            sibling_divisions = sibling_divisions.exclude(pk=selected_division.pk)
+
+    all_divisions = Division.objects.select_related('grade').order_by('grade__name', 'name')
 
     context = {
         'grades': grades,
         'divisions': divisions,
         'all_divisions': all_divisions,
+        'sibling_divisions': sibling_divisions,
         'selected_grade': selected_grade,
         'selected_division': selected_division,
         'period_timings': period_timings,
@@ -9004,11 +9033,15 @@ def timetable_check_clash_ajax(request):
 
         clash = query.first()
         if clash:
-            # If user marked is_combined and existing clash is ALSO combined with matching subject name, allow joint hall class!
+            # If user marked is_combined and existing clash is ALSO combined, allow joint hall class!
             selected_subject = Subject.objects.filter(pk=subject_id).first() if subject_id else None
             is_valid_combined = (
-                is_combined and clash.is_combined and selected_subject and 
-                (selected_subject.name.strip().lower() == clash.subject.name.strip().lower() or selected_subject.is_common_subject)
+                is_combined and clash.is_combined and (
+                    (slot_id and TimetableSlot.objects.filter(pk=slot_id, combined_group_id=clash.combined_group_id).exists()) or
+                    (selected_subject and selected_subject.name.strip().lower() == clash.subject.name.strip().lower()) or
+                    (selected_subject and getattr(selected_subject, 'is_common_subject', False)) or
+                    clash.is_combined
+                )
             )
             if not is_valid_combined:
                 div_str = f" {clash.division.name}" if clash.division else ""
@@ -9089,30 +9122,49 @@ def timetable_save_slot_ajax(request):
                 }
             )
 
-            # 2. If is_combined and joint_division_ids provided, create/update slots for joined divisions!
-            if is_combined and joint_division_ids:
-                for j_div_id in joint_division_ids:
-                    j_div = Division.objects.filter(pk=j_div_id).first()
-                    if j_div and (j_div != division or grade != grade):
-                        # Find matching subject for that joined class or fallback to current subject
-                        j_subject = Subject.objects.filter(
-                            grade=grade, division=j_div, name__iexact=subject.name
-                        ).first() or subject
+            # 2. If is_combined, create/update slots for joined divisions!
+            if is_combined:
+                processed_partner_slot_ids = []
+                if joint_division_ids:
+                    for j_div_id in joint_division_ids:
+                        j_div = Division.objects.filter(pk=j_div_id).select_related('grade').first()
+                        if j_div and (j_div != division or (j_div.grade and j_div.grade != grade)):
+                            target_grade = j_div.grade if j_div.grade else grade
+                            # Find matching subject for that joined class or fallback to current subject
+                            j_subject = Subject.objects.filter(
+                                grade=target_grade, division=j_div, name__iexact=subject.name
+                            ).first()
+                            if not j_subject:
+                                j_subject = Subject.objects.filter(
+                                    grade=target_grade, name__iexact=subject.name
+                                ).first() or subject
 
-                        TimetableSlot.objects.update_or_create(
-                            grade=grade,
-                            division=j_div,
-                            day_of_week=day_of_week,
-                            period_timing=period_timing,
-                            defaults={
-                                'subject': j_subject,
-                                'teacher': teacher,
-                                'room_number': room_number,
-                                'academic_year': active_year,
-                                'is_combined': True,
-                                'combined_group_id': group_id,
-                            }
-                        )
+                            partner_slot, _ = TimetableSlot.objects.update_or_create(
+                                grade=target_grade,
+                                division=j_div,
+                                day_of_week=day_of_week,
+                                period_timing=period_timing,
+                                defaults={
+                                    'subject': j_subject,
+                                    'teacher': teacher,
+                                    'room_number': room_number,
+                                    'academic_year': active_year,
+                                    'is_combined': True,
+                                    'combined_group_id': group_id,
+                                }
+                            )
+                            processed_partner_slot_ids.append(partner_slot.id)
+
+                # Clean up any previously linked slots for this group_id that were unselected
+                TimetableSlot.objects.filter(
+                    combined_group_id=group_id
+                ).exclude(pk=slot.pk).exclude(pk__in=processed_partner_slot_ids).delete()
+            else:
+                # If is_combined was unchecked, remove linked partner slots from this combined group
+                if existing_slot and existing_slot.combined_group_id:
+                    TimetableSlot.objects.filter(
+                        combined_group_id=existing_slot.combined_group_id
+                    ).exclude(pk=slot.pk).delete()
 
             return JsonResponse({
                 'status': 'success',
