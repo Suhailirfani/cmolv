@@ -9868,33 +9868,42 @@ def get_subject_attendance_matrix_data(selected_grade, selected_division, active
         'enrollment_id', 'subject_id', 'subject__name', 'status', 'date', 'period_id', 'enrollment__division_id'
     ))
 
-    # Calculate held sessions per (division_id, subject_name)
+    # Calculate held sessions per (division_id, subject_name) and across whole class
     div_subj_sessions = {}
+    subj_all_sessions = {}
     enr_subj_attended = {}
 
     for r in att_records:
         d_id = r['enrollment__division_id']
-        s_name = r['subject__name']
+        s_name = (r['subject__name'] or '').strip()
         if s_name:
             div_subj_sessions.setdefault((d_id, s_name), set()).add((r['date'], r['period_id']))
+            subj_all_sessions.setdefault(s_name, set()).add((r['date'], r['period_id']))
             if r['status'] in ['present', 'late', 'excused']:
                 key = (r['enrollment_id'], s_name)
                 enr_subj_attended[key] = enr_subj_attended.get(key, 0) + 1
 
+    # Deduplicate subjects strictly by normalized subject name so no subject appears multiple times
+    unique_subjects = {}
+    for s in available_subjects:
+        clean_name = (s.name or '').strip()
+        if clean_name and clean_name not in unique_subjects:
+            unique_subjects[clean_name] = s
+
     # Active subjects with sessions held
     subjects_with_sessions = []
-    for s in available_subjects:
+    for clean_name, s in unique_subjects.items():
         if selected_division:
-            held = len(div_subj_sessions.get((selected_division.id, s.name), set()))
+            held = len(div_subj_sessions.get((selected_division.id, clean_name), set()) | div_subj_sessions.get((None, clean_name), set()))
         else:
-            held = sum(len(sessions) for (did, sname), sessions in div_subj_sessions.items() if sname == s.name)
+            held = len(subj_all_sessions.get(clean_name, set()))
         if held > 0:
-            subjects_with_sessions.append({'id': s.id, 'name': s.name, 'code': s.code or '', 'held': held, 'subject': s})
+            subjects_with_sessions.append({'id': s.id, 'name': clean_name, 'code': s.code or '', 'held': held, 'subject': s})
 
     if subjects_with_sessions:
         matrix_subjects = subjects_with_sessions
     else:
-        matrix_subjects = [{'id': s.id, 'name': s.name, 'code': s.code or '', 'held': 0, 'subject': s} for s in available_subjects]
+        matrix_subjects = [{'id': s.id, 'name': clean_name, 'code': s.code or '', 'held': 0, 'subject': s} for clean_name, s in unique_subjects.items()]
 
     matrix_rows = []
     matrix_kpis = {
@@ -9921,8 +9930,16 @@ def get_subject_attendance_matrix_data(selected_grade, selected_division, active
 
         for ms in matrix_subjects:
             s_name = ms['name']
-            held = len(div_subj_sessions.get((enr.division_id, s_name), set())) if enr.division_id else ms['held']
+            if enr.division_id:
+                div_sess = div_subj_sessions.get((enr.division_id, s_name), set())
+                common_sess = div_subj_sessions.get((None, s_name), set())
+                held = len(div_sess | common_sess)
+            else:
+                held = len(subj_all_sessions.get(s_name, set()))
+
             att = enr_subj_attended.get((enr.id, s_name), 0)
+            if att > held:
+                held = att
 
             if held > 0:
                 pct = round(att / held * 100, 1)
