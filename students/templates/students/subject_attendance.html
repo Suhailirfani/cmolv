@@ -271,6 +271,51 @@
         box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
     }
 
+    /* Mobile 4 in a row buttons */
+    @media (max-width: 768px) {
+        .subj-header-actions {
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 0.35rem !important;
+            width: 100% !important;
+            margin-top: 0.5rem !important;
+        }
+        .subj-header-actions .btn-header-act {
+            padding: 0.45rem 0.2rem !important;
+            font-size: 0.68rem !important;
+            font-weight: 700 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            gap: 0.25rem !important;
+            border-radius: 8px !important;
+            min-height: 52px !important;
+        }
+        .subj-header-actions .btn-header-act i {
+            font-size: 1rem !important;
+        }
+        .subj-header-actions .btn-header-act span {
+            line-height: 1.1 !important;
+        }
+        .subj-kpi-grid {
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 0.4rem !important;
+        }
+        .subj-kpi-card {
+            padding: 0.6rem 0.35rem !important;
+            flex-direction: column !important;
+            text-align: center !important;
+            gap: 0.3rem !important;
+        }
+        .subj-kpi-icon {
+            width: 32px !important;
+            height: 32px !important;
+            font-size: 1rem !important;
+        }
+    }
+
     /* Print styles */
     @media print {
         .no-print, .subj-filter-card, .btn, nav, .sidebar {
@@ -320,27 +365,27 @@
             </p>
         </div>
 
-        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <div class="subj-header-actions" style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
             <!-- Download PDF Button -->
-            <a href="{% url 'students:subject_attendance_matrix_pdf' %}?{{ request.GET.urlencode }}" class="btn" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border-radius: 10px; padding: 0.6rem 1.15rem; font-weight: 800; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.45rem; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);" target="_blank">
-                <i class="fa-solid fa-file-pdf"></i> Download Matrix PDF
+            <a href="{% url 'students:subject_attendance_matrix_pdf' %}?{{ request.GET.urlencode }}" class="btn btn-header-act" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border-radius: 10px; padding: 0.6rem 1.15rem; font-weight: 800; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.45rem; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);" target="_blank">
+                <i class="fa-solid fa-file-pdf"></i> <span>Download PDF</span>
             </a>
 
             <!-- Print Report -->
-            <button type="button" onclick="window.print()" class="btn" style="background: white; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.6rem 1.1rem; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
-                <i class="fa-solid fa-print"></i> Print Register
+            <button type="button" onclick="window.print()" class="btn btn-header-act" style="background: white; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.6rem 1.1rem; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="fa-solid fa-print"></i> <span>Print Register</span>
             </button>
 
             <!-- Mark Period Attendance Link -->
             {% if selected_grade %}
-            <a href="{% url 'students:mark_attendance_class' selected_grade.id selected_division.id|default:0 %}" class="btn" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: white; border-radius: 10px; padding: 0.6rem 1.25rem; font-weight: 800; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.45rem; box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25);">
-                <i class="fa-solid fa-pencil"></i> Mark Period Attendance
+            <a href="{% url 'students:mark_attendance_class' selected_grade.id selected_division.id|default:0 %}" class="btn btn-header-act" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: white; border-radius: 10px; padding: 0.6rem 1.25rem; font-weight: 800; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.45rem; box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25);">
+                <i class="fa-solid fa-pencil"></i> <span>Mark Periods</span>
             </a>
             {% endif %}
 
             <!-- Back to Attendance Home -->
-            <a href="{% url 'students:attendance_list' %}" class="btn" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.6rem 1rem; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
-                <i class="fa-solid fa-arrow-left"></i> Attendance Records
+            <a href="{% url 'students:attendance_list' %}" class="btn btn-header-act" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.6rem 1rem; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="fa-solid fa-arrow-left"></i> <span>Records Home</span>
             </a>
         </div>
     </div>

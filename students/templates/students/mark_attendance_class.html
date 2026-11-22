@@ -492,6 +492,29 @@
             flex-direction: column;
             gap: 0.85rem;
         }
+        .period-buttons-container {
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 0.45rem !important;
+        }
+        .period-nav-btn {
+            min-height: auto !important;
+            padding: 0.45rem 0.25rem !important;
+            border-radius: 10px !important;
+        }
+        .period-nav-btn .p-subject-name {
+            font-size: 0.72rem !important;
+            margin: 0.2rem 0 !important;
+        }
+        .period-nav-btn .p-time {
+            display: none !important;
+        }
+        .period-nav-btn .p-teacher-tag {
+            display: none !important;
+        }
+        .period-nav-btn .p-status-pill {
+            font-size: 0.58rem !important;
+            padding: 0.1rem 0.25rem !important;
+        }
     }
 </style>
 {% endblock %}
