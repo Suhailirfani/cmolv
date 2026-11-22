@@ -78,6 +78,7 @@ urlpatterns = [
     path('attendance/monthly/', views.monthly_attendance_select, name='monthly_attendance_select'),
     path('attendance/monthly/grid/<int:grade_id>/<int:division_id>/', views.monthly_attendance_grid, name='monthly_attendance_grid'),
     path('attendance/subject/', views.subject_attendance_view, name='subject_attendance'),
+    path('attendance/subject/matrix/pdf/', views.subject_attendance_matrix_pdf, name='subject_attendance_matrix_pdf'),
     
     # Section Management
     path('sections/', views.section_list, name='section_list'),

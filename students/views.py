@@ -9843,6 +9843,140 @@ def daily_attendance_records(request):
 # SUBJECT ATTENDANCE MANAGEMENT & AUDIT
 # ==============================================================================
 
+def get_subject_attendance_matrix_data(selected_grade, selected_division, active_year, date_from_str, date_to_str, enrollments, available_subjects, student_search='', shortage_only=False):
+    """
+    Computes subject attendance matrix data:
+    Columns: Subjects
+    Rows: Students
+    Cells: Attended / Held (e.g. 13/15) + percentage
+    """
+    # All period attendances for this grade/division/date range
+    att_qs = Attendance.objects.filter(
+        attendance_type='period',
+        enrollment__grade=selected_grade
+    )
+    if active_year:
+        att_qs = att_qs.filter(enrollment__academic_year=active_year)
+    if selected_division:
+        att_qs = att_qs.filter(enrollment__division=selected_division)
+    if date_from_str:
+        att_qs = att_qs.filter(date__gte=date_from_str)
+    if date_to_str:
+        att_qs = att_qs.filter(date__lte=date_to_str)
+
+    att_records = list(att_qs.values(
+        'enrollment_id', 'subject_id', 'subject__name', 'status', 'date', 'period_id', 'enrollment__division_id'
+    ))
+
+    # Calculate held sessions per (division_id, subject_name)
+    div_subj_sessions = {}
+    enr_subj_attended = {}
+
+    for r in att_records:
+        d_id = r['enrollment__division_id']
+        s_name = r['subject__name']
+        if s_name:
+            div_subj_sessions.setdefault((d_id, s_name), set()).add((r['date'], r['period_id']))
+            if r['status'] in ['present', 'late', 'excused']:
+                key = (r['enrollment_id'], s_name)
+                enr_subj_attended[key] = enr_subj_attended.get(key, 0) + 1
+
+    # Active subjects with sessions held
+    subjects_with_sessions = []
+    for s in available_subjects:
+        if selected_division:
+            held = len(div_subj_sessions.get((selected_division.id, s.name), set()))
+        else:
+            held = sum(len(sessions) for (did, sname), sessions in div_subj_sessions.items() if sname == s.name)
+        if held > 0:
+            subjects_with_sessions.append({'id': s.id, 'name': s.name, 'code': s.code or '', 'held': held, 'subject': s})
+
+    if subjects_with_sessions:
+        matrix_subjects = subjects_with_sessions
+    else:
+        matrix_subjects = [{'id': s.id, 'name': s.name, 'code': s.code or '', 'held': 0, 'subject': s} for s in available_subjects]
+
+    matrix_rows = []
+    matrix_kpis = {
+        'total_students': 0,
+        'eligible_count': 0,
+        'shortage_count': 0,
+        'class_avg_pct': 0.0,
+        'total_sessions_all_subjects': sum(ms['held'] for ms in matrix_subjects),
+    }
+
+    total_pct_sum = 0
+    evaluated_students = 0
+
+    for enr in enrollments:
+        stud = enr.student
+        if student_search:
+            s_term = student_search.lower()
+            if (s_term not in (stud.full_name or '').lower()) and (s_term not in (stud.student_id or '').lower()):
+                continue
+
+        row_cells = []
+        st_tot_att = 0
+        st_tot_held = 0
+
+        for ms in matrix_subjects:
+            s_name = ms['name']
+            held = len(div_subj_sessions.get((enr.division_id, s_name), set())) if enr.division_id else ms['held']
+            att = enr_subj_attended.get((enr.id, s_name), 0)
+
+            if held > 0:
+                pct = round(att / held * 100, 1)
+                display = f"{att}/{held}"
+                is_shortage = pct < 75.0
+                st_tot_att += att
+                st_tot_held += held
+            else:
+                pct = None
+                display = "-"
+                is_shortage = False
+
+            row_cells.append({
+                'subject_name': s_name,
+                'subject_id': ms['id'],
+                'attended': att,
+                'held': held,
+                'display': display,
+                'pct': pct,
+                'is_shortage': is_shortage,
+            })
+
+        overall_pct = round(st_tot_att / st_tot_held * 100, 1) if st_tot_held > 0 else 0.0
+        is_overall_shortage = overall_pct < 75.0 and st_tot_held > 0
+
+        if shortage_only and not is_overall_shortage:
+            continue
+
+        if overall_pct >= 75.0:
+            matrix_kpis['eligible_count'] += 1
+        else:
+            matrix_kpis['shortage_count'] += 1
+
+        total_pct_sum += overall_pct
+        evaluated_students += 1
+
+        matrix_rows.append({
+            'student': stud,
+            'enrollment': enr,
+            'cells': row_cells,
+            'total_attended': st_tot_att,
+            'total_held': st_tot_held,
+            'overall_display': f"{st_tot_att}/{st_tot_held}" if st_tot_held > 0 else "-",
+            'overall_pct': overall_pct,
+            'is_overall_shortage': is_overall_shortage,
+        })
+
+    matrix_kpis['total_students'] = evaluated_students
+    if evaluated_students > 0:
+        matrix_kpis['class_avg_pct'] = round(total_pct_sum / evaluated_students, 1)
+
+    return matrix_subjects, matrix_rows, matrix_kpis
+
+
 @role_required(['admin', 'teacher'])
 def subject_attendance_view(request):
     """
@@ -9929,11 +10063,26 @@ def subject_attendance_view(request):
     student_search = request.GET.get('search', '').strip().lower()
     shortage_only = request.GET.get('shortage_only', '').strip() == '1'
 
+    # Check if PDF export is requested
+    if request.GET.get('format') == 'pdf' or request.GET.get('export') == 'pdf':
+        return subject_attendance_matrix_pdf(request)
+
     # -------------------------------------------------------------
-    # CASE 1: Subject NOT Selected -> Render Subject Overview Cards
+    # CASE 1: Subject NOT Selected -> Render Subject Matrix Table & Cards
     # -------------------------------------------------------------
     subject_overview_cards = []
+    matrix_subjects = []
+    matrix_rows = []
+    matrix_kpis = {
+        'total_students': 0,
+        'eligible_count': 0,
+        'shortage_count': 0,
+        'class_avg_pct': 0.0,
+        'total_sessions_all_subjects': 0,
+    }
+
     if not selected_subject:
+        # 1. Subject overview cards
         for subj in available_subjects:
             att_qs = Attendance.objects.filter(
                 attendance_type='period',
@@ -9975,6 +10124,19 @@ def subject_attendance_view(request):
                 'avg_attendance': avg_attendance,
                 'teacher_name': assigned_teacher_name,
             })
+
+        # 2. Build Subject Attendance Matrix (All Subjects per Student)
+        matrix_subjects, matrix_rows, matrix_kpis = get_subject_attendance_matrix_data(
+            selected_grade=selected_grade,
+            selected_division=selected_division,
+            active_year=active_year,
+            date_from_str=date_from_str,
+            date_to_str=date_to_str,
+            enrollments=enrollments,
+            available_subjects=available_subjects,
+            student_search=student_search,
+            shortage_only=shortage_only
+        )
 
     # -------------------------------------------------------------
     # CASE 2: Subject Selected -> Full Student-wise Breakdown & Sessions
@@ -10120,6 +10282,10 @@ def subject_attendance_view(request):
         'selected_division': selected_division,
         'selected_subject': selected_subject,
         'subject_overview_cards': subject_overview_cards,
+        'matrix_subjects': matrix_subjects,
+        'matrix_rows': matrix_rows,
+        'matrix_kpis': matrix_kpis,
+        'matrix_view_mode': request.GET.get('view_mode', 'matrix'),
         'student_subject_stats': student_subject_stats,
         'session_history': session_history,
         'total_periods_held': total_periods_held,
@@ -10138,9 +10304,225 @@ def subject_attendance_view(request):
             'month_filter': month_filter,
             'search': request.GET.get('search', '').strip(),
             'shortage_only': shortage_only,
+            'view_mode': request.GET.get('view_mode', 'matrix'),
         }
     }
     return render(request, 'students/subject_attendance.html', context)
+
+
+@role_required(['admin', 'teacher'])
+def subject_attendance_matrix_pdf(request):
+    """
+    Generate and download a clean, minimal, printable PDF register for Subject-wise Student Attendance Matrix.
+    """
+    import calendar
+    from datetime import datetime
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer, KeepTogether
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+    from reportlab.lib.units import cm
+
+    active_year = AcademicYear.objects.filter(is_active=True).first()
+    grade_id_param = request.GET.get('grade')
+    division_id_param = request.GET.get('division', '')
+
+    grade = Grade.objects.filter(id=int(grade_id_param)).first() if (grade_id_param and grade_id_param.isdigit()) else Grade.objects.first()
+    if not grade:
+        messages.error(request, "Class/Grade not found.")
+        return redirect('students:subject_attendance')
+
+    division = None
+    if division_id_param and division_id_param.isdigit() and int(division_id_param) > 0:
+        division = Division.objects.filter(id=int(division_id_param), grade=grade).first()
+
+    # Subjects for this class
+    subjects_qs = Subject.objects.filter(grade=grade, is_active=True).order_by('name')
+    if division:
+        subjects_qs = subjects_qs.filter(Q(division=division) | Q(division__isnull=True))
+    available_subjects = list(subjects_qs.distinct())
+
+    # Date filters
+    month_filter = request.GET.get('month_filter', '').strip()
+    date_from_str = request.GET.get('date_from', '').strip()
+    date_to_str = request.GET.get('date_to', '').strip()
+    specified_month_name = None
+
+    if month_filter:
+        try:
+            m_year, m_month = map(int, month_filter.split('-'))
+            _, last_day = calendar.monthrange(m_year, m_month)
+            date_from_str = f"{m_year:04d}-{m_month:02d}-01"
+            date_to_str = f"{m_year:04d}-{m_month:02d}-{last_day:02d}"
+            specified_month_name = datetime(m_year, m_month, 1).strftime('%B %Y').upper()
+        except Exception:
+            pass
+
+    if not date_from_str:
+        session_start = grade.session_start_date or (active_year.start_date if active_year else None)
+        if session_start:
+            date_from_str = session_start.isoformat()
+
+    enrollments_qs = Enrollment.objects.filter(
+        student__is_active=True,
+        grade=grade
+    ).select_related('student', 'division', 'section').order_by('student__student_id', 'student__first_name')
+    if active_year:
+        enrollments_qs = enrollments_qs.filter(academic_year=active_year)
+    if division:
+        enrollments_qs = enrollments_qs.filter(division=division)
+    enrollments = list(enrollments_qs)
+
+    student_search = request.GET.get('search', '').strip().lower()
+    shortage_only = request.GET.get('shortage_only', '').strip() == '1'
+
+    matrix_subjects, matrix_rows, matrix_kpis = get_subject_attendance_matrix_data(
+        grade, division, active_year, date_from_str, date_to_str, enrollments, available_subjects, student_search, shortage_only
+    )
+
+    # Build PDF Response
+    response = HttpResponse(content_type='application/pdf')
+    clean_grade_name = grade.name.replace(' ', '_')
+    clean_div_name = division.name.replace(' ', '_') if division else 'All_Streams'
+    filename = f"subject_attendance_{clean_grade_name}_{clean_div_name}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    doc = SimpleDocTemplate(
+        response,
+        pagesize=landscape(A4),
+        leftMargin=1.0*cm, rightMargin=1.0*cm,
+        topMargin=1.0*cm, bottomMargin=1.0*cm
+    )
+
+    styles = getSampleStyleSheet()
+    inst_style = ParagraphStyle(
+        'InstStyle',
+        parent=styles['Heading1'],
+        fontName='Helvetica-Bold',
+        fontSize=14,
+        alignment=1,
+        spaceAfter=3
+    )
+    title_style = ParagraphStyle(
+        'TitleStyle',
+        parent=styles['Heading2'],
+        fontName='Helvetica-Bold',
+        fontSize=11,
+        alignment=1,
+        spaceAfter=3
+    )
+    sub_style = ParagraphStyle(
+        'SubStyle',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=9,
+        alignment=1,
+        spaceAfter=2
+    )
+    meta_style = ParagraphStyle(
+        'MetaStyle',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=8,
+        alignment=1,
+        spaceAfter=8
+    )
+
+    elements = []
+    elements.append(Paragraph("MADEENATHU CM OLAVANNA", inst_style))
+    elements.append(Paragraph("STUDENT SUBJECT-WISE ATTENDANCE REGISTER", title_style))
+
+    div_title = division.name if division else "All Streams (Combined)"
+    year_title = f" | Academic Year: {active_year.name}" if active_year else ""
+    month_title = f" | Month: {specified_month_name}" if specified_month_name else ""
+    elements.append(Paragraph(f"Class: {grade.name} - {div_title}{year_title}{month_title}", sub_style))
+
+    p_from = date_from_str or "Session Start"
+    p_to = date_to_str or "Today"
+    elements.append(Paragraph(
+        f"Period: {p_from} to {p_to} | Total Students: {matrix_kpis['total_students']} | Class Average: {matrix_kpis['class_avg_pct']}%",
+        meta_style
+    ))
+
+    # Construct Table
+    headers = ["Sl", "ID", "Student Name"]
+    for s in matrix_subjects:
+        headers.append(f"{s['name']}\n(Held: {s['held']})")
+    headers.extend(["Total", "%"])
+
+    table_data = [headers]
+    for idx, r in enumerate(matrix_rows, 1):
+        row_data = [
+            str(idx),
+            r['student'].student_id or '-',
+            r['student'].full_name
+        ]
+        for c in r['cells']:
+            row_data.append(c['display'])
+        row_data.append(r['overall_display'])
+        row_data.append(f"{r['overall_pct']}%")
+        table_data.append(row_data)
+
+    # Class Average Row
+    summary_row = ["", "", "Class Average"]
+    for _ in matrix_subjects:
+        summary_row.append("")
+    summary_row.extend(["", f"{matrix_kpis['class_avg_pct']}%"])
+    table_data.append(summary_row)
+
+    # Calculate column widths to fit ~27.7cm printable area
+    printable_width = 27.7 * cm
+    fixed_widths = 0.8*cm + 2.0*cm + 5.2*cm + 1.8*cm + 1.6*cm  # = 11.4 cm
+    remaining_width = printable_width - fixed_widths
+    num_subs = max(len(matrix_subjects), 1)
+    sub_width = max(1.8*cm, remaining_width / num_subs)
+
+    col_widths = [0.8*cm, 2.0*cm, 5.2*cm] + [sub_width]*len(matrix_subjects) + [1.8*cm, 1.6*cm]
+
+    t = Table(table_data, colWidths=col_widths, repeatRows=1)
+    table_style = [
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#e2e8f0')),
+        ('TEXTCOLOR', (0,0), (-1,-1), colors.black),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('ALIGN', (0,0), (1,-1), 'CENTER'),
+        ('ALIGN', (2,0), (2,-1), 'LEFT'),
+        ('ALIGN', (3,0), (-1,-1), 'CENTER'),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#94a3b8')),
+        ('BACKGROUND', (0,-1), (-1,-1), colors.HexColor('#f1f5f9')),
+        ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
+    ]
+
+    # Alternating row background
+    for row_idx in range(1, len(matrix_rows) + 1):
+        bg = colors.HexColor('#ffffff') if row_idx % 2 != 0 else colors.HexColor('#f8fafc')
+        table_style.append(('BACKGROUND', (0, row_idx), (-1, row_idx), bg))
+
+    t.setStyle(TableStyle(table_style))
+    elements.append(t)
+    elements.append(Spacer(1, 0.8*cm))
+
+    # Signature Block
+    footer_data = [
+        ["_________________________", "_________________________", "Date: __________________"],
+        ["Class Teacher Signature", "Principal / Head of Institution", ""]
+    ]
+    f_table = Table(footer_data, colWidths=[9.0*cm, 9.0*cm, 9.0*cm])
+    f_table.setStyle(TableStyle([
+        ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 8.5),
+        ('ALIGN', (0,0), (0,-1), 'LEFT'),
+        ('ALIGN', (1,0), (1,-1), 'CENTER'),
+        ('ALIGN', (2,0), (2,-1), 'RIGHT'),
+        ('VALIGN', (0,0), (-1,-1), 'BOTTOM'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+    ]))
+    elements.append(KeepTogether(f_table))
+
+    doc.build(elements)
+    return response
 
 
 

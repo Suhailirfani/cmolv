@@ -175,6 +175,102 @@
     .progress-fill-warning { background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%); }
     .progress-fill-danger { background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); }
 
+    /* Matrix Table Styles */
+    .matrix-table-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+    .matrix-table-container {
+        overflow-x: auto;
+        max-width: 100%;
+        -webkit-overflow-scrolling: touch;
+    }
+    .matrix-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+        white-space: nowrap;
+    }
+    .matrix-table th {
+        background: #f8fafc;
+        color: #475569;
+        font-weight: 700;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        padding: 0.85rem 0.75rem;
+        border-bottom: 2px solid #e2e8f0;
+        border-right: 1px solid #f1f5f9;
+        text-align: center;
+    }
+    .matrix-table th.col-student {
+        text-align: left;
+        min-width: 190px;
+        position: sticky;
+        left: 0;
+        background: #f8fafc;
+        z-index: 2;
+    }
+    .matrix-table td {
+        padding: 0.75rem 0.65rem;
+        border-bottom: 1px solid #f1f5f9;
+        border-right: 1px solid #f8fafc;
+        text-align: center;
+        color: #1e293b;
+    }
+    .matrix-table td.col-student {
+        text-align: left;
+        position: sticky;
+        left: 0;
+        background: white;
+        z-index: 1;
+        font-weight: 700;
+    }
+    .matrix-table tbody tr:hover {
+        background: #f8fafc;
+    }
+    .matrix-table tbody tr:hover td.col-student {
+        background: #f8fafc;
+    }
+    .cell-held-zero {
+        color: #94a3b8;
+        font-size: 0.82rem;
+    }
+    .cell-ratio-main {
+        font-size: 0.95rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+    }
+    .cell-ratio-sub {
+        font-size: 0.72rem;
+        font-weight: 700;
+        margin-top: 1px;
+    }
+    .view-toggle-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        border-radius: 9px;
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        color: #475569;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.2s;
+    }
+    .view-toggle-btn.active {
+        background: #4f46e5;
+        border-color: #4f46e5;
+        color: white;
+        box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+    }
+
     /* Print styles */
     @media print {
         .no-print, .subj-filter-card, .btn, nav, .sidebar {
@@ -225,6 +321,11 @@
         </div>
 
         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <!-- Download PDF Button -->
+            <a href="{% url 'students:subject_attendance_matrix_pdf' %}?{{ request.GET.urlencode }}" class="btn" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border-radius: 10px; padding: 0.6rem 1.15rem; font-weight: 800; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.45rem; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);" target="_blank">
+                <i class="fa-solid fa-file-pdf"></i> Download Matrix PDF
+            </a>
+
             <!-- Print Report -->
             <button type="button" onclick="window.print()" class="btn" style="background: white; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.6rem 1.1rem; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
                 <i class="fa-solid fa-print"></i> Print Register
@@ -290,7 +391,6 @@
             </div>
 
             <!-- Search Student -->
-            {% if selected_subject %}
             <div class="form-group-custom">
                 <label for="searchInput">Search Student:</label>
                 <input type="text" id="searchInput" name="search" value="{{ current_filters.search }}" placeholder="Name or Student ID...">
@@ -303,7 +403,6 @@
                     <span>Shortage Only (&lt;75%)</span>
                 </label>
             </div>
-            {% endif %}
 
             <!-- Filter Buttons -->
             <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
@@ -319,24 +418,189 @@
 </div>
 
 <!-- =======================================================================
-     VIEW 1: NO SUBJECT SELECTED -> SUBJECT OVERVIEW CARDS
+     VIEW 1: NO SUBJECT SELECTED -> SUBJECT ATTENDANCE MATRIX & CARDS
      ======================================================================= -->
 {% if not selected_subject %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
     <div>
-        <h3 style="margin: 0; color: #1e293b; font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
-            <span>📖</span> Subjects Taught in {{ selected_grade.name }}{% if selected_division %} - {{ selected_division.name }}{% endif %}
+        <h3 style="margin: 0; color: #1e293b; font-size: 1.35rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+            <span>📊</span> Subject Attendance Matrix: {{ selected_grade.name }}{% if selected_division %} - {{ selected_division.name }}{% endif %}
         </h3>
-        <p style="margin: 0.2rem 0 0 0; color: #64748b; font-size: 0.85rem;">
-            Click on any subject below to inspect its detailed student attendance list, session history, and defaulters.
+        <p style="margin: 0.2rem 0 0 0; color: #64748b; font-size: 0.88rem;">
+            Student-wise attendance vs total periods held per subject (Attended / Held).
         </p>
     </div>
-    <span class="badge bg-secondary" style="font-size: 0.82rem; padding: 0.4rem 0.75rem; border-radius: 8px;">
-        {{ available_subjects|length }} Subjects Available
-    </span>
+
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <!-- View Toggle Pills -->
+        <div style="background: #e2e8f0; padding: 3px; border-radius: 10px; display: inline-flex; gap: 3px;">
+            <button type="button" id="btnViewMatrix" onclick="switchView('matrix')" class="view-toggle-btn active">
+                <i class="fa-solid fa-table-cells"></i> Matrix Table
+            </button>
+            <button type="button" id="btnViewCards" onclick="switchView('cards')" class="view-toggle-btn">
+                <i class="fa-solid fa-grip"></i> Subject Cards ({{ available_subjects|length }})
+            </button>
+        </div>
+
+        <!-- Download PDF Link -->
+        <a href="{% url 'students:subject_attendance_matrix_pdf' %}?{{ request.GET.urlencode }}" class="btn" style="background: #dc2626; color: white; border-radius: 9px; padding: 0.55rem 0.95rem; font-weight: 700; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);" target="_blank">
+            <i class="fa-solid fa-file-pdf"></i> Download PDF
+        </a>
+    </div>
 </div>
 
-<div class="subject-cards-grid">
+<!-- Matrix KPI Cards -->
+<div id="matrixKpiContainer" class="subj-kpi-grid">
+    <!-- Total Students -->
+    <div class="subj-kpi-card">
+        <div class="subj-kpi-icon" style="background: #ede9fe; color: #6366f1;">
+            <i class="fa-solid fa-user-graduate"></i>
+        </div>
+        <div>
+            <div style="font-size: 0.78rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Students</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b;">{{ matrix_kpis.total_students }}</div>
+        </div>
+    </div>
+
+    <!-- Subjects Count -->
+    <div class="subj-kpi-card">
+        <div class="subj-kpi-icon" style="background: #e0f2fe; color: #0284c7;">
+            <i class="fa-solid fa-book-open"></i>
+        </div>
+        <div>
+            <div style="font-size: 0.78rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Subjects</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b;">{{ matrix_subjects|length }}</div>
+        </div>
+    </div>
+
+    <!-- Class Avg -->
+    <div class="subj-kpi-card">
+        <div class="subj-kpi-icon" style="background: #f0fdf4; color: #16a34a;">
+            <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div>
+            <div style="font-size: 0.78rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Class Average</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: {% if matrix_kpis.class_avg_pct >= 75 %}#16a34a{% elif matrix_kpis.class_avg_pct >= 60 %}#d97706{% else %}#dc2626{% endif %};">
+                {{ matrix_kpis.class_avg_pct }}%
+            </div>
+        </div>
+    </div>
+
+    <!-- Shortage Defaulters -->
+    <div class="subj-kpi-card">
+        <div class="subj-kpi-icon" style="background: #fee2e2; color: #dc2626;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+            <div style="font-size: 0.78rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Shortage (&lt;75%)</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: {% if matrix_kpis.shortage_count > 0 %}#dc2626{% else %}#16a34a{% endif %};">
+                {{ matrix_kpis.shortage_count }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =======================================================================
+     SUBJECT ATTENDANCE MATRIX TABLE (Student vs Subjects)
+     ======================================================================= -->
+<div id="matrixTableContainer" class="matrix-table-card">
+    <div class="matrix-table-container">
+        <table class="matrix-table">
+            <thead>
+                <tr>
+                    <th style="width: 45px;">Sl</th>
+                    <th style="width: 80px;">ID</th>
+                    <th class="col-student">Student Name</th>
+                    {% for ms in matrix_subjects %}
+                    <th style="min-width: 115px;">
+                        <div>{{ ms.name }}</div>
+                        <span style="font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #e2e8f0; color: #475569; display: inline-block; margin-top: 2px;">
+                            Held: {{ ms.held }}
+                        </span>
+                    </th>
+                    {% endfor %}
+                    <th style="min-width: 100px; background: #f1f5f9; border-left: 2px solid #cbd5e1;">Total</th>
+                    <th style="min-width: 75px; background: #f1f5f9;">%</th>
+                    <th style="min-width: 90px; background: #f1f5f9;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in matrix_rows %}
+                <tr>
+                    <td style="color: #64748b; font-weight: 700;">{{ forloop.counter }}</td>
+                    <td style="font-family: monospace; font-weight: 700; color: #475569;">{{ r.student.student_id|default:"-" }}</td>
+                    <td class="col-student">
+                        <div style="font-weight: 700; color: #0f172a;">{{ r.student.full_name }}</div>
+                        {% if r.enrollment.division %}
+                        <small style="color: #64748b; font-size: 0.72rem;">{{ r.enrollment.division.name }}</small>
+                        {% endif %}
+                    </td>
+                    {% for cell in r.cells %}
+                    <td>
+                        {% if cell.held > 0 %}
+                        <div class="cell-ratio-main" style="color: {% if cell.pct >= 75 %}#15803d{% elif cell.pct >= 60 %}#b45309{% else %}#b91c1c{% endif %};">
+                            {{ cell.display }}
+                        </div>
+                        <div class="cell-ratio-sub" style="color: {% if cell.pct >= 75 %}#16a34a{% elif cell.pct >= 60 %}#d97706{% else %}#dc2626{% endif %};">
+                            {{ cell.pct }}%
+                        </div>
+                        {% else %}
+                        <span class="cell-held-zero">-</span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                    <!-- Total column -->
+                    <td style="font-weight: 800; font-size: 0.95rem; background: #f8fafc; border-left: 2px solid #cbd5e1; color: #1e293b;">
+                        {{ r.overall_display }}
+                    </td>
+                    <!-- Percentage column -->
+                    <td style="font-weight: 800; font-size: 0.92rem; background: #f8fafc; color: {% if r.overall_pct >= 75 %}#15803d{% elif r.overall_pct >= 60 %}#b45309{% else %}#b91c1c{% endif %};">
+                        {{ r.overall_pct }}%
+                    </td>
+                    <!-- Status Badge -->
+                    <td style="background: #f8fafc;">
+                        {% if r.overall_pct >= 75 %}
+                        <span class="status-badge-custom badge-eligible">Eligible</span>
+                        {% elif r.overall_pct >= 60 %}
+                        <span class="status-badge-custom badge-warning">Warning</span>
+                        {% else %}
+                        <span class="status-badge-custom badge-shortage">Shortage</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{{ matrix_subjects|length|add:6 }}" style="text-align: center; padding: 3rem; color: #64748b;">
+                        <i class="fa-solid fa-users-slash" style="font-size: 2.5rem; color: #cbd5e1; margin-bottom: 0.75rem; display: block;"></i>
+                        <h4 style="font-weight: 700; color: #334155; margin-bottom: 0.3rem;">No Students Found</h4>
+                        <p style="margin: 0; font-size: 0.88rem;">No enrolled students match the selected class or search filter.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if matrix_rows %}
+            <tfoot>
+                <tr style="background: #f1f5f9; font-weight: 800; border-top: 2px solid #cbd5e1;">
+                    <td colspan="3" style="text-align: right; padding: 0.85rem 1rem; color: #334155;">Class Overall Average:</td>
+                    {% for ms in matrix_subjects %}
+                    <td style="color: #64748b; font-size: 0.82rem;">-</td>
+                    {% endfor %}
+                    <td style="border-left: 2px solid #cbd5e1; color: #334155;">-</td>
+                    <td style="color: {% if matrix_kpis.class_avg_pct >= 75 %}#15803d{% elif matrix_kpis.class_avg_pct >= 60 %}#b45309{% else %}#b91c1c{% endif %}; font-size: 0.95rem;">
+                        {{ matrix_kpis.class_avg_pct }}%
+                    </td>
+                    <td>-</td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+</div>
+
+<!-- =======================================================================
+     SUBJECT CARDS GRID (Alternative View)
+     ======================================================================= -->
+<div id="subjectCardsContainer" class="subject-cards-grid" style="display: none;">
     {% for sc in subject_overview_cards %}
     <a href="?grade={{ selected_grade.id }}&division={{ selected_division.id|default:0 }}&subject={{ sc.subject.id }}{% if current_filters.month_filter %}&month_filter={{ current_filters.month_filter }}{% endif %}" class="subject-overview-card">
         <div>
@@ -705,5 +969,29 @@
 </div>
 
 {% endif %}
+
+<script>
+function switchView(mode) {
+    const matrixContainer = document.getElementById('matrixTableContainer');
+    const matrixKpi = document.getElementById('matrixKpiContainer');
+    const cardsContainer = document.getElementById('subjectCardsContainer');
+    const btnMatrix = document.getElementById('btnViewMatrix');
+    const btnCards = document.getElementById('btnViewCards');
+
+    if (mode === 'cards') {
+        if (matrixContainer) matrixContainer.style.display = 'none';
+        if (matrixKpi) matrixKpi.style.display = 'none';
+        if (cardsContainer) cardsContainer.style.display = 'grid';
+        if (btnMatrix) btnMatrix.classList.remove('active');
+        if (btnCards) btnCards.classList.add('active');
+    } else {
+        if (matrixContainer) matrixContainer.style.display = 'block';
+        if (matrixKpi) matrixKpi.style.display = 'grid';
+        if (cardsContainer) cardsContainer.style.display = 'none';
+        if (btnMatrix) btnMatrix.classList.add('active');
+        if (btnCards) btnCards.classList.remove('active');
+    }
+}
+</script>
 
 {% endblock %}
